@@ -1,3 +1,4 @@
+import type { BookCategory } from '@/types'
 import { get, post, put, del } from './request'
 
 export interface CategoryFormData {
@@ -9,21 +10,21 @@ export interface CategoryFormData {
 }
 
 export function getCategoryList() {
-  return get('/categories')
+  return get<BookCategory[]>('/categories')
 }
 
 export function getCategoryById(id: number) {
-  return get(`/categories/${id}`)
+  return get<BookCategory>(`/categories/${id}`)
 }
 
 export function createCategory(data: CategoryFormData) {
-  return post('/categories', data)
+  return post<BookCategory>('/categories', data)
 }
 
 export function updateCategory(data: CategoryFormData) {
-  return put('/categories', data)
+  return put<BookCategory>('/categories', data)
 }
 
 export function deleteCategory(id: number) {
-  return del(`/categories/${id}`)
+  return del<void>(`/categories/${id}`)
 }

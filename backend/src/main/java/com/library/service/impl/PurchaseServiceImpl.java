@@ -47,7 +47,7 @@ public class PurchaseServiceImpl implements PurchaseService {
 
     @Override
     public PurchaseOrder getById(Long id) {
-        PurchaseOrder order = orderMapper.selectById(id);
+        PurchaseOrder order = orderMapper.lockById(id);
         if (order == null) throw new RuntimeException("采购单不存在");
         fillOrderInfo(order);
         List<PurchaseItem> items = itemMapper.selectList(
@@ -64,7 +64,7 @@ public class PurchaseServiceImpl implements PurchaseService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public PurchaseOrder create(PurchaseOrderRequest request, Long applicantId) {
         PurchaseOrder order = new PurchaseOrder();
         order.setOrderNo(generateOrderNo());
@@ -89,10 +89,10 @@ public class PurchaseServiceImpl implements PurchaseService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public PurchaseOrder update(PurchaseOrderRequest request) {
         if (request.getId() == null) throw new RuntimeException("采购单ID不能为空");
-        PurchaseOrder order = orderMapper.selectById(request.getId());
+        PurchaseOrder order = orderMapper.lockById(request.getId());
         if (order == null) throw new RuntimeException("采购单不存在");
         if (!"DRAFT".equals(order.getStatus()) && !"REJECTED".equals(order.getStatus())) {
             throw new RuntimeException("只有草稿或已驳回的采购单可以修改");
@@ -117,9 +117,9 @@ public class PurchaseServiceImpl implements PurchaseService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void delete(Long id) {
-        PurchaseOrder order = orderMapper.selectById(id);
+        PurchaseOrder order = orderMapper.lockById(id);
         if (order == null) throw new RuntimeException("采购单不存在");
         if (!"DRAFT".equals(order.getStatus())) throw new RuntimeException("只有草稿状态可以删除");
         itemMapper.delete(new LambdaQueryWrapper<PurchaseItem>().eq(PurchaseItem::getOrderId, id));
@@ -127,9 +127,9 @@ public class PurchaseServiceImpl implements PurchaseService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public PurchaseOrder submit(Long id) {
-        PurchaseOrder order = orderMapper.selectById(id);
+        PurchaseOrder order = orderMapper.lockById(id);
         if (order == null) throw new RuntimeException("采购单不存在");
         if (!"DRAFT".equals(order.getStatus()) && !"REJECTED".equals(order.getStatus())) {
             throw new RuntimeException("只有草稿或已驳回的采购单可以提交");
@@ -140,12 +140,13 @@ public class PurchaseServiceImpl implements PurchaseService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public PurchaseOrder approve(Long id, ApprovalActionRequest request, Long approverId) {
-        PurchaseOrder order = orderMapper.selectById(id);
+        PurchaseOrder order = orderMapper.lockById(id);
         if (order == null) throw new RuntimeException("采购单不存在");
         if (!"PENDING".equals(order.getStatus())) throw new RuntimeException("只有审批中的采购单可以审批");
 
+        if (!java.util.Set.of("APPROVE", "REJECT").contains(request.getAction())) throw new RuntimeException("审批动作无效");
         User approver = userMapper.selectById(approverId);
         ApprovalRecord record = new ApprovalRecord();
         record.setOrderId(id);
@@ -167,31 +168,46 @@ public class PurchaseServiceImpl implements PurchaseService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void quickInstock(Long id) {
-        PurchaseOrder order = orderMapper.selectById(id);
+        PurchaseOrder order = orderMapper.lockById(id);
         if (order == null) throw new RuntimeException("采购单不存在");
         if (!"APPROVED".equals(order.getStatus())) throw new RuntimeException("只有已通过的采购单可以入库");
 
         List<PurchaseItem> items = itemMapper.selectList(
-                new LambdaQueryWrapper<PurchaseItem>().eq(PurchaseItem::getOrderId, id)
+                new LambdaQueryWrapper<PurchaseItem>().eq(PurchaseItem::getOrderId, id).orderByAsc(PurchaseItem::getIsbn).orderByAsc(PurchaseItem::getId)
         );
+        bookMapper.lockCatalog();
 
         for (PurchaseItem item : items) {
             int pendingQty = item.getQuantity() - item.getInstockQuantity();
             if (pendingQty <= 0) continue;
 
-            Book book = new Book();
-            book.setIsbn(item.getIsbn() != null ? item.getIsbn() : "PO-" + id + "-" + item.getId());
-            book.setTitle(item.getBookTitle());
-            book.setAuthor(item.getAuthor());
-            book.setPublisher(item.getPublisher());
-            book.setCategoryId(item.getCategoryId());
-            book.setPrice(item.getPrice());
-            book.setStockTotal(pendingQty);
-            book.setStockAvailable(pendingQty);
-            book.setStatus(1);
-            bookMapper.insert(book);
+            String isbn = StringUtils.hasText(item.getIsbn()) ? item.getIsbn().trim() : "PO-" + id + "-" + item.getId();
+            Book book = bookMapper.lockByIsbn(isbn);
+            if (book == null) {
+                book = new Book();
+                book.setIsbn(isbn);
+                book.setTitle(item.getBookTitle());
+                book.setAuthor(item.getAuthor());
+                book.setPublisher(item.getPublisher());
+                book.setCategoryId(item.getCategoryId());
+                book.setPrice(item.getPrice());
+                book.setStockTotal(pendingQty);
+                book.setStockAvailable(pendingQty);
+                book.setStatus(1);
+                bookMapper.insert(book);
+            } else {
+                if (Integer.valueOf(1).equals(book.getDeleted())) throw new RuntimeException("此ISBN对应图书已删除，请先恢复或更正ISBN");
+                if (!java.util.Objects.equals(book.getTitle().trim(), item.getBookTitle().trim())
+                        || (StringUtils.hasText(item.getAuthor()) && !java.util.Objects.equals(book.getAuthor(), item.getAuthor()))
+                        || (StringUtils.hasText(item.getPublisher()) && !java.util.Objects.equals(book.getPublisher(), item.getPublisher()))) {
+                    throw new RuntimeException("ISBN对应图书的书名、作者或出版社不一致，请核对采购明细");
+                }
+                book.setStockTotal(Math.addExact(book.getStockTotal(), pendingQty));
+                book.setStockAvailable(Math.addExact(book.getStockAvailable(), pendingQty));
+                bookMapper.updateById(book);
+            }
 
             StockFlow flow = new StockFlow();
             flow.setBookId(book.getId());

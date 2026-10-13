@@ -116,7 +116,7 @@ onMounted(async () => {
 async function fetchCurrentBorrows() {
   loading.value = true
   try {
-    const res = await getMyBorrows({ page: 1, size: 100, status: 'BORROWING' })
+    const res = await getMyBorrows({ page: 1, size: 100, status: 'ACTIVE' })
     currentBorrows.value = (res?.records || []).filter((r: BorrowRecord) => r.status === 'BORROWING' || r.status === 'OVERDUE')
   } catch {
     currentBorrows.value = []
@@ -149,7 +149,7 @@ async function handleReturn(record: BorrowRecord) {
     await ElMessageBox.confirm(
       `确定要归还《${record.bookTitle}》吗？\n${isOverdue(record) ? '⚠️ 该书已逾期，可能产生罚款。' : ''}`,
       '确认归还',
-      { confirmButtonText: '确认归还', cancelButtonText: '取消', type: 'info', dangerouslyUseHTMLString: true },
+      { confirmButtonText: '确认归还', cancelButtonText: '取消', type: 'info', dangerouslyUseHTMLString: false },
     )
     returningId.value = record.id
     await selfReturnBook(record.id)
@@ -157,7 +157,7 @@ async function handleReturn(record: BorrowRecord) {
     await fetchCurrentBorrows()
     await fetchHistoryBorrows()
   } catch (e) {
-    if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.message || '归还失败')
+    if (e !== 'cancel' && e !== 'close') ElMessage.error(e instanceof Error ? e.message : '归还失败')
   } finally { returningId.value = null }
 }
 

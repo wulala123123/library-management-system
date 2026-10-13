@@ -1,163 +1,72 @@
-#!/bin/bash
-
-set -e
-
-echo "=========================================="
-echo "  图书馆管理系统 - 一键部署脚本"
-echo "=========================================="
-
-VERSION="${1:-latest}"
-INSTALL_DIR="/opt/library-management-system"
-SERVICE_NAME="library-backend"
-
-color_red='\033[0;31m'
-color_green='\033[0;32m'
-color_yellow='\033[1;33m'
-color_reset='\033[0m'
-
-log_info() { echo -e "${color_green}[INFO]${color_reset} $1"; }
-log_warn() { echo -e "${color_yellow}[WARN]${color_reset} $1"; }
-log_error() { echo -e "${color_red}[ERROR]${color_reset} $1"; }
-
-check_dependencies() {
-    log_info "检查系统依赖..."
-    local missing=()
-    command -v docker >/dev/null 2>&1 || missing+=("docker")
-    command -v wget >/dev/null 2>&1 || missing+=("wget")
-    command -v unzip >/dev/null 2>&1 || missing+=("unzip")
-    
-    if [ ${#missing[@]} -ne 0 ]; then
-        log_error "缺少以下依赖: ${missing[*]}"
-        log_info "安装命令: apt-get install docker.io wget unzip (Ubuntu/Debian)"
+#!/usr/bin/env bash
+set -euo pipefail
+library_archive="${1:?Usage: deploy.sh release.zip [install|update] [installation-directory]}"
+library_action="${2:-install}"
+library_root="${3:-/opt/library-management-system}"
+case "$library_action" in install|update) ;; *) echo 'Action must be install or update' >&2; exit 1;; esac
+for library_tool in docker unzip sha256sum realpath python3; do command -v "$library_tool" >/dev/null || { echo "Missing: $library_tool" >&2; exit 1; }; done
+library_archive="$(realpath "$library_archive")"
+library_root="$(realpath -m "$library_root")"
+[[ "$library_root" != / && "$library_root" != /opt && "$library_root" != /home && "$library_root" != /tmp ]] || { echo 'Choose a dedicated installation directory' >&2; exit 1; }
+[[ -f "$library_archive.sha256" ]] || { echo 'Missing checksum sidecar' >&2; exit 1; }
+(cd "$(dirname "$library_archive")" && sha256sum -c "$(basename "$library_archive").sha256")
+python3 - "$library_archive" <<'PY'
+import stat, sys
+from pathlib import PurePosixPath
+from zipfile import ZipFile
+with ZipFile(sys.argv[1]) as archive:
+    for entry in archive.infolist():
+        path=PurePosixPath(entry.filename)
+        mode=entry.external_attr >> 16
+        if path.is_absolute() or '..' in path.parts or '\\' in entry.filename or stat.S_ISLNK(mode):
+            raise SystemExit('Unsafe ZIP entry')
+PY
+mkdir -p -- "$library_root/releases" "$library_root/backups"
+library_stage="$(mktemp -d "$library_root/.stage.XXXXXX")"
+trap 'rm -rf -- "$library_stage"' EXIT
+unzip -q "$library_archive" -d "$library_stage"
+library_bundles=("$library_stage"/*)
+[[ ${#library_bundles[@]} == 1 && -f "${library_bundles[0]}/compose.yaml" ]] || { echo 'Invalid release layout' >&2; exit 1; }
+library_version="$(basename "${library_bundles[0]}")"
+[[ "$library_version" =~ ^library-management-system-[A-Za-z0-9._-]+$ ]] || exit 1
+library_release="$library_root/releases/$library_version"
+library_previous=''
+if [[ -L "$library_root/current" ]]; then library_previous="$(readlink -f "$library_root/current")"; fi
+if [[ -e "$library_release" ]]; then
+    [[ "$library_release" != "$library_previous" && -f "$library_release/.archive.sha256" ]] || { echo 'Release is already current or has no checksum' >&2; exit 1; }
+    [[ "$(sha256sum "$library_archive" | cut -d ' ' -f 1)" == "$(cut -d ' ' -f 1 "$library_release/.archive.sha256")" ]] || { echo 'Release content differs' >&2; exit 1; }
+else
+    mv -- "${library_bundles[0]}" "$library_release"
+    cp -- "$library_archive.sha256" "$library_release/.archive.sha256"
+fi
+if [[ ! -f "$library_root/.env" ]]; then
+    umask 077
+    cp -- "$library_release/.env.example" "$library_root/.env"
+    echo "Release unpacked. Configure $library_root/.env, then repeat this deployment command." >&2
+    exit 1
+fi
+library_compose() {
+    local library_path="$1"; shift
+    local library_cmd=(docker compose -p library --project-directory "$library_path" --env-file "$library_root/.env" -f "$library_path/compose.yaml")
+    [[ ! -f "$library_root/use-sub2api" ]] || library_cmd+=(-f "$library_path/compose.sub2api.yaml")
+    APP_VERSION="$(basename "$library_path")" "${library_cmd[@]}" "$@"
+}
+library_compose "$library_release" config --quiet
+if [[ "$library_action" == update ]]; then
+    [[ -n "$library_previous" && -f "$library_previous/compose.yaml" ]] || { echo 'Missing current release; use install' >&2; exit 1; }
+    if ! LIBRARY_ENV_FILE="$library_root/.env" LIBRARY_KEEP_STOPPED=1 APP_VERSION="$(basename "$library_previous")" bash "$library_previous/scripts/backup.sh" "$library_root/backups/$(date -u +%Y%m%dT%H%M%SZ)"; then
+        library_compose "$library_previous" up -d --wait --wait-timeout 240
         exit 1
     fi
-    log_info "依赖检查通过 ✓"
-}
-
-download_release() {
-    if [ "$VERSION" = "latest" ]; then
-        DOWNLOAD_URL=$(curl -s https://api.github.com/repos/gxfdev/library-management-system/releases/latest | grep browser_download_url | cut -d '"' -f 4)
-    else
-        DOWNLOAD_URL="https://github.com/gxfdev/library-management-system/releases/download/v${VERSION}/library-management-system-v${VERSION}.zip"
+elif [[ -n "$library_previous" ]]; then echo 'Already installed; use update' >&2; exit 1; fi
+if ! library_compose "$library_release" up -d --build --wait --wait-timeout 240; then
+    library_compose "$library_release" logs --tail 60 backend || true
+    if [[ -n "$library_previous" ]]; then
+        echo 'Start failed; restoring previous application. Additive migrations are retained.' >&2
+        library_compose "$library_previous" up -d --wait --wait-timeout 240
     fi
-    
-    if [ -z "$DOWNLOAD_URL" ]; then
-        log_error "未找到版本 v${VERSION} 的发布包"
-        exit 1
-    fi
-    
-    log_info "下载发布包: $(basename $DOWNLOAD_URL) ..."
-    mkdir -p /tmp/library-deploy
-    cd /tmp/library-deploy
-    wget -q --show-progress "$DOWNLOAD_URL"
-}
-
-install() {
-    log_info "安装到 $INSTALL_DIR ..."
-    sudo mkdir -p "$INSTALL_DIR"
-    sudo rm -rf "$INSTALL_DIR"/*
-    unzip -qo "/tmp/library-deploy/$(ls /tmp/library-deploy/*.zip)" -d "$INSTALL_DIR"
-    
-    if [ ! -f "$INSTALL_DIR/.env" ]; then
-        cp "$INSTALL_DIR/.env.example" "$INSTALL_DIR/.env"
-        log_warn "请编辑 .env 文件配置数据库密码和JWT密钥:"
-        log_warn "  sudo nano $INSTALL_DIR/.env"
-    fi
-    
-    log_info "文件解压完成 ✓"
-}
-
-start_services() {
-    cd "$INSTALL_DIR"
-    log_info "启动服务..."
-    docker compose up -d --build
-    
-    log_info "等待服务启动..."
-    sleep 10
-    
-    if curl -sf http://localhost:8080/api/actuator/health > /dev/null 2>&1; then
-        log_info "后端服务启动成功 ✓"
-    else
-        log_warn "后端服务可能还在启动中，请稍后检查: docker logs library-backend"
-    fi
-    
-    if curl -sf http://localhost > /dev/null 2>&1; then
-        log_info "前端服务启动成功 ✓"
-    else
-        log_warn "前端服务可能还在启动中，请稍后检查: docker logs library-frontend"
-    fi
-}
-
-stop_services() {
-    if [ -d "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$INSTALL_DIR"
-        docker compose down
-        log_info "服务已停止"
-    else
-        log_warn "未找到已安装的服务"
-    fi
-}
-
-show_status() {
-    echo ""
-    echo "=========================================="
-    echo "  服务状态"
-    echo "=========================================="
-    docker ps --filter "name=library" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-    echo ""
-    echo "访问地址:"
-    echo "  前端: http://$(hostname -I | awk '{print $1}')"
-    echo "  后端API: http://$(hostname -I | awk '{print $1}'):8080"
-    echo "  默认账号: admin / admin123"
-}
-
-case "${2:-install}" in
-    install)
-        check_dependencies
-        download_release
-        install
-        start_services
-        show_status
-        ;;
-    update)
-        stop_services
-        check_dependencies
-        download_release
-        install
-        start_services
-        show_status
-        ;;
-    stop)
-        stop_services
-        ;;
-    start)
-        start_services
-        show_status
-        ;;
-    status)
-        show_status
-        ;;
-    uninstall)
-        stop_services
-        sudo rm -rf "$INSTALL_DIR"
-        docker volume rm library_mysql-data 2>/dev/null || true
-        log_info "已完全卸载"
-        ;;
-    *)
-        echo "用法: $0 <version> <command>"
-        echo ""
-        echo "Commands:"
-        echo "  install   安装并启动（默认）"
-        echo "  update    更新到指定版本"
-        echo "  start     启动服务"
-        echo "  stop      停止服务"
-        echo "  status    查看状态"
-        echo "  uninstall 完全卸载"
-        echo ""
-        echo "Examples:"
-        echo "  $0 latest install     # 安装最新版"
-        echo "  $0 1.0.0 install      # 安装 v1.0.0"
-        echo "  $0 latest update      # 更新到最新版"
-        exit 1
-        ;;
-esac
+    exit 1
+fi
+ln -s -- "$library_release" "$library_root/.next-current"
+mv -Tf -- "$library_root/.next-current" "$library_root/current"
+echo "Healthy release: $library_version"

@@ -1,0 +1,9 @@
+.git
+.env
+**/node_modules
+logs
+dist
+backend/uploads
+uploads
+**/.ssh
+**/ssh

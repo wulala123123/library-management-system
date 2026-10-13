@@ -118,7 +118,6 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { getBookPage, type BookPageParams } from '@/api/book'
 import { getCategoryList } from '@/api/category'
-import { borrowBook as apiBorrowBook } from '@/api/borrow'
 import { generateBorrowCode } from '@/api/borrowCode'
 import type { Book, BookCategory } from '@/types'
 import BookDetailDialog from './components/BookDetailDialog.vue'
@@ -184,12 +183,11 @@ async function handleBorrow(book: Book) {
       confirmButtonText: '确定', cancelButtonText: '取消', type: 'info',
     })
     try {
-      await apiBorrowBook({ bookId: book.id })
       const codeRes = await generateBorrowCode(book.id)
       const borrowCode = codeRes?.code || '未知'
       ElMessageBox.alert(
-        `您已成功借阅《${book.title}》！\n\n您的借阅码为：${borrowCode}\n有效期30分钟，请妥善保管。`,
-        '借阅成功',
+        `已为您生成借阅码《${book.title}》！\n\n您的借阅码为：${borrowCode}\n有效期30分钟，核销后完成借阅。借阅码不预留库存，请及时核销。`,
+        '已生成借阅码，核销后完成借阅',
         { confirmButtonText: '我知道了', type: 'success', dangerouslyUseHTMLString: false }
       )
       fetchBooks()

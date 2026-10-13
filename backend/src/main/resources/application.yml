@@ -4,6 +4,11 @@ server:
     context-path: /api
 
 spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    clean-disabled: true
+    locations: classpath:db/migration
   application:
     name: library-management
 
@@ -17,8 +22,8 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 20MB
+      max-file-size: 50MB
+      max-request-size: 52MB
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -33,7 +38,7 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 jwt:
-  secret: ${JWT_SECRET:MyS3cr3tK3yF0rD3v3l0pm3nt0nl1D0N0tUs3InPr0duct10n2024!}
+  secret: ${JWT_SECRET:}
   expiration: ${JWT_EXPIRATION:86400000}
   header: Authorization
   prefix: "Bearer "
@@ -84,3 +89,14 @@ logging:
   level:
     com.library: ${LOG_LEVEL:info}
     com.library.mapper: ${LOG_LEVEL:info}
+
+file:
+  upload-dir: ${UPLOAD_DIR:uploads}
+
+bootstrap:
+  admin:
+    username: ${ADMIN_USERNAME:}
+    password: ${ADMIN_PASSWORD:}
+
+security:
+  trusted-proxies: ${TRUSTED_PROXIES:}

@@ -27,7 +27,7 @@
                 >
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span>{{ b.title }}</span>
-                    <span style="color: #999; font-size: 12px;">库存:{{ b.stockAvailable || b.stockTotal }}</span>
+                    <span style="color: #999; font-size: 12px;">库存:{{ b.stockAvailable ?? b.stockTotal }}</span>
                   </div>
                 </el-option>
               </el-select>
@@ -177,10 +177,12 @@ async function handleGenerate() {
 }
 
 async function handleVerify() {
+  if (verifying.value) return
   if (!codeInput.value.trim()) { ElMessage.warning('请输入借阅码'); return }
   verifying.value = true
   try {
     verifyResult.value = await verifyBorrowCode(codeInput.value.trim())
+    codeInput.value = ''
     ElMessage.success('借阅成功')
     loadMyCodes()
   } catch { ElMessage.error('验证失败') } finally { verifying.value = false }

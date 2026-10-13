@@ -68,7 +68,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public Book getById(Long id) {
-        Book book = bookMapper.selectById(id);
+        Book book = bookMapper.lockById(id);
         if (book == null) {
             throw new RuntimeException("图书不存在");
         }
@@ -80,7 +80,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public Book create(BookRequest request) {
         Book book = new Book();
         BeanUtils.copyProperties(request, book);
@@ -91,13 +91,13 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public Book update(BookRequest request) {
         if (request.getId() == null) {
             throw new RuntimeException("图书ID不能为空");
         }
 
-        Book book = bookMapper.selectById(request.getId());
+        Book book = bookMapper.lockById(request.getId());
         if (book == null) {
             throw new RuntimeException("图书不存在");
         }
@@ -105,21 +105,21 @@ public class BookServiceImpl implements BookService {
         int stockDiff = request.getStockTotal() - book.getStockTotal();
         BeanUtils.copyProperties(request, book);
         book.setStockAvailable(book.getStockAvailable() + stockDiff);
-        if (book.getStockAvailable() < 0) book.setStockAvailable(0);
+        if (book.getStockAvailable() < 0) throw new RuntimeException("总库存不能小于未归还册数");
 
         bookMapper.updateById(book);
         return book;
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void delete(Long id) {
-        Book book = bookMapper.selectById(id);
+        Book book = bookMapper.lockById(id);
         if (book == null) {
             throw new RuntimeException("图书不存在");
         }
         Long activeBorrows = borrowRecordMapper.selectCount(
-                new LambdaQueryWrapper<BorrowRecord>().eq(BorrowRecord::getBookId, id).eq(BorrowRecord::getStatus, "BORROWING")
+                new LambdaQueryWrapper<BorrowRecord>().eq(BorrowRecord::getBookId, id).in(BorrowRecord::getStatus, "BORROWING", "OVERDUE")
         );
         if (activeBorrows > 0) {
             throw new RuntimeException("该图书有未归还的借阅记录，无法删除");
@@ -128,9 +128,9 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void updateStatus(Long id, Integer status) {
-        Book book = bookMapper.selectById(id);
+        Book book = bookMapper.lockById(id);
         if (book == null) {
             throw new RuntimeException("图书不存在");
         }
@@ -139,7 +139,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public String uploadBookCover(Long bookId, MultipartFile file) {
         if (file.isEmpty()) {
             throw new RuntimeException("请选择要上传的文件");
@@ -166,7 +166,7 @@ public class BookServiceImpl implements BookService {
         if (!ALLOWED_EXTENSIONS.contains(ext)) {
             throw new RuntimeException("仅支持 JPG、PNG、GIF、WEBP 格式的图片");
         }
-        Book book = bookMapper.selectById(bookId);
+        Book book = bookMapper.lockById(bookId);
         if (book == null) {
             throw new RuntimeException("图书不存在");
         }

@@ -1,3 +1,4 @@
+-- Legacy development fixture. Production uses db/migration in the application JAR.
 -- 图书馆管理系统数据库初始化脚本
 -- Database: library_db
 

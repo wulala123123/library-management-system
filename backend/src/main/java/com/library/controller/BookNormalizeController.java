@@ -51,11 +51,12 @@ public class BookNormalizeController {
     }
 
     @Operation(summary = "规范化单本图书")
+    @org.springframework.transaction.annotation.Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public Result<Book> normalizeBook(@PathVariable Long id, @RequestBody BookNormalizeRequest request,
                                       Authentication authentication) {
-        Book book = bookMapper.selectById(id);
+        Book book = bookMapper.lockById(id);
         if (book == null) return Result.error(404, "图书不存在");
 
         BookNormalizeLog logEntry = new BookNormalizeLog();
@@ -84,6 +85,7 @@ public class BookNormalizeController {
     }
 
     @Operation(summary = "批量规范化图书")
+    @org.springframework.transaction.annotation.Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PutMapping("/batch")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public Result<Integer> batchNormalize(@RequestBody List<BookNormalizeRequest> requests,
@@ -92,7 +94,7 @@ public class BookNormalizeController {
         String operatorName = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
         for (BookNormalizeRequest req : requests) {
             if (req.getId() == null) continue;
-            Book book = bookMapper.selectById(req.getId());
+            Book book = bookMapper.lockById(req.getId());
             if (book == null) continue;
 
             BookNormalizeLog logEntry = new BookNormalizeLog();

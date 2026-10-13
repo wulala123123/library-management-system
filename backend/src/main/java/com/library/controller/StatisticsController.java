@@ -41,7 +41,7 @@ public class StatisticsController {
         stats.put("totalBorrows", borrowRecordMapper.selectCount(null));
         stats.put("activeBorrows", borrowRecordMapper.selectCount(
                 new LambdaQueryWrapper<BorrowRecord>()
-                        .eq(BorrowRecord::getStatus, "BORROWING")
+                        .in(BorrowRecord::getStatus, "BORROWING", "OVERDUE")
         ));
         return Result.success(stats);
     }

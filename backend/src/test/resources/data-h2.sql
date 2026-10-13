@@ -1,5 +1,5 @@
 MERGE INTO `sys_user` (`username`, `password`, `real_name`, `phone`, `email`, `role`, `status`) KEY(`username`) VALUES
-('admin', '$2a$10$WFJvStr2.OtGuzIOcWb2C.cOgELgzzsQATtI0YO0Gop4IGYhMGCEu', '系统管理员', '13800138000', 'admin@library.com', 'ADMIN', 1),
+('admin', '$2a$10$8P71.Xj.vNfALEGYOC4mgOjE17rZM4rI2cGHcLLRsswlqZpICvzPO', '系统管理员', '13800138000', 'admin@library.com', 'ADMIN', 1),
 ('librarian', '$2a$10$WFJvStr2.OtGuzIOcWb2C.cOgELgzzsQATtI0YO0Gop4IGYhMGCEu', '图书管理员', '13800138001', 'librarian@library.com', 'LIBRARIAN', 1),
 ('reader', '$2a$10$WFJvStr2.OtGuzIOcWb2C.cOgELgzzsQATtI0YO0Gop4IGYhMGCEu', '张三', '13800138002', 'reader@library.com', 'READER', 1);
 

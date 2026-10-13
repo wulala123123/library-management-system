@@ -30,6 +30,10 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
     @Value("${register.rate-limit.max-attempts:3}")
     private int registerMaxAttempts;
 
+    @Value("${security.trusted-proxies:}")
+    private String trustedProxies;
+
+    private final ConcurrentHashMap<String, AttemptRecord> captchaAttemptRecords = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, AttemptRecord> loginAttemptRecords = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, AttemptRecord> registerAttemptRecords = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, AttemptRecord> forgotPasswordAttemptRecords = new ConcurrentHashMap<>();
@@ -38,6 +42,7 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
     public void cleanupExpiredRecords() {
         long now = System.currentTimeMillis();
         cleanupRecords(loginAttemptRecords, now);
+        cleanupRecords(captchaAttemptRecords, now);
         cleanupRecords(registerAttemptRecords, now);
         cleanupRecords(forgotPasswordAttemptRecords, now);
     }
@@ -67,7 +72,9 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (isAuthEndpoint(request, "/auth/login")) {
+        if ("GET".equals(request.getMethod()) && uri.endsWith("/captcha/image")) {
+            checkRateLimit(request, response, filterChain, captchaAttemptRecords, Math.max(maxAttempts * 4, 20), "验证码");
+        } else if (isAuthEndpoint(request, "/auth/login")) {
             checkRateLimit(request, response, filterChain, loginAttemptRecords, maxAttempts, "登录");
         } else if (isAuthEndpoint(request, "/auth/register")) {
             checkRateLimit(request, response, filterChain, registerAttemptRecords, registerMaxAttempts, "注册");
@@ -88,7 +95,11 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
         long now = System.currentTimeMillis();
 
         if (records.size() > 10000) {
-            records.clear();
+            cleanupRecords(records, now);
+            if (!records.containsKey(clientIp) && records.size() > 10000) {
+                response.sendError(429);
+                return;
+            }
             log.warn("限流记录过多，执行清理");
         }
 
@@ -122,20 +133,13 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isEmpty() && !"unknown".equalsIgnoreCase(forwarded)) {
-            String ip = forwarded.split(",")[0].trim();
-            if (!ip.isEmpty()) return ip;
-        }
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isEmpty() && !"unknown".equalsIgnoreCase(realIp)) {
-            return realIp.trim();
-        }
-        String remoteAddr = request.getRemoteAddr();
-        if (remoteAddr == null || remoteAddr.isEmpty()) {
-            return "unknown";
-        }
-        return remoteAddr;
+        String remote = request.getRemoteAddr();
+        // Only an explicitly trusted immediate proxy may provide the canonical address.
+        boolean trusted = java.util.Arrays.stream(trustedProxies.split(","))
+                .map(String::trim).filter(ip -> !ip.isEmpty()).anyMatch(ip -> ip.equals(remote));
+        String real = request.getHeader("X-Real-IP");
+        if (trusted && real != null && real.length() <= 45 && real.matches("[0-9a-fA-F:.]+")) return real;
+        return remote == null ? "unknown" : remote;
     }
 
     private record AttemptRecord(long windowStart, int count) {}

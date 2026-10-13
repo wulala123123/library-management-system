@@ -1,0 +1,71 @@
+name: Verify
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        default: ci
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mysql:
+        image: mysql:8.0.44
+        env:
+          MYSQL_ROOT_PASSWORD: ci-disposable-root-password
+          MYSQL_DATABASE: library_repair_tests
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -pci-disposable-root-password"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17", cache: maven }
+      - uses: actions/setup-node@v4
+        with: { node-version: "24.19.0" }
+      - run: npm install -g pnpm@11.25.0
+      - name: Backend safety, production HTTP, migration and MySQL concurrency tests
+        env:
+          MYSQL_TEST_URL: jdbc:mysql://127.0.0.1:3306/library_repair_tests?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai
+          MYSQL_TEST_PASSWORD: ci-disposable-root-password
+        run: mvn -B -ntp -f backend/pom.xml verify
+      - name: Audit resolved backend runtime dependencies
+        run: |
+          mvn -B -ntp -f backend/pom.xml dependency:list -DincludeScope=runtime -DoutputFile=target/runtime-dependencies.txt
+          python3 scripts/audit_backend.py backend/target/runtime-dependencies.txt
+      - name: Locked frontend install, types, page flows, build and dependency audit
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm build
+          pnpm audit --audit-level=high
+      - name: Shell syntax and release package
+        env:
+          LIBRARY_VERSION: ${{ inputs.version || 'ci' }}
+        run: |
+          for script in deploy.sh scripts/*.sh backend/docker/*.sh; do bash -n "$script"; done
+          bash scripts/operations.test.sh
+          python3 scripts/package_release.py "$LIBRARY_VERSION"
+      - name: Unpacked distribution, Nginx routing, persistence and recovery
+        env:
+          LIBRARY_VERSION: ${{ inputs.version || 'ci' }}
+        run: bash scripts/container-acceptance.sh "dist/library-management-system-$LIBRARY_VERSION.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-distribution
+          path: |
+            dist/library-management-system-${{ inputs.version || 'ci' }}.zip
+            dist/library-management-system-${{ inputs.version || 'ci' }}.zip.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-reports
+          path: backend/target/surefire-reports

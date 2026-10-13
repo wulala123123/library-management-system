@@ -1,0 +1,9 @@
+services:
+  frontend:
+    networks:
+      proxy:
+        aliases: [library-web]
+networks:
+  proxy:
+    external: true
+    name: proxy

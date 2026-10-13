@@ -36,9 +36,9 @@ class PermissionControllerTest {
 
     @BeforeEach
     void setUp() {
-        adminToken = jwtTokenProvider.generateToken(1L, "admin", "ADMIN");
-        librarianToken = jwtTokenProvider.generateToken(2L, "librarian", "LIBRARIAN");
-        readerToken = jwtTokenProvider.generateToken(3L, "reader", "READER");
+        adminToken = jwtTokenProvider.generateToken(1L, "admin", "ADMIN", 0L);
+        librarianToken = jwtTokenProvider.generateToken(2L, "librarian", "LIBRARIAN", 0L);
+        readerToken = jwtTokenProvider.generateToken(3L, "reader", "READER", 0L);
     }
 
     @Test

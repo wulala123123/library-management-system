@@ -2,6 +2,7 @@
 frontend/node_modules/
 node_modules/
 frontend/dist/
+dist/
 frontend/.env.local
 frontend/.env.*.local
 
@@ -24,6 +25,8 @@ desktop.ini
 # Environment
 .env
 backend/.env
+uploads/
+backend/uploads/
 
 # Logs
 *.log

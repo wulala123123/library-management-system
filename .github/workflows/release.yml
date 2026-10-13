@@ -1,129 +1,30 @@
 name: Release
-
 on:
   push:
-    tags:
-      - 'v*'
-
+    tags: ['v*']
 permissions:
   contents: write
-
 jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml
+    with:
+      version: ${{ github.ref_name }}
   release:
-
+    needs: verify
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-
-    - name: Build Backend JAR
-      working-directory: backend
-      run: mvn -B package -DskipTests -Dmaven.javadoc.skip=true
-
-    - name: Build Frontend
-      working-directory: frontend
-      run: |
-        npm install
-        npm run build
-
-    - name: Get version from tag
-      id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-    - name: Package distribution
-      run: |
-        DIST_NAME="library-management-system-${{ steps.get_version.outputs.VERSION }}"
-        mkdir -p "$DIST_NAME"
-        cp backend/target/library-backend.jar "$DIST_NAME/"
-        cp -r frontend/dist "$DIST_NAME"/frontend-dist
-        cp backend/Dockerfile "$DIST_NAME/"
-        cp backend/docker-compose.yml "$DIST_NAME/"
-        cp backend/nginx.conf "$DIST_NAME/"
-        cp backend/.env.example "$DIST_NAME/"
-        zip -r "${DIST_NAME}.zip" "$DIST_NAME"
-        echo "ZIP_FILE=${DIST_NAME}.zip" >> $GITHUB_ENV
-
-    - name: Delete existing Release if exists
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        TAG="${{ github.ref_name }}"
-        if gh release view "$TAG" &>/dev/null; then
-          echo "Deleting existing release for tag $TAG"
-          gh release delete "$TAG" --yes --cleanup-tag || true
-        fi
-
-    - name: Create GitHub Release with Assets
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        VERSION="${{ steps.get_version.outputs.VERSION }}"
-        gh release create "${{ github.ref_name }}" \
-          "${ZIP_FILE}" \
-          --title "Library Management System v${VERSION}" \
-          --notes "## 📦 图书馆管理系统 v${VERSION}
-
-        ### 🚀 快速部署（推荐 Docker）
-
-        \`\`\`bash
-        # 下载 ZIP 并解压
-        unzip library-management-system-v${VERSION}.zip
-        cd library-management-system-v${VERSION}
-
-        # 配置环境变量
-        cp .env.example .env
-        nano .env   # 修改数据库密码和JWT密钥
-
-        # 一键启动全部服务
-        docker compose up -d
-        \`\`\`
-
-        ### 📋 手动部署
-
-        **后端（需要 JDK 17+、MySQL 8+）：**
-        \`\`\`bash
-        java -jar library-backend.jar --spring.profiles.active=prod
-        \`\`\`
-
-        **前端（Nginx 部署）：**
-        \`\`\`bash
-        cp -r frontend-dist /usr/share/nginx/html/
-        \`\`\`
-
-        ### 🔧 环境变量说明（.env 文件）
-
-        | 变量名 | 说明 | 默认值 |
-        |--------|------|--------|
-        | MYSQL_ROOT_PASSWORD | MySQL root 密码 | changeme |
-        | MYSQL_DB | 数据库名称 | library_db |
-        | JWT_SECRET | JWT 密钥（生产环境必须改！） | changeThisToASecureRandomStringInProduction2024 |
-        | BACKEND_PORT | 后端端口 | 8080 |
-        | FRONTEND_PORT | 前端端口 | 80 |
-
-        ### 🔗 访问地址
-
-        - 前端：\`http://你的服务器IP\`
-        - 后端 API：\`http://你的服务器IP:8080/api\`
-        - Swagger 文档：\`http://你的服务器IP:8080/api/doc.html\`
-        - 默认账号：**admin / admin123**
-
-        ### 📝 一键部署脚本
-
-        在 Linux 服务器上执行：
-        \`\`\`bash
-        wget https://raw.githubusercontent.com/gxfdev/library-management-system/main/deploy.sh
-        chmod +x deploy.sh
-        ./deploy.sh latest install
-        \`\`\`"
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-distribution
+          path: release-files
+      - name: Create release without deleting existing assets or tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LIBRARY_TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$LIBRARY_TAG" >/dev/null 2>&1; then
+            echo 'This release already exists; use a new version tag.' >&2
+            exit 1
+          fi
+          gh release create "$LIBRARY_TAG" release-files/*.zip release-files/*.sha256 --verify-tag --title "$LIBRARY_TAG" --notes-file docs/release-notes.md

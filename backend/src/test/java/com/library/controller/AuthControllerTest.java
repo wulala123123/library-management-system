@@ -24,11 +24,21 @@ class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private com.library.service.CaptchaService captchaService;
+
+    private void addCaptcha(com.library.dto.LoginRequest request) {
+        String key = captchaService.generateCaptcha().getData().captchaKey();
+        request.setCaptchaKey(key);
+        request.setCaptchaCode(captchaService.getCaptchaStore().get(key).code);
+    }
+
     @Test
     void loginWithValidCredentials() throws Exception {
         LoginRequest request = new LoginRequest();
         request.setUsername("admin");
         request.setPassword("admin123");
+        addCaptcha(request);
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -44,6 +54,7 @@ class AuthControllerTest {
         LoginRequest request = new LoginRequest();
         request.setUsername("admin");
         request.setPassword("wrongpassword");
+        addCaptcha(request);
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -57,6 +68,7 @@ class AuthControllerTest {
         LoginRequest request = new LoginRequest();
         request.setUsername("");
         request.setPassword("admin123");
+        addCaptcha(request);
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

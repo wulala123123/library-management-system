@@ -42,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final BorrowRecordMapper borrowRecordMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final com.library.service.CaptchaService captchaService;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
@@ -52,6 +53,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
+        if (!captchaService.verifyAndConsume(request.getCaptchaKey(), request.getCaptchaCode())) {
+            throw new RuntimeException("验证码错误或已过期，请刷新");
+        }
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, request.getUsername())
         );
@@ -64,7 +68,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("账号已被禁用");
         }
 
-        String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername(), user.getRole());
+        String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername(), user.getRole(), user.getTokenVersion());
 
         LoginResponse response = new LoginResponse();
         response.setToken(token);
@@ -83,7 +87,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public User register(RegisterRequest request) {
         Long count = userMapper.selectCount(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, request.getUsername())
@@ -124,7 +128,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public User create(UserRequest request) {
         Long count = userMapper.selectCount(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, request.getUsername())
@@ -135,7 +139,10 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         BeanUtils.copyProperties(request, user);
-        user.setPassword(passwordEncoder.encode(request.getPassword() != null ? request.getPassword() : "123456"));
+        if (request.getPassword() == null || request.getPassword().length() < 6) {
+            throw new RuntimeException("创建用户必须指定至少6位的初始密码");
+        }
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setStatus(request.getStatus() != null ? request.getStatus() : 1);
         userMapper.insert(user);
 
@@ -144,13 +151,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public User update(UserRequest request) {
         if (request.getId() == null) {
             throw new RuntimeException("用户ID不能为空");
         }
 
-        User user = userMapper.selectById(request.getId());
+        User user = userMapper.lockById(request.getId());
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -164,55 +171,61 @@ public class UserServiceImpl implements UserService {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userMapper.updateById(user);
         user.setPassword(null);
         return user;
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void delete(Long id) {
-        User user = userMapper.selectById(id);
+        User user = userMapper.lockById(id);
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
         Long activeBorrows = borrowRecordMapper.selectCount(
-                new LambdaQueryWrapper<BorrowRecord>().eq(BorrowRecord::getUserId, id).eq(BorrowRecord::getStatus, "BORROWING")
+                new LambdaQueryWrapper<BorrowRecord>().eq(BorrowRecord::getUserId, id).in(BorrowRecord::getStatus, "BORROWING", "OVERDUE")
         );
         if (activeBorrows > 0) {
             throw new RuntimeException("该用户有未归还的借阅记录，无法删除");
         }
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        userMapper.updateById(user);
         userMapper.deleteById(id);
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void updateStatus(Long id, Integer status) {
-        User user = userMapper.selectById(id);
+        if (status == null || (status != 0 && status != 1)) throw new RuntimeException("状态只能为0或1");
+        User user = userMapper.lockById(id);
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
         user.setStatus(status);
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userMapper.updateById(user);
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public String resetPassword(Long id) {
-        User user = userMapper.selectById(id);
+        User user = userMapper.lockById(id);
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
         String rawPassword = generateRandomPassword();
         user.setPassword(passwordEncoder.encode(rawPassword));
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userMapper.updateById(user);
         return rawPassword;
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void adminChangePassword(Long id, String newPassword) {
-        User user = userMapper.selectById(id);
+        User user = userMapper.lockById(id);
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -220,6 +233,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("新密码长度不能少于6位");
         }
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userMapper.updateById(user);
     }
 
@@ -229,7 +243,7 @@ public class UserServiceImpl implements UserService {
         String digits = "23456789";
         String all = upper + lower + digits;
         StringBuilder sb = new StringBuilder();
-        java.util.Random random = new java.util.Random();
+        java.security.SecureRandom random = new java.security.SecureRandom();
         sb.append(upper.charAt(random.nextInt(upper.length())));
         sb.append(lower.charAt(random.nextInt(lower.length())));
         sb.append(digits.charAt(random.nextInt(digits.length())));
@@ -237,70 +251,6 @@ public class UserServiceImpl implements UserService {
             sb.append(all.charAt(random.nextInt(all.length())));
         }
         return sb.toString();
-    }
-
-    private final Map<String, ResetCodeEntry> resetCodeStore = new java.util.concurrent.ConcurrentHashMap<>();
-
-    private static class ResetCodeEntry {
-        final String code;
-        final Long userId;
-        final long timestamp;
-        ResetCodeEntry(String code, Long userId, long timestamp) {
-            this.code = code;
-            this.userId = userId;
-            this.timestamp = timestamp;
-        }
-    }
-
-    @Override
-    public Map<String, String> sendResetCode(String phone) {
-        User user = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getPhone, phone)
-        );
-        if (user == null) {
-            throw new RuntimeException("该手机号未注册");
-        }
-        String code = String.format("%06d", new java.util.Random().nextInt(1000000));
-        long now = System.currentTimeMillis();
-        resetCodeStore.put(phone, new ResetCodeEntry(code, user.getId(), now));
-
-        cleanupExpiredResetCodes();
-
-        Map<String, String> result = new HashMap<>();
-        result.put("code", code);
-        result.put("message", "验证码已发送");
-        return result;
-    }
-
-    @Override
-    @Transactional
-    public void resetPasswordByPhone(String phone, String code, String newPassword) {
-        ResetCodeEntry entry = resetCodeStore.get(phone);
-        if (entry == null) {
-            throw new RuntimeException("请先获取验证码");
-        }
-        if ((System.currentTimeMillis() - entry.timestamp) > 300_000) {
-            resetCodeStore.remove(phone);
-            throw new RuntimeException("验证码已过期，请重新获取");
-        }
-        if (!entry.code.equals(code)) {
-            throw new RuntimeException("验证码错误");
-        }
-        resetCodeStore.remove(phone);
-
-        User user = userMapper.selectById(entry.userId);
-        if (user == null) {
-            throw new RuntimeException("用户不存在");
-        }
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userMapper.updateById(user);
-    }
-
-    private void cleanupExpiredResetCodes() {
-        long now = System.currentTimeMillis();
-        if (resetCodeStore.size() > 5000) {
-            resetCodeStore.entrySet().removeIf(e -> (now - e.getValue().timestamp) > 300_000);
-        }
     }
 
     @Override
@@ -314,9 +264,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void updateProfile(Long userId, UpdateProfileRequest request) {
-        User user = userMapper.selectById(userId);
+        User user = userMapper.lockById(userId);
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -345,9 +295,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void changePassword(Long userId, ChangePasswordRequest request) {
-        User user = userMapper.selectById(userId);
+        User user = userMapper.lockById(userId);
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -358,6 +308,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("新密码不能与原密码相同");
         }
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userMapper.updateById(user);
     }
 
@@ -368,7 +319,7 @@ public class UserServiceImpl implements UserService {
                 new LambdaQueryWrapper<BorrowRecord>().eq(BorrowRecord::getUserId, userId)
         );
         Long activeBorrows = borrowRecordMapper.selectCount(
-                new LambdaQueryWrapper<BorrowRecord>().eq(BorrowRecord::getUserId, userId).eq(BorrowRecord::getStatus, "BORROWING")
+                new LambdaQueryWrapper<BorrowRecord>().eq(BorrowRecord::getUserId, userId).in(BorrowRecord::getStatus, "BORROWING", "OVERDUE")
         );
         Long overdueBorrows = borrowRecordMapper.selectCount(
                 new LambdaQueryWrapper<BorrowRecord>().eq(BorrowRecord::getUserId, userId).eq(BorrowRecord::getStatus, "OVERDUE")
@@ -380,7 +331,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public String uploadAvatar(Long userId, MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new RuntimeException("请选择要上传的头像文件");
@@ -407,7 +358,7 @@ public class UserServiceImpl implements UserService {
         if (!ALLOWED_AVATAR_EXTENSIONS.contains(ext)) {
             throw new RuntimeException("仅支持 JPG、PNG、GIF、WEBP 格式的图片");
         }
-        User user = userMapper.selectById(userId);
+        User user = userMapper.lockById(userId);
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }

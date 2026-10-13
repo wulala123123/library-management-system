@@ -35,9 +35,9 @@ public class BorrowCodeServiceImpl implements BorrowCodeService {
     private static final int CODE_EXPIRE_MINUTES = 30;
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public BorrowCode generateCode(Long userId, Long bookId) {
-        User user = userMapper.selectById(userId);
+        User user = userMapper.lockById(userId);
         if (user == null) throw new RuntimeException("用户不存在");
         if (user.getStatus() != null && user.getStatus() != 1) throw new RuntimeException("用户已被禁用");
 
@@ -80,13 +80,15 @@ public class BorrowCodeServiceImpl implements BorrowCodeService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public BorrowCode verifyAndBorrow(String code, Long userId) {
         if (code == null || code.trim().isEmpty()) throw new RuntimeException("借阅码不能为空");
 
+        userMapper.lockById(userId);
         BorrowCode borrowCode = borrowCodeMapper.selectOne(
                 new LambdaQueryWrapper<BorrowCode>().eq(BorrowCode::getCode, code.trim()));
         if (borrowCode == null) throw new RuntimeException("借阅码不存在");
+        borrowCode = borrowCodeMapper.lockById(borrowCode.getId());
 
         if ("EXPIRED".equals(borrowCode.getStatus()) || borrowCode.getExpireTime().isBefore(LocalDateTime.now())) {
             borrowCode.setStatus("EXPIRED");
@@ -105,7 +107,7 @@ public class BorrowCodeServiceImpl implements BorrowCodeService {
 
         borrowCode.setStatus("USED");
         borrowCode.setUsedTime(LocalDateTime.now());
-        borrowCodeMapper.updateById(borrowCode);
+        if (borrowCodeMapper.updateById(borrowCode) != 1) throw new RuntimeException("借阅码状态更新失败，请重试");
 
         Book book = bookMapper.selectById(borrowCode.getBookId());
         if (book != null) borrowCode.setBookTitle(book.getTitle());
@@ -136,8 +138,9 @@ public class BorrowCodeServiceImpl implements BorrowCodeService {
     }
 
     @Override
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void invalidate(Long id) {
-        BorrowCode borrowCode = borrowCodeMapper.selectById(id);
+        BorrowCode borrowCode = borrowCodeMapper.lockById(id);
         if (borrowCode == null) throw new RuntimeException("借阅码不存在");
         if ("USED".equals(borrowCode.getStatus())) throw new RuntimeException("已使用的借阅码不可作废");
         borrowCode.setStatus("INVALID");
@@ -157,7 +160,7 @@ public class BorrowCodeServiceImpl implements BorrowCodeService {
             }
             if ("VALID".equals(bc.getStatus()) && bc.getExpireTime() != null && bc.getExpireTime().isBefore(LocalDateTime.now())) {
                 bc.setStatus("EXPIRED");
-                borrowCodeMapper.updateById(bc);
+
             }
         }
     }

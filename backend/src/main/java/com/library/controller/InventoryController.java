@@ -39,7 +39,7 @@ public class InventoryController {
                 new LambdaQueryWrapper<Book>().eq(Book::getStatus, 1).gt(Book::getStockAvailable, 0)
         );
         Long borrowedBooks = borrowRecordMapper.selectCount(
-                new LambdaQueryWrapper<BorrowRecord>().eq(BorrowRecord::getStatus, "BORROWING")
+                new LambdaQueryWrapper<BorrowRecord>().in(BorrowRecord::getStatus, "BORROWING", "OVERDUE")
         );
         Long lowStockBooks = bookMapper.selectCount(
                 new LambdaQueryWrapper<Book>().eq(Book::getStatus, 1).le(Book::getStockAvailable, 2)

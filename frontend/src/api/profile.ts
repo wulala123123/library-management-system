@@ -1,3 +1,4 @@
+import type { User } from '@/types'
 import { get, post, put } from './request'
 
 export interface ProfileStats {
@@ -7,15 +8,15 @@ export interface ProfileStats {
 }
 
 export function getProfile() {
-  return get('/profile')
+  return get<User>('/profile')
 }
 
 export function updateProfile(data: Record<string, string>) {
-  return put('/profile', data)
+  return put<void>('/profile', data)
 }
 
 export function changePassword(data: { oldPassword: string; newPassword: string }) {
-  return put('/profile/password', data)
+  return put<void>('/profile/password', data)
 }
 
 export function getProfileStats() {
@@ -25,7 +26,7 @@ export function getProfileStats() {
 export function uploadAvatar(file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  return post('/profile/avatar', formData as unknown as Record<string, unknown>, {
+  return post<string>('/profile/avatar', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 30000,
   })

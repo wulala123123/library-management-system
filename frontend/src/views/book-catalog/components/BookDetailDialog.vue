@@ -18,7 +18,7 @@
           </div>
           <div class="cover-actions">
             <el-button type="primary" size="large" round @click="handleBorrow" :disabled="book.stockAvailable <= 0">
-              {{ book.stockAvailable > 0 ? '立即借阅' : '暂无库存' }}
+              {{ book.stockAvailable > 0 ? '生成借阅码' : '暂无库存' }}
             </el-button>
           </div>
         </div>
@@ -55,7 +55,7 @@
             <div class="info-item">
               <span class="info-label">可借数量</span>
               <span class="info-value" :class="{ 'stock-low': book.stockAvailable <= 3, 'stock-out': book.stockAvailable <= 0 }">
-                {{ book.available ?? book.stockAvailable }}
+                {{ book.stockAvailable }}
               </span>
             </div>
             <div class="info-item">
@@ -74,7 +74,7 @@
 
     <template #footer>
       <el-button @click="emit('update:visible', false)">关闭</el-button>
-      <el-button type="primary" @click="handleBorrow" :disabled="!book || book.stockAvailable <= 0">确认借阅</el-button>
+      <el-button type="primary" @click="handleBorrow" :disabled="!book || book.stockAvailable <= 0">生成借阅码</el-button>
     </template>
   </el-dialog>
 </template>
@@ -83,7 +83,6 @@
 import { ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getBookById } from '@/api/book'
-import { borrowBook as apiBorrowBook } from '@/api/borrow'
 import { generateBorrowCode } from '@/api/borrowCode'
 import type { Book } from '@/types'
 
@@ -114,12 +113,11 @@ async function fetchDetail() {
 async function handleBorrow() {
   if (!book.value || book.value.stockAvailable <= 0) return
   try {
-    await apiBorrowBook({ bookId: book.value.id })
     const codeRes = await generateBorrowCode(book.value.id)
     const borrowCode = codeRes?.code || '未知'
     ElMessageBox.alert(
-      `您已成功借阅《${book.value.title}》！\n\n您的借阅码为：${borrowCode}\n有效期30分钟，请妥善保管。`,
-      '借阅成功',
+      `已为您生成借阅码《${book.value.title}》！\n\n您的借阅码为：${borrowCode}\n有效期30分钟，核销后完成借阅。借阅码不预留库存，请及时核销。`,
+      '已生成借阅码，核销后完成借阅',
       { confirmButtonText: '我知道了', type: 'success' }
     )
     emit('update:visible', false)

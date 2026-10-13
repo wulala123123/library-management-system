@@ -152,16 +152,16 @@ export function sanitizeInput(str: string): string {
   }[char] || char))
 }
 
-export const get = <T>(url: string, params?: Record<string, unknown>) =>
-  request.get<any, T>(url, { params })
+export const get = <T>(url: string, params?: object) =>
+  request.get<unknown, T>(url, { params })
 
-export const post = <T>(url: string, data?: Record<string, unknown>, config?: AxiosRequestConfig) =>
-  request.post<any, T>(url, data, config)
+export const post = <T>(url: string, data?: object | null, config?: AxiosRequestConfig) =>
+  request.post<unknown, T>(url, data, config)
 
-export const put = <T>(url: string, data?: Record<string, unknown>, config?: AxiosRequestConfig) =>
-  request.put<any, T>(url, data, config)
+export const put = <T>(url: string, data?: object | null, config?: AxiosRequestConfig) =>
+  request.put<unknown, T>(url, data, config)
 
 export const del = <T>(url: string) =>
-  request.delete<any, T>(url)
+  request.delete<unknown, T>(url)
 
 export default request

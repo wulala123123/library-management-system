@@ -12,14 +12,14 @@
           <el-option v-for="b in bookOptions" :key="b.id" :label="`${b.title} (${b.isbn})`" :value="b.id">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span>{{ b.title }}</span>
-              <span style="color: #999; font-size: 12px;">库存:{{ b.stockAvailable || b.stockTotal }}</span>
+              <span style="color: #999; font-size: 12px;">库存:{{ b.stockAvailable ?? b.stockTotal }}</span>
             </div>
           </el-option>
         </el-select>
       </el-form-item>
 
       <el-form-item label="借阅天数" prop="borrowDays">
-        <el-input-number v-model="form.borrowDays" :min="1" :max="365" style="width: 100%" />
+        <el-input-number v-model="form.borrowDays" :min="1" :max="90" style="width: 100%" />
       </el-form-item>
 
       <el-form-item label="备注">
@@ -40,7 +40,7 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { adminBorrowBook } from '@/api/borrow'
 import { getBookPage } from '@/api/book'
-import { searchUsers } from '@/api/user'
+import { searchUsers as searchUsersApi } from '@/api/user'
 
 interface Props { visible: boolean }
 const props = defineProps<Props>()
@@ -82,7 +82,7 @@ async function searchUsers(query: string) {
   if (!query || query.length < 2) return
   userLoading.value = true
   try {
-    const res = await searchUsers(query)
+    const res = await searchUsersApi(query)
     userOptions.value = res?.records || []
   } catch { userOptions.value = [] } finally { userLoading.value = false }
 }

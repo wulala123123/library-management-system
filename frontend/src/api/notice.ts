@@ -1,25 +1,26 @@
+import type { Notice, PageResult } from '@/types'
 import { get, post, put, del } from './request'
 
 export function getNotices(params: { page?: number; size?: number; type?: string; status?: string }) {
-  return get('/notices', params)
+  return get<PageResult<Notice>>('/notices', params)
 }
 
 export function getNoticeById(id: number) {
-  return get(`/notices/${id}`)
+  return get<Notice>(`/notices/${id}`)
 }
 
 export function createNotice(data: Record<string, unknown>) {
-  return post('/notices', data)
+  return post<Notice>('/notices', data)
 }
 
 export function updateNotice(data: Record<string, unknown>) {
-  return put('/notices', data)
+  return put<Notice>('/notices', data)
 }
 
 export function deleteNotice(id: number) {
-  return del(`/notices/${id}`)
+  return del<void>(`/notices/${id}`)
 }
 
 export function publishNotice(id: number) {
-  return put(`/notices/${id}/publish`, {})
+  return put<void>(`/notices/${id}/publish`, {})
 }

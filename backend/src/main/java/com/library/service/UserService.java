@@ -33,10 +33,6 @@ public interface UserService {
 
     void adminChangePassword(Long id, String newPassword);
 
-    Map<String, String> sendResetCode(String phone);
-
-    void resetPasswordByPhone(String phone, String code, String newPassword);
-
     User getProfile(Long userId);
 
     void updateProfile(Long userId, UpdateProfileRequest request);

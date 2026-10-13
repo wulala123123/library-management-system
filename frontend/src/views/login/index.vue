@@ -66,8 +66,7 @@
             </el-form>
 
             <div class="switch-mode">
-              <a href="javascript:;" class="forgot-link" @click="showForgotPassword = true">忘记密码？</a>
-              <span class="divider">|</span>
+              <span>忘记密码请联系管理员。 </span>
               <span>还没有账号？</span>
               <a href="javascript:;" @click="switchToRegister">立即注册</a>
             </div>
@@ -125,54 +124,6 @@
       </footer>
     </div>
 
-    <el-dialog v-model="showForgotPassword" title="忘记密码" width="420px" :close-on-click-modal="false" append-to-body>
-      <el-steps :active="forgotStep" align-center style="margin-bottom: 24px;">
-        <el-step title="验证手机号" />
-        <el-step title="输入验证码" />
-        <el-step title="设置新密码" />
-      </el-steps>
-
-      <div v-if="forgotStep === 0">
-        <el-form label-width="80px">
-          <el-form-item label="手机号">
-            <el-input v-model="forgotPhone" placeholder="请输入注册时使用的手机号" maxlength="11" />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" :loading="forgotLoading" style="width: 100%" @click="handleSendCode">发送验证码</el-button>
-          </el-form-item>
-        </el-form>
-      </div>
-
-      <div v-if="forgotStep === 1">
-        <el-form label-width="80px">
-          <el-form-item label="验证码">
-            <el-input v-model="forgotCode" placeholder="请输入6位数字验证码" maxlength="6" />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" style="width: 100%" @click="forgotStep = 2">下一步</el-button>
-          </el-form-item>
-        </el-form>
-      </div>
-
-      <div v-if="forgotStep === 2">
-        <el-form label-width="80px">
-          <el-form-item label="新密码">
-            <el-input v-model="forgotNewPassword" type="password" placeholder="至少6位，需包含字母和数字" show-password />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" :loading="forgotLoading" style="width: 100%" @click="handleResetPassword">重置密码</el-button>
-          </el-form-item>
-        </el-form>
-      </div>
-
-      <div v-if="forgotStep === 3" style="text-align: center; padding: 20px 0;">
-        <el-result icon="success" title="密码重置成功" sub-title="请使用新密码登录">
-          <template #extra>
-            <el-button type="primary" @click="closeForgotDialog">返回登录</el-button>
-          </template>
-        </el-result>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -182,7 +133,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { User, Lock, Key, UserFilled, Phone, Message } from '@element-plus/icons-vue'
-import { loginApi, registerApi, getCaptchaImage, verifyCaptcha, forgotPasswordSendCode, forgotPasswordReset } from '@/api/auth'
+import { loginApi, registerApi, getCaptchaImage } from '@/api/auth'
 import { useUserStore } from '@/store/modules/user'
 
 const router = useRouter()
@@ -209,13 +160,6 @@ const registerForm = reactive({
   username: '', password: '', confirmPassword: '',
   realName: '', phone: '', email: '',
 })
-
-const showForgotPassword = ref(false)
-const forgotStep = ref(0)
-const forgotPhone = ref('')
-const forgotCode = ref('')
-const forgotNewPassword = ref('')
-const forgotLoading = ref(false)
 
 async function refreshCaptcha() {
   try {
@@ -268,7 +212,7 @@ function switchToRegister() { isRegister.value = true }
 function switchToLogin() { isRegister.value = false }
 
 async function handleLogin() {
-  if (!loginFormRef.value) return
+  if (loading.value || !loginFormRef.value) return
   try { await loginFormRef.value.validate() } catch { return }
 
   if (!loginForm.captchaCode || loginForm.captchaCode.length !== 4) {
@@ -276,17 +220,9 @@ async function handleLogin() {
     return
   }
 
-  const verifyRes = await verifyCaptcha(loginForm.captchaCode, captchaKey.value)
-  if (verifyRes !== true) {
-    ElMessage.error('验证码错误，请重新输入')
-    loginForm.captchaCode = ''
-    refreshCaptcha()
-    return
-  }
-
   loading.value = true
   try {
-    const data = await loginApi({ username: loginForm.username, password: loginForm.password })
+    const data = await loginApi({ ...loginForm, captchaKey: captchaKey.value })
     if (!data.token || !data.userInfo) { ElMessage.error('登录响应数据异常'); return }
     userStore.setToken(data.token)
     userStore.setUserInfo(data.userInfo)
@@ -325,46 +261,6 @@ async function handleRegister() {
   } finally { loading.value = false }
 }
 
-async function handleSendCode() {
-  if (!forgotPhone.value || !/^1[3-9]\d{9}$/.test(forgotPhone.value)) {
-    ElMessage.warning('请输入正确的手机号')
-    return
-  }
-  forgotLoading.value = true
-  try {
-    const res = await forgotPasswordSendCode(forgotPhone.value)
-    ElMessage.success(`验证码已发送${res?.code ? '：' + res.code : ''}（开发环境直接显示）`)
-    forgotStep.value = 1
-  } catch (e: unknown) {
-    if (e instanceof Error) ElMessage.error(e.message || '发送失败')
-  } finally { forgotLoading.value = false }
-}
-
-async function handleResetPassword() {
-  if (!forgotCode.value || forgotCode.value.length !== 6) {
-    ElMessage.warning('请输入6位验证码')
-    return
-  }
-  if (!forgotNewPassword.value || forgotNewPassword.value.length < 6) {
-    ElMessage.warning('密码至少6位')
-    return
-  }
-  forgotLoading.value = true
-  try {
-    await forgotPasswordReset(forgotPhone.value, forgotCode.value, forgotNewPassword.value)
-    forgotStep.value = 3
-  } catch (e: unknown) {
-    if (e instanceof Error) ElMessage.error(e.message || '重置失败')
-  } finally { forgotLoading.value = false }
-}
-
-function closeForgotDialog() {
-  showForgotPassword.value = false
-  forgotStep.value = 0
-  forgotPhone.value = ''
-  forgotCode.value = ''
-  forgotNewPassword.value = ''
-}
 </script>
 
 <style lang="scss" scoped>

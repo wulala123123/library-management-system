@@ -17,7 +17,7 @@
         <el-table-column prop="sortOrder" label="排序" width="80" align="center" />
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-switch v-model="row.status" :active-value="1" :inactive-value="0" @change="(val: number) => ElMessage.success(val ? '已启用' : '已禁用')" />
+            <el-switch v-model="row.status" :active-value="1" :inactive-value="0" @change="handleStatusChange(row)" />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220" align="center">
@@ -38,7 +38,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CategoryDialog from './components/CategoryDialog.vue'
-import { getCategoryList, deleteCategory } from '@/api/category'
+import { getCategoryList, deleteCategory, updateCategory } from '@/api/category'
 import type { BookCategory } from '@/types'
 
 const loading = ref(false)
@@ -61,7 +61,7 @@ async function fetchCategories() {
     })
     flatList.forEach((item: BookCategory) => {
       if (item.parentId && item.parentId > 0 && map.has(item.parentId)) {
-        map.get(item.parentId).children.push(item)
+        map.get(item.parentId)?.children.push(item)
       } else {
         tree.push(item)
       }
@@ -76,6 +76,15 @@ function handleAdd(parent?: BookCategory | null) {
   editCategoryId.value = null
   parentId.value = parent ? parent.id : 0
   dialogVisible.value = true
+}
+
+async function handleStatusChange(row: BookCategory) {
+  try {
+    await updateCategory({ id: row.id, name: row.name, parentId: row.parentId, sortOrder: row.sortOrder, status: row.status })
+    ElMessage.success(row.status ? '已启用' : '已禁用')
+  } catch {
+    row.status = row.status === 1 ? 0 : 1
+  }
 }
 
 function handleEdit(row: BookCategory) {

@@ -31,6 +31,9 @@ public class User {
     private Integer status;
 
     @JsonIgnore
+    private Long tokenVersion = 0L;
+
+    @JsonIgnore
     @TableLogic
     private Integer deleted;
 

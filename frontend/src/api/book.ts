@@ -1,3 +1,4 @@
+import type { Book, PageResult } from '@/types'
 import { get, post, put, del } from './request'
 
 export interface BookPageParams {
@@ -5,7 +6,7 @@ export interface BookPageParams {
   size: number
   keyword?: string
   categoryId?: number
-  status?: number
+  status?: number | null
 }
 
 export interface BookFormData {
@@ -22,37 +23,37 @@ export interface BookFormData {
   description?: string
   location?: string
   stockTotal: number
-  status?: number
+  status?: number | null
 }
 
 export function getBookPage(params: BookPageParams) {
-  return get('/books', params)
+  return get<PageResult<Book>>('/books', params)
 }
 
 export function getBookById(id: number) {
-  return get(`/books/${id}`)
+  return get<Book>(`/books/${id}`)
 }
 
 export function createBook(data: BookFormData) {
-  return post('/books', data)
+  return post<Book>('/books', data)
 }
 
 export function updateBook(data: BookFormData) {
-  return put('/books', data)
+  return put<Book>('/books', data)
 }
 
 export function deleteBook(id: number) {
-  return del(`/books/${id}`)
+  return del<void>(`/books/${id}`)
 }
 
 export function updateBookStatus(id: number, status: number) {
-  return put(`/books/${id}/status`, {}, { params: { status } })
+  return put<void>(`/books/${id}/status`, {}, { params: { status } })
 }
 
 export function uploadBookCover(bookId: number, file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  return post<string>(`/upload/book-cover/${bookId}`, formData as unknown as Record<string, unknown>, {
+  return post<string>(`/upload/book-cover/${bookId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 30000,
   })

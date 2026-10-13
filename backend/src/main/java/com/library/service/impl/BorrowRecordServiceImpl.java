@@ -43,9 +43,9 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public BorrowRecord borrow(BorrowRequest request) {
-        User user = userMapper.selectById(request.getUserId());
+        User user = userMapper.lockById(request.getUserId());
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -53,7 +53,7 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
             throw new RuntimeException("用户已被禁用，无法借阅");
         }
 
-        Book book = bookMapper.selectById(request.getBookId());
+        Book book = bookMapper.lockById(request.getBookId());
         if (book == null) {
             throw new RuntimeException("图书不存在");
         }
@@ -67,7 +67,7 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
         Long activeCount = borrowRecordMapper.selectCount(
                 new LambdaQueryWrapper<BorrowRecord>()
                         .eq(BorrowRecord::getUserId, request.getUserId())
-                        .eq(BorrowRecord::getStatus, "BORROWING")
+                        .in(BorrowRecord::getStatus, "BORROWING", "OVERDUE")
         );
         if (activeCount >= 10) {
             throw new RuntimeException("借阅数量已达上限(10本)");
@@ -77,13 +77,14 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
                 new LambdaQueryWrapper<BorrowRecord>()
                         .eq(BorrowRecord::getUserId, request.getUserId())
                         .eq(BorrowRecord::getBookId, request.getBookId())
-                        .eq(BorrowRecord::getStatus, "BORROWING")
+                        .in(BorrowRecord::getStatus, "BORROWING", "OVERDUE")
         );
         if (duplicateBorrow > 0) {
             throw new RuntimeException("您已借阅该图书且尚未归还，不可重复借阅");
         }
 
         int borrowDays = request.getBorrowDays() != null ? request.getBorrowDays() : 30;
+        if (borrowDays < 1 || borrowDays > 90) throw new RuntimeException("借阅天数必须为1-90天");
 
         BorrowRecord record = new BorrowRecord();
         record.setUserId(request.getUserId());
@@ -96,39 +97,39 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
         borrowRecordMapper.insert(record);
 
         book.setStockAvailable(book.getStockAvailable() - 1);
-        bookMapper.updateById(book);
+        if (bookMapper.updateById(book) != 1) throw new RuntimeException("库存更新失败，请重试");
 
         return record;
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public BorrowRecord returnBook(Long id) {
-        BorrowRecord record = borrowRecordMapper.selectById(id);
+        BorrowRecord record = lockCirculationRecord(id);
         if (record == null) {
             throw new RuntimeException("借阅记录不存在");
         }
-        if ("RETURNED".equals(record.getStatus())) {
-            throw new RuntimeException("该图书已归还");
+        if ("RETURNED".equals(record.getStatus())) return record;
+        if (!java.util.Set.of("BORROWING", "OVERDUE").contains(record.getStatus())) {
+            throw new RuntimeException("当前借阅状态不能归还");
         }
 
         record.setReturnDate(LocalDate.now());
         record.setStatus("RETURNED");
-        borrowRecordMapper.updateById(record);
+        if (borrowRecordMapper.updateById(record) != 1) throw new RuntimeException("借阅状态更新失败，请重试");
 
-        Book book = bookMapper.selectById(record.getBookId());
-        if (book != null) {
-            book.setStockAvailable(book.getStockAvailable() + 1);
-            bookMapper.updateById(book);
-        }
+        Book book = bookMapper.lockById(record.getBookId());
+        if (book == null) throw new RuntimeException("关联图书不存在，请联系管理员");
+        book.setStockAvailable(book.getStockAvailable() + 1);
+        if (bookMapper.updateById(book) != 1) throw new RuntimeException("库存更新失败，请重试");
 
         return record;
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public BorrowRecord renew(Long id) {
-        BorrowRecord record = borrowRecordMapper.selectById(id);
+        BorrowRecord record = lockCirculationRecord(id);
         if (record == null) {
             throw new RuntimeException("借阅记录不存在");
         }
@@ -140,9 +141,20 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
         }
 
         record.setDueDate(record.getDueDate().plusDays(30));
+        record.setStatus(record.getDueDate().isBefore(LocalDate.now()) ? "OVERDUE" : "BORROWING");
         record.setRenewCount(record.getRenewCount() + 1);
-        borrowRecordMapper.updateById(record);
+        if (borrowRecordMapper.updateById(record) != 1) throw new RuntimeException("借阅状态更新失败，请重试");
 
+        return record;
+    }
+
+    private BorrowRecord lockCirculationRecord(Long id) {
+        BorrowRecord snapshot = borrowRecordMapper.selectById(id);
+        if (snapshot == null) throw new RuntimeException("借阅记录不存在");
+        userMapper.lockById(snapshot.getUserId());
+        bookMapper.lockById(snapshot.getBookId());
+        BorrowRecord record = borrowRecordMapper.lockById(id);
+        if (record == null) throw new RuntimeException("借阅记录不存在");
         return record;
     }
 

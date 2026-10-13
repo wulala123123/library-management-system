@@ -178,9 +178,9 @@ async function handleSubmit() {
     try {
       let bookId = props.bookId
       if (isEdit.value) {
-        await updateBook({ id: props.bookId!, ...form })
+        await updateBook({ id: props.bookId!, ...form, categoryId: form.categoryId! })
       } else {
-        const res = await createBook(form)
+        const res = await createBook({ ...form, categoryId: form.categoryId! })
         bookId = res?.id
       }
 

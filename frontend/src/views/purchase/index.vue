@@ -131,7 +131,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPurchaseOrders, getPurchaseOrderById, createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, submitPurchaseOrder, approvePurchaseOrder, quickInstock } from '@/api/purchase'
 import { getDeptList, type Dept } from '@/api/dept'
-import { getCategoryList, type BookCategory } from '@/api/category'
+import { getCategoryList } from '@/api/category'
+import type { BookCategory } from '@/types'
 
 const statusMap: Record<string, { label: string; type: string }> = {
   DRAFT: { label: '草稿', type: 'info' },
@@ -253,7 +254,7 @@ async function handleDoApprove() {
 
 async function handleInstock(row: any) {
   try {
-    await ElMessageBox.confirm('确定要执行快速入库吗？将自动创建图书记录并增加库存。', '提示', { type: 'warning' })
+    await ElMessageBox.confirm('确定要执行入库吗？已有 ISBN 将增加库存，新 ISBN 将创建图书记录。', '提示', { type: 'warning' })
     await quickInstock(row.id)
     ElMessage.success('入库成功')
     fetchData()

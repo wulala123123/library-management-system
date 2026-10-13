@@ -1,17 +1,18 @@
+import type { Book, BookNormalizeLog, NormalizeCandidate, PageResult } from '@/types'
 import { get, put } from './request'
 
 export function getPendingBooks() {
-  return get('/book-normalize/pending')
+  return get<NormalizeCandidate[]>('/book-normalize/pending')
 }
 
 export function normalizeBook(id: number, data: Record<string, string>) {
-  return put(`/book-normalize/${id}`, data)
+  return put<Book>(`/book-normalize/${id}`, data)
 }
 
 export function batchNormalize(data: Record<string, string>[]) {
-  return put('/book-normalize/batch', data as unknown as Record<string, unknown>)
+  return put<number>('/book-normalize/batch', data)
 }
 
 export function getNormalizeReport(params: { page: number; size: number }) {
-  return get('/book-normalize/report', params)
+  return get<PageResult<BookNormalizeLog>>('/book-normalize/report', params)
 }

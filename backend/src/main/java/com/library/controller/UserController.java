@@ -25,7 +25,19 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final com.library.mapper.UserMapper userMapper;
     private final PermissionLogService permissionLogService;
+
+    public record BorrowerSummary(Long id, String username, String realName) {}
+
+    @GetMapping("/borrowers")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    public Result<PageResult<BorrowerSummary>> searchBorrowers(@RequestParam(required = false) String keyword) {
+        PageResult<User> page = userService.getPage(1, 20, keyword, null, 1);
+        var summaries = page.getRecords().stream()
+                .map(user -> new BorrowerSummary(user.getId(), user.getUsername(), user.getRealName())).toList();
+        return Result.success(new PageResult<>(summaries, page.getTotal(), page.getPage(), page.getSize()));
+    }
 
     @Operation(summary = "分页查询用户列表")
     @GetMapping
@@ -47,6 +59,7 @@ public class UserController {
     }
 
     @Operation(summary = "新增用户")
+    @org.springframework.transaction.annotation.Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public Result<User> create(@Valid @RequestBody UserRequest request, Authentication authentication) {
@@ -59,10 +72,11 @@ public class UserController {
     }
 
     @Operation(summary = "更新用户")
+    @org.springframework.transaction.annotation.Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PutMapping
     @PreAuthorize("hasRole('ADMIN')")
     public Result<User> update(@Valid @RequestBody UserRequest request, Authentication authentication) {
-        User oldUser = userService.getById(request.getId());
+        User oldUser = userMapper.lockById(request.getId());
         String oldRole = oldUser != null ? oldUser.getRole() : null;
         User user = userService.update(request);
         Long operatorId = (Long) authentication.getPrincipal();
@@ -79,10 +93,11 @@ public class UserController {
     }
 
     @Operation(summary = "删除用户")
+    @org.springframework.transaction.annotation.Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> delete(@PathVariable Long id, Authentication authentication) {
-        User user = userService.getById(id);
+        User user = userMapper.lockById(id);
         Long operatorId = (Long) authentication.getPrincipal();
         String operatorName = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
         permissionLogService.log(operatorId, operatorName, id, user != null ? user.getRealName() : "",
@@ -92,10 +107,11 @@ public class UserController {
     }
 
     @Operation(summary = "更新用户状态")
+    @org.springframework.transaction.annotation.Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> updateStatus(@PathVariable Long id, @RequestParam Integer status, Authentication authentication) {
-        User user = userService.getById(id);
+        User user = userMapper.lockById(id);
         Long operatorId = (Long) authentication.getPrincipal();
         String operatorName = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
         String action = status == 1 ? "ENABLE_USER" : "DISABLE_USER";
@@ -107,10 +123,11 @@ public class UserController {
     }
 
     @Operation(summary = "重置用户密码")
+    @org.springframework.transaction.annotation.Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PutMapping("/{id}/reset-password")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, String>> resetPassword(@PathVariable Long id, Authentication authentication) {
-        User user = userService.getById(id);
+        User user = userMapper.lockById(id);
         Long operatorId = (Long) authentication.getPrincipal();
         String operatorName = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
         permissionLogService.log(operatorId, operatorName, id, user != null ? user.getRealName() : "",
@@ -122,6 +139,7 @@ public class UserController {
     }
 
     @Operation(summary = "管理员修改用户密码")
+    @org.springframework.transaction.annotation.Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PutMapping("/{id}/change-password")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> adminChangePassword(@PathVariable Long id, @RequestBody Map<String, String> body, Authentication authentication) {
@@ -129,7 +147,7 @@ public class UserController {
         if (newPassword == null || newPassword.isEmpty()) {
             return Result.error(400, "新密码不能为空");
         }
-        User user = userService.getById(id);
+        User user = userMapper.lockById(id);
         Long operatorId = (Long) authentication.getPrincipal();
         String operatorName = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
         permissionLogService.log(operatorId, operatorName, id, user != null ? user.getRealName() : "",

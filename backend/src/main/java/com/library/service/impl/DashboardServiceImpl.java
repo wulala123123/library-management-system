@@ -37,7 +37,7 @@ public class DashboardServiceImpl implements DashboardService {
         stats.setOverdueCount(borrowRecordMapper.countByStatus("OVERDUE"));
 
         stats.setTotalBorrows(borrowRecordMapper.selectCount(
-                new LambdaQueryWrapper<BorrowRecord>().eq(BorrowRecord::getStatus, "BORROWING")
+                new LambdaQueryWrapper<BorrowRecord>().in(BorrowRecord::getStatus, "BORROWING", "OVERDUE")
         ));
 
         stats.setAvailableBooks(bookMapper.selectCount(

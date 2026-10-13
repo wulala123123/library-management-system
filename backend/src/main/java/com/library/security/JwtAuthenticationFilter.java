@@ -22,32 +22,28 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final com.library.mapper.UserMapper userMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String token = resolveToken(request);
-        String requestUri = request.getRequestURI();
 
-        if (StringUtils.hasText(token)) {
-            if (jwtTokenProvider.validateToken(token)) {
+        if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
+            try {
                 Long userId = jwtTokenProvider.getUserIdFromToken(token);
-                String username = jwtTokenProvider.getUsernameFromToken(token);
-                String role = jwtTokenProvider.getRoleFromToken(token);
-
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userId,
-                                null,
-                                List.of(new SimpleGrantedAuthority("ROLE_" + role))
-                        );
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("JWT认证成功: userId={}, username={}, role={}, uri={}", userId, username, role, requestUri);
-            } else {
-                log.warn("JWT验证失败: uri={}, token前缀={}", requestUri,
-                        token.length() > 10 ? token.substring(0, 10) + "..." : "invalid");
+                Long version = jwtTokenProvider.getVersionFromToken(token);
+                com.library.entity.User user = userMapper.selectById(userId);
+                if (user != null && Integer.valueOf(1).equals(user.getStatus())
+                        && version != null && version.equals(user.getTokenVersion())
+                        && List.of("ADMIN", "LIBRARIAN", "READER").contains(user.getRole())) {
+                    SecurityContextHolder.getContext().setAuthentication(
+                            new UsernamePasswordAuthenticationToken(userId, null,
+                                    List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()))));
+                }
+            } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+                SecurityContextHolder.clearContext();
             }
         }
 

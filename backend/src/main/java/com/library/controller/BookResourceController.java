@@ -36,7 +36,7 @@ public class BookResourceController {
 
     private final BookResourceMapper bookResourceMapper;
 
-    @Value("${file.upload-path:./uploads}")
+    @Value("${file.upload-dir:uploads}")
     private String uploadPath;
 
     private static final Set<String> ALLOWED_RESOURCE_EXTENSIONS = Set.of(

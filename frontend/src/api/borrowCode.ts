@@ -1,21 +1,22 @@
+import type { BorrowCode, BorrowRecord, PageResult } from '@/types'
 import { get, post, put } from './request'
 
 export function generateBorrowCode(bookId: number) {
-  return post('/borrow-codes/generate', {}, { params: { bookId } })
+  return post<BorrowCode>('/borrow-codes/generate', {}, { params: { bookId } })
 }
 
 export function verifyBorrowCode(code: string) {
-  return post('/borrow-codes/verify', {}, { params: { code } })
+  return post<{ borrowCode: BorrowCode; borrowRecord: BorrowRecord }>('/borrow-codes/verify', {}, { params: { code } })
 }
 
 export function getMyBorrowCodes(params: { page: number; size: number }) {
-  return get('/borrow-codes/my', params)
+  return get<PageResult<BorrowCode>>('/borrow-codes/my', params)
 }
 
 export function getBorrowCodePage(params: { page: number; size: number; status?: string }) {
-  return get('/borrow-codes', params)
+  return get<PageResult<BorrowCode>>('/borrow-codes', params)
 }
 
 export function invalidateBorrowCode(id: number) {
-  return put(`/borrow-codes/${id}/invalidate`, {})
+  return put<void>(`/borrow-codes/${id}/invalidate`, {})
 }

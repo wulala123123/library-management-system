@@ -20,11 +20,21 @@ class UserServiceTest {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private com.library.service.CaptchaService captchaService;
+
+    private void addCaptcha(com.library.dto.LoginRequest request) {
+        String key = captchaService.generateCaptcha().getData().captchaKey();
+        request.setCaptchaKey(key);
+        request.setCaptchaCode(captchaService.getCaptchaStore().get(key).code);
+    }
+
     @Test
     void loginSuccess() {
         var request = new com.library.dto.LoginRequest();
         request.setUsername("admin");
         request.setPassword("admin123");
+        addCaptcha(request);
 
         LoginResponse response = userService.login(request);
         assertNotNull(response.getToken());
@@ -38,6 +48,7 @@ class UserServiceTest {
         var request = new com.library.dto.LoginRequest();
         request.setUsername("admin");
         request.setPassword("wrongpassword");
+        addCaptcha(request);
 
         assertThrows(RuntimeException.class, () -> userService.login(request));
     }

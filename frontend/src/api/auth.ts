@@ -1,10 +1,11 @@
+import type { User } from '@/types'
 import { post, get } from './request'
 
 export interface LoginParams {
   username: string
   password: string
-  captchaCode?: string
-  captchaKey?: string
+  captchaCode: string
+  captchaKey: string
 }
 
 export interface LoginResult {
@@ -33,7 +34,7 @@ export function loginApi(data: LoginParams) {
 }
 
 export function registerApi(data: RegisterParams) {
-  return post('/auth/register', data)
+  return post<User>('/auth/register', data)
 }
 
 export interface CaptchaData {
@@ -43,16 +44,4 @@ export interface CaptchaData {
 
 export function getCaptchaImage() {
   return get<CaptchaData>('/captcha/image')
-}
-
-export function verifyCaptcha(code: string, captchaKey: string) {
-  return post<boolean>('/captcha/verify', null, { params: { code, captchaKey } })
-}
-
-export function forgotPasswordSendCode(phone: string) {
-  return post<{ code: string; message: string }>('/auth/forgot-password/send-code', { phone })
-}
-
-export function forgotPasswordReset(phone: string, code: string, newPassword: string) {
-  return post('/auth/forgot-password/reset', { phone, code, newPassword })
 }

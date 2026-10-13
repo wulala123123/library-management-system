@@ -1,3 +1,4 @@
+import type { PageResult, User } from '@/types'
 import { get, post, put, del } from './request'
 
 export interface UserPageParams {
@@ -20,23 +21,23 @@ export interface UserFormData {
 }
 
 export function getUserPage(params: UserPageParams) {
-  return get('/users', params)
+  return get<PageResult<User>>('/users', params)
 }
 
 export function getUserById(id: number) {
-  return get(`/users/${id}`)
+  return get<User>(`/users/${id}`)
 }
 
 export function createUser(data: UserFormData) {
-  return post('/users', data)
+  return post<User>('/users', data)
 }
 
 export function updateUser(data: UserFormData) {
-  return put('/users', data)
+  return put<User>('/users', data)
 }
 
 export function deleteUser(id: number) {
-  return del(`/users/${id}`)
+  return del<void>(`/users/${id}`)
 }
 
 export function updateUserStatus(id: number, status: number) {
@@ -52,5 +53,5 @@ export function adminChangePassword(id: number, newPassword: string) {
 }
 
 export function searchUsers(keyword: string) {
-  return get('/users', { page: 1, size: 20, keyword })
+  return get<PageResult<Pick<User, 'id' | 'username' | 'realName'>>>('/users/borrowers', { keyword })
 }

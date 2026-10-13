@@ -18,6 +18,12 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(org.springframework.dao.DataAccessException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Result<Void> handleDatabaseException(org.springframework.dao.DataAccessException e) {
+        log.error("数据库操作失败", e);
+        return Result.error(500, "数据操作失败，请稍后重试");
+    }
 
     private static final String SANITIZED_ERROR = "操作失败，请检查输入后重试";
 

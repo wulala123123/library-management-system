@@ -1,5 +1,5 @@
+import type { BorrowRecord, PageResult } from '@/types'
 import { get, post, put } from './request'
-import type { PageResult, BorrowRecord } from '@/types'
 
 export interface BorrowPageParams {
   page: number
@@ -20,23 +20,23 @@ export function getBorrowPage(params: BorrowPageParams) {
 }
 
 export function borrowBook(data: BorrowFormData) {
-  return post('/borrows/self', { bookId: data.bookId, borrowDays: data.borrowDays, remark: data.remark })
+  return post<BorrowRecord>('/borrows/self', { bookId: data.bookId, borrowDays: data.borrowDays, remark: data.remark })
 }
 
 export function adminBorrowBook(data: BorrowFormData) {
-  return post('/borrows', data)
+  return post<BorrowRecord>('/borrows', data)
 }
 
 export function returnBook(id: number) {
-  return put(`/borrows/${id}/return`, {})
+  return put<BorrowRecord>(`/borrows/${id}/return`, {})
 }
 
 export function selfReturnBook(id: number) {
-  return put(`/borrows/${id}/self-return`, {})
+  return put<BorrowRecord>(`/borrows/${id}/self-return`, {})
 }
 
 export function renewBook(id: number) {
-  return put(`/borrows/${id}/renew`, {})
+  return put<BorrowRecord>(`/borrows/${id}/renew`, {})
 }
 
 export function getMyBorrows(params: { page: number; size: number; status?: string }) {

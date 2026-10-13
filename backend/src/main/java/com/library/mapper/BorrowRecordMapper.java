@@ -10,6 +10,10 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface BorrowRecordMapper extends BaseMapper<BorrowRecord> {
 
+    @org.apache.ibatis.annotations.Select("SELECT * FROM borrow_record WHERE id = #{id} AND deleted = 0 FOR UPDATE")
+    BorrowRecord lockById(@org.apache.ibatis.annotations.Param("id") Long id);
+
+
     IPage<BorrowRecord> selectPageWithDetail(Page<BorrowRecord> page,
                                              @Param("keyword") String keyword,
                                              @Param("status") String status,

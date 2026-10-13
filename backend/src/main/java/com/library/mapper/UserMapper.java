@@ -10,6 +10,10 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
 
+    @org.apache.ibatis.annotations.Select("SELECT * FROM sys_user WHERE id = #{id} AND deleted = 0 FOR UPDATE")
+    User lockById(@org.apache.ibatis.annotations.Param("id") Long id);
+
+
     IPage<User> selectPageWithKeyword(Page<User> page,
                                       @Param("keyword") String keyword,
                                       @Param("role") String role,

@@ -1,3 +1,4 @@
+-- Legacy development fixture. Production uses db/migration in the application JAR.
 -- =============================================
 -- 图书馆管理系统 - 新增模块数据库迁移脚本
 -- 基于 GitHub 项目的核心业务功能
