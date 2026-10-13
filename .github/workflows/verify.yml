@@ -33,6 +33,7 @@ jobs:
       - run: npm install -g pnpm@11.25.0
       - name: Backend safety, production HTTP, migration and MySQL concurrency tests
         env:
+          CI_NGINX_HTTP: "true"
           MYSQL_TEST_URL: jdbc:mysql://127.0.0.1:3306/library_repair_tests?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai
           MYSQL_TEST_PASSWORD: ci-disposable-root-password
         run: mvn -B -ntp -f backend/pom.xml verify

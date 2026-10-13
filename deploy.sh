@@ -60,7 +60,7 @@ if [[ "$library_action" == update ]]; then
     fi
 elif [[ -n "$library_previous" ]]; then echo 'Already installed; use update' >&2; exit 1; fi
 if ! library_compose "$library_release" up -d --build --wait --wait-timeout 240; then
-    library_compose "$library_release" logs --tail 60 backend || true
+    library_compose "$library_release" logs --tail 100 mysql backend frontend || true
     if [[ -n "$library_previous" ]]; then
         echo 'Start failed; restoring previous application. Additive migrations are retained.' >&2
         library_compose "$library_previous" up -d --wait --wait-timeout 240

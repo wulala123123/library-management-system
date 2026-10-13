@@ -27,6 +27,7 @@ target = out/(name + '.zip')
 with ZipFile(target, 'w', compression=ZIP_DEFLATED, compresslevel=6) as archive:
     for file in sorted(set(files)):
         info = ZipInfo(name + '/' + file, date_time=(2026, 10, 13, 0, 0, 0))
+        info.create_system = 3  # Preserve Unix executable bits even when packaging on Windows.
         info.compress_type = ZIP_DEFLATED
         info.external_attr = (0o100755 if file.endswith('.sh') else 0o100644) << 16
         archive.writestr(info, (root/file).read_bytes())
