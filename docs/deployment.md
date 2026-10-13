@@ -1,6 +1,6 @@
 # 部署、更新与恢复
 
-本版修复了发布目录、迁移、持久化和代理配置。当前未安装到 sub2api，完整容器验收须先运行 `scripts/container-acceptance.sh` 或通过仓库的 Verify 工作流。修复记录见 [验收记录](repair-results-2026-10-13.md)，本次放行判断见 [部署复审](release-readiness-2026-10-13.md)。使用新 `reviewed-20261013` 候选包，原 `repaired-20261013` 包未包含复审补修。
+本版修复了发布目录、迁移、持久化和代理配置，完整隔离容器验收已通过 [Verify 38420811037](https://github.com/wulala123123/library-management-system/actions/runs/38420811037)，当前未安装到 sub2api。后续版本仍须运行 `scripts/container-acceptance.sh` 或通过 Verify。修复记录见 [验收记录](repair-results-2026-10-13.md)，本次放行判断见 [部署复审](release-readiness-2026-10-13.md)。部署使用通过 Verify 的 `verified-distribution` 产物和配套校验文件；原 `repaired-20261013`、`reviewed-20261013` 包缺少后续容器补修，不再作为上线包。
 
 ## 发布目录
 
@@ -72,3 +72,5 @@ LIBRARY_PROJECT_NAME=library-recovery LIBRARY_ENV_FILE=/absolute/path/recovery.e
 ```
 
 恢复必须从备份中 `application-version.txt` 记录的对应版本运行脚本，不同版本会被拒绝；示例中的 `current` 只有在与备份版本一致时才适用。恢复环境不能包含 `use-sub2api` 标记。脚本核对校验和，恢复数据库与上传文件，启动并等待健康。切换真实流量前还要核对用户、库存、借阅记录和文件。数据库账号及迁移账号的密码轮换需更新数据库本身，单改 `.env` 不会修改已有 MySQL 卷内的账号密码。
+
+原仓库跟踪的 3 张历史头像已按原路径、原字节整理到 `legacy-data/uploads/`，本机运行目录中的文件保留。它们不随发布包分发、不在新库自动导入。接管旧库应备份和迁移完整的真实上传目录；只有数据库头像路径匹配且原文件缺失时才核对该参考归档，不能用它替代完整备份。

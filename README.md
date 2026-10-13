@@ -2,7 +2,7 @@
 
 Vue 3、TypeScript、Element Plus 前端与 Java 17、Spring Boot 3、MyBatis Plus、MySQL 8 后端。提供读者注册、图书分类与目录、借还续借、借阅码、采购、库存、文件、用户和权限日志。
 
-本次修复尚未部署到服务器。实现与验收状态见 [修复记录](docs/repair-results-2026-10-13.md)，最新放行结论见 [部署复审](docs/release-readiness-2026-10-13.md)。部署前先阅读 [部署与恢复](docs/deployment.md) 和 [数据库迁移](docs/database-migrations.md)。
+修复计划 52/52 项完成，隔离 CI 的后端 69 项、前端 8 项、生产 Nginx HTTP 和实际容器启动、更新、回退、备份恢复均通过，尚未部署到服务器。实现与验收状态见 [修复记录](docs/repair-results-2026-10-13.md)，最新放行结论见 [部署复审](docs/release-readiness-2026-10-13.md)。部署前先阅读 [部署与恢复](docs/deployment.md) 和 [数据库迁移](docs/database-migrations.md)。
 
 ## 本地开发
 
@@ -37,6 +37,8 @@ pnpm --dir frontend audit --audit-level=high
 ```
 
 后端默认测试使用 H2；真实 MySQL 用例只有在设置 `MYSQL_TEST_URL` 时执行，并要求专用、可丢弃的 `library_repair_tests` 数据库。测试账号使用 `MYSQL_TEST_USER`、`MYSQL_TEST_PASSWORD`，需要创建/删除测试库和临时账号。绝不能指向业务数据库。MySQL 测试会验证升级、并发、DML 权限、审计回滚和生产 HTTP 文件限制。
+
+Linux 隔离 Docker 主机还可设置 `CI_NGINX_HTTP=true`，使生产 HTTP 用例通过实际 Nginx 容器加载发布模板同款路由和大小限制。该模式只用于测试进程，Compose 发布包仍另行进行完整持久化与恢复验收。
 
 前端 `build` 强制执行 `vue-tsc --noEmit`。依赖构建脚本只允许明确列出的 esbuild、Parcel watcher 和 vue-demi。后端审计使用 `scripts/audit_backend.py`，参数格式见 CI 的 Verify 工作流。
 

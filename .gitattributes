@@ -4,4 +4,6 @@ Dockerfile text eol=lf
 *.yaml text eol=lf
 *.sql text eol=lf
 *.py text eol=lf
+*.sha256 text eol=lf
+SHA256SUMS text eol=lf
 * text=auto
