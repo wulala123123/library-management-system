@@ -60,6 +60,9 @@ if [[ "$library_action" == update ]]; then
     fi
 elif [[ -n "$library_previous" ]]; then echo 'Already installed; use update' >&2; exit 1; fi
 if ! library_compose "$library_release" up -d --build --wait --wait-timeout 240; then
+    while IFS= read -r library_container; do
+        [[ -z "$library_container" ]] || docker inspect --format '{{.Name}} {{json .State.Health}}' "$library_container" || true
+    done < <(library_compose "$library_release" ps -aq)
     library_compose "$library_release" logs --tail 100 mysql backend frontend || true
     if [[ -n "$library_previous" ]]; then
         echo 'Start failed; restoring previous application. Additive migrations are retained.' >&2

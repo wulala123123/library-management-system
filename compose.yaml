@@ -49,7 +49,7 @@ services:
     networks: [app]
     depends_on: { mysql: { condition: service_healthy } }
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/actuator/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/api/actuator/health"]
       interval: 5s
       timeout: 5s
       retries: 36
@@ -67,7 +67,7 @@ services:
       app: { ipv4_address: "${FRONTEND_INTERNAL_IP:-172.30.88.10}" }
     depends_on: { backend: { condition: service_healthy } }
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/api/actuator/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/api/actuator/health"]
       interval: 5s
       timeout: 5s
       retries: 12
