@@ -126,4 +126,12 @@ expect_failure bash "$library_repo/deploy.sh" "$library_test/release.zip" update
 # Preparing an installation without credentials must not report successful deployment.
 expect_failure bash "$library_repo/deploy.sh" "$library_test/release.zip" install "$library_test/unconfigured"
 [[ -f "$library_test/unconfigured/.env" && ! -e "$library_test/unconfigured/current" ]]
+# Private operator umasks must not make implicit frontend directories inaccessible.
+mkdir "$library_test/private-install"
+cp "$library_test/install/.env" "$library_test/private-install/.env"
+(umask 077; bash "$library_repo/deploy.sh" "$library_test/release.zip" install "$library_test/private-install") > "$library_test/output"
+if [[ "$OSTYPE" != msys* ]]; then
+    [[ "$(stat -c %a "$library_test/private-install/current/scripts")" == 755 ]]
+fi
+
 echo 'Operations failure-path tests passed (mock Docker; no container acceptance claimed)'

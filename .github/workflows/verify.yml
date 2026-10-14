@@ -10,6 +10,8 @@ on:
         default: ci
 permissions:
   contents: read
+env:
+  LIBRARY_VERSION: ${{ inputs.version || format('ci-{0}', github.sha) }}
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -49,22 +51,18 @@ jobs:
           pnpm build
           pnpm audit --audit-level=high
       - name: Shell syntax and release package
-        env:
-          LIBRARY_VERSION: ${{ inputs.version || 'ci' }}
         run: |
           for script in deploy.sh scripts/*.sh backend/docker/*.sh; do bash -n "$script"; done
           bash scripts/operations.test.sh
           python3 scripts/package_release.py "$LIBRARY_VERSION"
       - name: Unpacked distribution, Nginx routing, persistence and recovery
-        env:
-          LIBRARY_VERSION: ${{ inputs.version || 'ci' }}
         run: bash scripts/container-acceptance.sh "dist/library-management-system-$LIBRARY_VERSION.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: verified-distribution
           path: |
-            dist/library-management-system-${{ inputs.version || 'ci' }}.zip
-            dist/library-management-system-${{ inputs.version || 'ci' }}.zip.sha256
+            dist/library-management-system-${{ env.LIBRARY_VERSION }}.zip
+            dist/library-management-system-${{ env.LIBRARY_VERSION }}.zip.sha256
       - uses: actions/upload-artifact@v4
         if: always()
         with:

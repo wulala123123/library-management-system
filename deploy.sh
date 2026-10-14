@@ -24,7 +24,9 @@ PY
 mkdir -p -- "$library_root/releases" "$library_root/backups"
 library_stage="$(mktemp -d "$library_root/.stage.XXXXXX")"
 trap 'rm -rf -- "$library_stage"' EXIT
-unzip -q "$library_archive" -d "$library_stage"
+# Implicit ZIP directories inherit umask. Nginx workers must be able to traverse
+# frontend assets after Docker COPY, even when the operator uses a private umask.
+(umask 022; unzip -q "$library_archive" -d "$library_stage")
 library_bundles=("$library_stage"/*)
 [[ ${#library_bundles[@]} == 1 && -f "${library_bundles[0]}/compose.yaml" ]] || { echo 'Invalid release layout' >&2; exit 1; }
 library_version="$(basename "${library_bundles[0]}")"

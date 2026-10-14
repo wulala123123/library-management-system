@@ -47,7 +47,7 @@ trap library_cleanup EXIT
     echo 'APP_NETWORK_SUBNET=172.30.89.0/24'
     echo 'FRONTEND_INTERNAL_IP=172.30.89.10'
 } > "$library_test/install/.env"
-bash "$library_repo/deploy.sh" "$library_archive" install "$library_test/install"
+(umask 077; bash "$library_repo/deploy.sh" "$library_archive" install "$library_test/install")
 library_release="$(readlink -f "$library_test/install/current")"
 python3 "$library_release/scripts/container_smoke.py" --base http://localhost:18089 --env "$library_test/install/.env" --state "$library_test/state.json"
 export LIBRARY_ENV_FILE="$library_test/install/.env"

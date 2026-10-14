@@ -1,5 +1,5 @@
 """HTTP smoke test against an isolated Compose deployment; never prints credentials."""
-import argparse, base64, hashlib, hmac, json, time, uuid, urllib.request, urllib.error
+import argparse, base64, hashlib, hmac, json, re, time, uuid, urllib.request, urllib.error
 from pathlib import Path
 
 p=argparse.ArgumentParser()
@@ -28,6 +28,12 @@ def upload(path, filename, content, mime):
     body=(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{filename}"\r\nContent-Type: {mime}\r\n\r\n').encode()+content+f'\r\n--{boundary}--\r\n'.encode()
     return request(path,'POST',body,content_type='multipart/form-data; boundary='+boundary)
 png=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jX1kAAAAASUVORK5CYII=')
+html=request('/',raw=True,authenticated=False).decode()
+assets=re.findall(r'(?:src|href)="(/assets/[^\"]+)"',html)
+assert assets, 'Built page must reference frontend assets'
+for asset in assets:
+    content=request(asset,raw=True,authenticated=False)
+    assert content and not content.lstrip().lower().startswith((b'<!doctype html',b'<html')), 'Missing frontend asset: '+asset
 assert request('/api/actuator/health',authenticated=False)['status']=='UP'
 if args.check_state:
     state=json.loads(Path(args.state).read_text())
