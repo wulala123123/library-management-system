@@ -138,6 +138,31 @@ class MySqlProductionHttpTest {
         return success("/books","POST",Map.of("isbn",UUID.randomUUID().toString().substring(0,20),
                 "title","生产验收图书","categoryId",category,"stockTotal",2),token);
     }
+    @Test void userCrudAllowsOptionalPhoneAndEditingWithoutChangingPassword() throws Exception {
+        String token=login();
+        for(String phone:new String[]{null,"","13800138000"}) {
+            String username="contact_"+UUID.randomUUID().toString().substring(0,8);
+            var body=new LinkedHashMap<String,Object>();
+            body.put("username",username); body.put("password","ContactPassword123");
+            body.put("realName","测试读者"); body.put("role","READER"); body.put("email","");
+            if(phone!=null) body.put("phone",phone);
+            long id=success("/users","POST",body,token).path("id").asLong();
+            String hash=jdbc.queryForObject("SELECT password FROM sys_user WHERE id=?",String.class,id);
+            body.remove("password"); body.put("id",id); body.put("realName","修改姓名"); body.put("phone","");
+            var updated=success("/users","PUT",body,token);
+            assertEquals("修改姓名",updated.path("realName").asText());
+            assertEquals("",jdbc.queryForObject("SELECT phone FROM sys_user WHERE id=?",String.class,id));
+            assertEquals(hash,jdbc.queryForObject("SELECT password FROM sys_user WHERE id=?",String.class,id));
+            assertEquals(username,success("/profile","GET",null,login(username,"ContactPassword123")).path("username").asText());
+        }
+        for(String phone:List.of("12345","23800138000")) {
+            String username="invalid_"+UUID.randomUUID().toString().substring(0,8);
+            var body=Map.of("username",username,"password","ContactPassword123","realName","测试读者","role","READER","phone",phone);
+            var response=send("/users","POST",json.writeValueAsString(body),token);
+            assertEquals(400,response.statusCode());
+            assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM sys_user WHERE username=?",Integer.class,username));
+        }
+    }
     @Test void readerLoginBorrowCodeRenewAndReturnUseRealHttp() throws Exception {
         String admin=login(), username="reader_"+UUID.randomUUID().toString().substring(0,8);
         success("/auth/register","POST",Map.of("username",username,"password","ReaderPassword123","realName","验收读者"),null);

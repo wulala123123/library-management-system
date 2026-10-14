@@ -22,7 +22,7 @@ public class UserRequest {
     private String realName;
 
     @Size(max = 20, message = "手机号格式不正确")
-    @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
+    @Pattern(regexp = "^(?:|1[3-9]\\d{9})$", message = "手机号格式不正确")
     private String phone;
 
     @Size(max = 100, message = "邮箱长度不超过100个字符")

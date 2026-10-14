@@ -41,3 +41,9 @@ ssh -N -L 127.0.0.1:18080:127.0.0.1:18080 sub2api
 首份备份 `/opt/library-management-system/backups/first-trial-20261014` 校验通过。更新脚本还在 `/opt/library-management-system/backups/20261014T130620Z` 自动保存更新前数据。当前修复版对应的备份为 `/opt/library-management-system/backups/verified-trial-20261014`，恢复时须使用其 `application-version.txt` 对应的安全版本；不要把旧版静态资源问题重新带入恢复环境。
 
 本机证据位于忽略的 `logs/server-preflight-20261014.log`、`logs/server-trial-http-20261014.json`、`logs/server-trial-final-20261014.log` 和 `logs/ci-38567733813.zip`。服务器 `/opt/library-management-system/verified-distribution.json` 记录正在运行的源码、CI 与包校验。备份含环境凭据，不复制进仓库或发布产物。
+
+## 用户表单追加修复
+
+用户确认手机号和邮箱应保持选填。管理员新增/编辑用户的手机号后端规则已接受缺省和空字符串，填写非空值时仍校验手机号格式；自助注册原本允许留空，规则不变。表单显示“手机号（选填）”“邮箱（选填）”，编辑不再提交隐藏的空密码，已处理的 API 失败保留表单供修改，不再传播到全局异常提示。
+
+本地新增 4 个表单回归，使用实际 Element Plus 表单校验，覆盖空联系方式新增、非空错误格式阻断、清空手机号且不提交密码、API 失败后修正重试。Vitest 内联表单与校验依赖以正确处理模块互操作；角色下拉控件使用测试替身。前端共 12 项、完整类型及构建通过；新增 MySQL 生产 HTTP 检查覆盖缺省/空/有效手机号、编辑清空、原密码保留及重新登录、错误格式拒绝，生产 HTTP 共 7 项通过。完整 CI 和服务器更新待运行。

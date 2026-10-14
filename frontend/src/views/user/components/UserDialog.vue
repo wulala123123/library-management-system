@@ -28,11 +28,11 @@
       </el-form-item>
 
       <el-form-item label="手机号" prop="phone">
-        <el-input v-model="form.phone" placeholder="请输入手机号" />
+        <el-input v-model="form.phone" placeholder="手机号（选填）" />
       </el-form-item>
 
       <el-form-item label="邮箱" prop="email">
-        <el-input v-model="form.email" placeholder="请输入邮箱" />
+        <el-input v-model="form.email" placeholder="邮箱（选填）" />
       </el-form-item>
     </el-form>
 
@@ -118,24 +118,24 @@ function handleClose() {
 }
 
 async function handleSubmit() {
-  if (!formRef.value) return
-  
-  await formRef.value.validate(async (valid) => {
-    if (!valid) return
-    
-    loading.value = true
-    try {
-      if (isEdit.value) {
-        await updateUser({ id: props.userId!, ...form })
-      } else {
-        await createUser(form)
-      }
-      ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
-      handleClose()
-      emit('success')
-    } finally {
-      loading.value = false
+  if (!formRef.value || loading.value) return
+  try { await formRef.value.validate() } catch { return }
+
+  loading.value = true
+  try {
+    const { password, ...details } = form
+    if (isEdit.value) {
+      await updateUser({ id: props.userId!, ...details })
+    } else {
+      await createUser({ ...details, password })
     }
-  })
+    ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
+    handleClose()
+    emit('success')
+  } catch {
+    // The request interceptor displays API errors; keep the form open for correction.
+  } finally {
+    loading.value = false
+  }
 }
 </script>

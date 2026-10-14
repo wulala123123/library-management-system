@@ -5,5 +5,8 @@ import { resolve } from 'node:path'
 export default defineConfig({
   plugins: [vue()],
   resolve: { alias: { '@': resolve(__dirname, 'src') } },
-  test: { environment: 'jsdom', include: ['src/**/*.test.ts'], restoreMocks: true },
+  test: {
+    environment: 'jsdom', include: ['src/**/*.test.ts'], restoreMocks: true,
+    server: { deps: { inline: ['element-plus', 'async-validator'] } },
+  },
 })
