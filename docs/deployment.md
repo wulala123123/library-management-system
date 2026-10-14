@@ -1,6 +1,6 @@
 # 部署、更新与恢复
 
-本版修复了发布目录、迁移、持久化和代理配置，完整隔离容器验收已通过 [Verify 38420811037](https://github.com/wulala123123/library-management-system/actions/runs/38420811037)，当前未安装到 sub2api。后续版本仍须运行 `scripts/container-acceptance.sh` 或通过 Verify。修复记录见 [验收记录](repair-results-2026-10-13.md)，本次放行判断见 [部署复审](release-readiness-2026-10-13.md)。部署使用通过 Verify 的 `verified-distribution` 产物和配套校验文件；原 `repaired-20261013`、`reviewed-20261013` 包缺少后续容器补修，不再作为上线包。
+本版修复了发布目录、迁移、持久化和代理配置，追加严格 umask 和前端实际资源验收后通过 [Verify 38567733813](https://github.com/wulala123123/library-management-system/actions/runs/38567733813)。2026 年 10 月 14 日已在 sub2api 本机端口试运行，尚未接入公网代理，见 [服务器记录](server-trial-2026-10-14.md)。后续版本仍须运行 `scripts/container-acceptance.sh` 或通过 Verify。修复记录见 [验收记录](repair-results-2026-10-13.md)，本次放行判断见 [部署复审](release-readiness-2026-10-13.md)。部署使用通过 Verify 的 `verified-distribution` 产物和配套校验文件；此前所有不含严格 umask 补修的候选包不再用于新安装。
 
 ## 发布目录
 

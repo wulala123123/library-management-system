@@ -2,7 +2,7 @@
 
 Vue 3、TypeScript、Element Plus 前端与 Java 17、Spring Boot 3、MyBatis Plus、MySQL 8 后端。提供读者注册、图书分类与目录、借还续借、借阅码、采购、库存、文件、用户和权限日志。
 
-修复计划 52/52 项完成，隔离 CI 的后端 69 项、前端 8 项、生产 Nginx HTTP 和实际容器启动、更新、回退、备份恢复均通过，尚未部署到服务器。实现与验收状态见 [修复记录](docs/repair-results-2026-10-13.md)，最新放行结论见 [部署复审](docs/release-readiness-2026-10-13.md)。部署前先阅读 [部署与恢复](docs/deployment.md) 和 [数据库迁移](docs/database-migrations.md)。
+修复计划 52/52 项完成，后端 69 项、前端 8 项、生产 Nginx HTTP 和实际容器启动、更新、回退、备份恢复均通过。2026 年 10 月 14 日已在服务器部署到本机 `127.0.0.1:18080` 试运行，未发布到公网，现有服务保持不变。现场追加的静态资源权限问题已补修并重新通过 CI。详情见 [服务器试运行](docs/server-trial-2026-10-14.md)、[修复记录](docs/repair-results-2026-10-13.md) 和 [部署复审](docs/release-readiness-2026-10-13.md)。部署前先阅读 [部署与恢复](docs/deployment.md) 和 [数据库迁移](docs/database-migrations.md)。
 
 ## 本地开发
 
