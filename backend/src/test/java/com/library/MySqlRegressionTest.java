@@ -115,7 +115,7 @@ class MySqlRegressionTest {
     }
     @Test void parallelRenewalsCannotExceedLimit() throws Exception {
         BorrowRecord r=borrow(user(),book(1));
-        assertEquals(2,parallel(8,i->borrows.renew(r.getId())));
+        assertEquals(2,parallel(8,i->borrows.renew(r.getId(), null)));
         assertEquals(2,borrowMapper.selectById(r.getId()).getRenewCount());
     }
     @Test void overdueStillProtectsUserBookAndDuplicateBorrow() {

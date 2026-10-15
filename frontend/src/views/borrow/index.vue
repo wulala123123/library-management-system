@@ -116,6 +116,7 @@
     </div>
 
     <BorrowDialog v-model:visible="borrowDialogVisible" @success="fetchBorrowList" />
+    <RenewDialog v-model:visible="renewDialogVisible" :record="renewRecord" show-reader @success="fetchBorrowList" />
   </div>
 </template>
 
@@ -123,14 +124,17 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
-import { getBorrowPage, returnBook, renewBook } from '@/api/borrow'
+import { getBorrowPage, returnBook } from '@/api/borrow'
 import type { BorrowRecord } from '@/types'
 import BorrowDialog from './components/BorrowDialog.vue'
+import RenewDialog from './components/RenewDialog.vue'
 
 const loading = ref(false)
 const borrowList = ref<BorrowRecord[]>([])
 const total = ref(0)
 const borrowDialogVisible = ref(false)
+const renewDialogVisible = ref(false)
+const renewRecord = ref<BorrowRecord | null>(null)
 
 const queryParams = reactive({ page: 1, size: 10, keyword: '', status: undefined as string | undefined })
 
@@ -166,14 +170,10 @@ async function handleReturn(record: BorrowRecord) {
   } catch {}
 }
 
-async function handleRenew(record: BorrowRecord) {
+function handleRenew(record: BorrowRecord) {
   if (record.renewCount >= 2) { ElMessage.warning('续借次数已达上限'); return }
-  try {
-    await ElMessageBox.confirm(`为"${record.userName}"续借《${record.bookTitle}》？`, '确认续借')
-    await renewBook(record.id)
-    ElMessage.success('续借成功')
-    fetchBorrowList()
-  } catch {}
+  renewRecord.value = record
+  renewDialogVisible.value = true
 }
 
 function formatDate(dateStr?: string): string { if (!dateStr) return '-'; return dateStr.split('T')[0] }

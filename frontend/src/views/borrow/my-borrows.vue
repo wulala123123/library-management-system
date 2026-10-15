@@ -93,6 +93,7 @@
         </div>
       </el-tab-pane>
     </el-tabs>
+    <RenewDialog v-model:visible="renewDialogVisible" :record="renewRecord" @success="fetchCurrentBorrows" />
   </div>
 </template>
 
@@ -100,12 +101,15 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMyBorrows, renewBook, selfReturnBook } from '@/api/borrow'
+import { getMyBorrows, selfReturnBook } from '@/api/borrow'
 import type { BorrowRecord } from '@/types'
+import RenewDialog from './components/RenewDialog.vue'
 
 const router = useRouter()
 const loading = ref(false)
 const returningId = ref<number | null>(null)
+const renewDialogVisible = ref(false)
+const renewRecord = ref<BorrowRecord | null>(null)
 const currentBorrows = ref<BorrowRecord[]>([])
 const historyBorrows = ref<BorrowRecord[]>([])
 
@@ -132,16 +136,10 @@ async function fetchHistoryBorrows() {
   }
 }
 
-async function handleRenew(record: BorrowRecord) {
+function handleRenew(record: BorrowRecord) {
   if (record.renewCount >= 2) { ElMessage.warning('续借次数已达上限'); return }
-  try {
-    await ElMessageBox.confirm(`确定要续借《${record.bookTitle}》吗？`, '确认续借')
-    await renewBook(record.id)
-    ElMessage.success('续借成功，已延长30天')
-    record.renewCount++
-  } catch (e) {
-    if (e !== 'cancel' && e !== 'close') ElMessage.error('续借失败')
-  }
+  renewRecord.value = record
+  renewDialogVisible.value = true
 }
 
 async function handleReturn(record: BorrowRecord) {

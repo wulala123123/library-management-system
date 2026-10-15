@@ -14,7 +14,7 @@ public interface BorrowRecordService {
 
     BorrowRecord returnBook(Long id);
 
-    BorrowRecord renew(Long id);
+    BorrowRecord renew(Long id, Integer renewDays);
 
     PageResult<BorrowRecord> getMyBorrows(int page, int size, Long userId, String status);
 }

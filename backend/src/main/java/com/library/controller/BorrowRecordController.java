@@ -3,6 +3,7 @@ package com.library.controller;
 import com.library.common.PageResult;
 import com.library.common.Result;
 import com.library.dto.BorrowRequest;
+import com.library.dto.RenewRequest;
 import com.library.entity.BorrowRecord;
 import com.library.service.BorrowRecordService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -86,7 +87,9 @@ public class BorrowRecordController {
 
     @Operation(summary = "续借")
     @PutMapping("/{id}/renew")
-    public Result<BorrowRecord> renew(@PathVariable Long id, Authentication authentication) {
+    public Result<BorrowRecord> renew(@PathVariable Long id,
+                                      @Valid @RequestBody(required = false) RenewRequest request,
+                                      Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         log.info("续借请求: userId={}, recordId={}", userId, id);
         BorrowRecord record = borrowRecordService.getById(id);
@@ -98,7 +101,7 @@ public class BorrowRecordController {
             log.warn("越权续借: userId={}, recordUserId={}, recordId={}", userId, record.getUserId(), id);
             return Result.error(403, "只能续借自己的借阅记录");
         }
-        return Result.success(borrowRecordService.renew(id));
+        return Result.success(borrowRecordService.renew(id, request != null ? request.getRenewDays() : null));
     }
 
     @Operation(summary = "我的借阅记录")

@@ -177,8 +177,12 @@ class MySqlProductionHttpTest {
         assertEquals(1,success("/books/"+book,"GET",null,reader).path("stockAvailable").asInt());
         var renewed=success("/borrows/"+record.path("id").asLong()+"/renew","PUT",Map.of(),reader);
         assertEquals(1,renewed.path("renewCount").asInt());
-        assertTrue(java.time.LocalDate.parse(renewed.path("dueDate").asText())
-                .isAfter(java.time.LocalDate.parse(record.path("dueDate").asText())));
+        assertEquals(java.time.LocalDate.parse(record.path("dueDate").asText()).plusDays(30),
+                java.time.LocalDate.parse(renewed.path("dueDate").asText()));
+        var customRenewed=success("/borrows/"+record.path("id").asLong()+"/renew","PUT",Map.of("renewDays",7),reader);
+        assertEquals(2,customRenewed.path("renewCount").asInt());
+        assertEquals(java.time.LocalDate.parse(renewed.path("dueDate").asText()).plusDays(7),
+                java.time.LocalDate.parse(customRenewed.path("dueDate").asText()));
         assertEquals("RETURNED",success("/borrows/"+record.path("id").asLong()+"/self-return","PUT",Map.of(),reader).path("status").asText());
         assertEquals(2,success("/books/"+book,"GET",null,reader).path("stockAvailable").asInt());
     }

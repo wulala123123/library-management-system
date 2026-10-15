@@ -35,8 +35,8 @@ export function selfReturnBook(id: number) {
   return put<BorrowRecord>(`/borrows/${id}/self-return`, {})
 }
 
-export function renewBook(id: number) {
-  return put<BorrowRecord>(`/borrows/${id}/renew`, {})
+export function renewBook(id: number, renewDays = 30) {
+  return put<BorrowRecord>(`/borrows/${id}/renew`, { renewDays })
 }
 
 export function getMyBorrows(params: { page: number; size: number; status?: string }) {

@@ -128,7 +128,9 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
 
     @Override
     @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
-    public BorrowRecord renew(Long id) {
+    public BorrowRecord renew(Long id, Integer renewDays) {
+        int days = renewDays != null ? renewDays : 30;
+        if (days < 1 || days > 90) throw new RuntimeException("续借天数必须为1-90天");
         BorrowRecord record = lockCirculationRecord(id);
         if (record == null) {
             throw new RuntimeException("借阅记录不存在");
@@ -140,7 +142,7 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
             throw new RuntimeException("续借次数已达上限(2次)");
         }
 
-        record.setDueDate(record.getDueDate().plusDays(30));
+        record.setDueDate(record.getDueDate().plusDays(days));
         record.setStatus(record.getDueDate().isBefore(LocalDate.now()) ? "OVERDUE" : "BORROWING");
         record.setRenewCount(record.getRenewCount() + 1);
         if (borrowRecordMapper.updateById(record) != 1) throw new RuntimeException("借阅状态更新失败，请重试");
