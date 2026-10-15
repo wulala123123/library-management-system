@@ -24,10 +24,12 @@ set -euo pipefail
 if [[ "$1" == volume ]]; then exit 0; fi
 shift
 project=''
+release=''
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -p) project="$2"; shift 2;;
-        --project-directory|--env-file|-f) shift 2;;
+        --project-directory) release="$2"; shift 2;;
+        --env-file|-f) shift 2;;
         *) break;;
     esac
 done
@@ -35,6 +37,11 @@ printf '%s|%s|%s\n' "$project" "${APP_VERSION:-}" "$*" >> "$LIBRARY_MOCK_EVENTS"
 case "$1" in
     stop) [[ "${LIBRARY_MOCK_FAILURE:-}" != stop ]];;
     exec)
+        if [[ "$*" == *'sha256sum /app/app.jar' ]]; then
+            if [[ "${LIBRARY_MOCK_FAILURE:-}" == artifact ]]; then printf '%064d  /app/app.jar\n' 0
+            else sha256sum "$release/backend/target/library-backend.jar"; fi
+            exit 0
+        fi
         [[ "${LIBRARY_MOCK_FAILURE:-}" != dump ]] || exit 1
         printf 'disposable database dump\n';;
     run) printf 'disposable upload archive\n';;
@@ -47,7 +54,8 @@ chmod +x "$library_test/bin/docker"
 library_old="$library_test/install/releases/library-management-system-test-old"
 library_new="$library_test/install/releases/library-management-system-test-broken"
 for library_path in "$library_old" "$library_new"; do
-    mkdir -p "$library_path/scripts"
+    mkdir -p "$library_path/scripts" "$library_path/backend/target"
+    printf 'disposable backend artifact: %s\n' "$library_path" > "$library_path/backend/target/library-backend.jar"
     cp "$library_repo/scripts/"{lib,backup,restore}.sh "$library_path/scripts/"
     cp "$library_repo/compose.yaml" "$library_path/compose.yaml"
     cp "$library_repo/.env.example" "$library_path/.env.example"
@@ -115,6 +123,14 @@ ln -s "$library_old" "$library_test/install/current"
 : > "$LIBRARY_MOCK_EVENTS"
 expect_failure env LIBRARY_MOCK_FAILURE=broken bash "$library_repo/deploy.sh" "$library_test/release.zip" update "$library_test/install"
 [[ "$(readlink -f "$library_test/install/current")" == "$library_old" ]]
+expect_event 'library-management-system-test-old|up -d --wait --wait-timeout 240'
+# A healthy process running stale artifact bytes must also roll back.
+rm -rf -- "$library_test/install/backups"
+mkdir "$library_test/install/backups"
+: > "$LIBRARY_MOCK_EVENTS"
+expect_failure env LIBRARY_MOCK_FAILURE=artifact bash "$library_repo/deploy.sh" "$library_test/release.zip" update "$library_test/install"
+[[ "$(readlink -f "$library_test/install/current")" == "$library_old" ]]
+grep -Fq 'Running backend JAR differs' "$library_test/output"
 expect_event 'library-management-system-test-old|up -d --wait --wait-timeout 240'
 # Retry identical immutable content after the failure is corrected.
 # The production backup name uses seconds; remove only the test backup to avoid a name collision.

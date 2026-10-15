@@ -41,6 +41,9 @@ else
     mv -- "${library_bundles[0]}" "$library_release"
     cp -- "$library_archive.sha256" "$library_release/.archive.sha256"
 fi
+# Different packages can contain same-size files with identical fixed ZIP
+# timestamps. Refresh metadata on first use and retries before BuildKit syncs.
+find "$library_release" -type f -exec touch -- {} +
 if [[ ! -f "$library_root/.env" ]]; then
     umask 077
     cp -- "$library_release/.env.example" "$library_root/.env"
@@ -61,7 +64,13 @@ if [[ "$library_action" == update ]]; then
         exit 1
     fi
 elif [[ -n "$library_previous" ]]; then echo 'Already installed; use update' >&2; exit 1; fi
-if ! library_compose "$library_release" up -d --build --wait --wait-timeout 240; then
+library_verify_backend() {
+    local library_expected_hash library_actual_hash
+    library_expected_hash="$(sha256sum "$library_release/backend/target/library-backend.jar")" || return 1
+    library_actual_hash="$(library_compose "$library_release" exec -T backend sha256sum /app/app.jar)" || return 1
+    [[ "${library_actual_hash%% *}" == "${library_expected_hash%% *}" ]] || { echo 'Running backend JAR differs from release package' >&2; return 1; }
+}
+if ! library_compose "$library_release" up -d --build --wait --wait-timeout 240 || ! library_verify_backend; then
     while IFS= read -r library_container; do
         [[ -z "$library_container" ]] || docker inspect --format '{{.Name}} {{json .State.Health}}' "$library_container" || true
     done < <(library_compose "$library_release" ps -aq)
