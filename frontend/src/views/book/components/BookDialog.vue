@@ -1,11 +1,13 @@
 <template>
-  <el-dialog :model-value="visible" :title="isEdit ? '编辑图书' : '新增图书'" width="720px" :close-on-click-modal="false" @close="handleClose">
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" size="default">
+  <el-dialog :model-value="visible" :title="isEdit ? '编辑书目资料' : '新书目与首批实体册'" width="720px" :close-on-click-modal="false" :close-on-press-escape="!loading && !intakeVisible" :before-close="beforeClose">
+    <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" />
+    <el-alert v-if="isEdit" title="这里只保存书目资料。增加库存请使用“登记实体册”，现有总数和可借数由业务流程维护。" type="info" :closable="false" />
+    <el-form v-if="canManage" ref="formRef" :model="form" :rules="rules" :disabled="loading || !!loadError" label-width="100px" size="default">
       <div class="cover-upload-section">
         <label class="section-label">封面图片</label>
         <div class="upload-area">
           <div class="cover-preview" v-if="form.coverImage || previewUrl">
-            <img :src="previewUrl || form.coverImage" alt="封面预览" />
+            <img :src="previewUrl || form.coverImage || undefined" alt="封面预览" />
             <div class="preview-actions">
               <el-button type="danger" size="small" circle @click="removeCover">
                 <el-icon><Delete /></el-icon>
@@ -51,13 +53,10 @@
 
       <el-row :gutter="20">
         <el-col :span="8">
-          <el-form-item label="价格(元)"><el-input-number v-model="form.price" :min="0" :precision="2" style="width: 100%" /></el-form-item>
+          <el-form-item label="价格(元)"><el-input-number v-model="form.price" :min="0" :max="99999.99" :precision="2" style="width: 100%" /></el-form-item>
         </el-col>
         <el-col :span="8">
-          <el-form-item label="页数"><el-input-number v-model="form.pages" :min="0" placeholder="未设置" style="width: 100%" /></el-form-item>
-        </el-col>
-        <el-col :span="8">
-          <el-form-item label="总库存" prop="stockTotal"><el-input-number v-model="form.stockTotal" :min="isEdit ? 0 : 1" style="width: 100%" /></el-form-item>
+          <el-form-item label="页数"><el-input-number v-model="form.pages" :min="0" :max="99999" :precision="0" placeholder="未设置" style="width: 100%" /></el-form-item>
         </el-col>
       </el-row>
 
@@ -66,23 +65,29 @@
     </el-form>
 
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
-      <el-button type="primary" :loading="loading" @click="handleSubmit">确定</el-button>
+      <el-button :disabled="loading || intakeVisible" @click="handleClose">取消</el-button>
+      <el-button v-if="canManage" type="primary" :loading="loading" :disabled="!!loadError || intakeVisible" @click="handleSubmit">{{ isEdit ? '保存书目资料' : '下一步：登记实体册' }}</el-button>
     </template>
   </el-dialog>
+  <IntakeDialog :visible="intakeVisible" :new-book="preparedBook" @update:visible="onIntakeVisible" @success="onIntakeSuccess" />
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Delete, Upload, Picture } from '@element-plus/icons-vue'
-import type { FormInstance, FormRules, UploadFile } from 'element-plus'
-import { createBook, updateBook, getBookById, uploadBookCover } from '@/api/book'
+import type { FormInstance, FormRules } from 'element-plus'
+import { getBookMetadata, updateBookMetadata, uploadBookCover, type BookMetadata } from '@/api/book'
 import { getCategoryList } from '@/api/category'
+import { useUserStore } from '@/store/modules/user'
+import type { IntakeReceipt } from '@/api/inventoryIntake'
+import IntakeDialog from './IntakeDialog.vue'
+import { metadataChanges, metadataKeys } from './intakeDraft'
 
 interface Props { visible: boolean; bookId: number | null }
 const props = defineProps<Props>()
 const emit = defineEmits(['update:visible', 'success'])
+const user = useUserStore(), canManage = computed(() => user.isAdmin || user.isLibrarian)
 
 const formRef = ref<FormInstance>()
 const fileInputRef = ref<HTMLInputElement>()
@@ -92,25 +97,28 @@ const pendingFile = ref<File | null>(null)
 const previewUrl = ref('')
 const isEdit = computed(() => !!props.bookId)
 const categories = ref<any[]>([])
+const loadError = ref(''), metadataDigest = ref(''), original = ref<Partial<BookMetadata>>({})
+const intakeVisible = ref(false), preparedBook = ref<BookMetadata | null>(null), created = ref(false)
 
 const form = reactive({
-  isbn: '', title: '', author: '', publisher: '', publishDate: '',
+  isbn: '', title: '', author: '' as string | null, publisher: '' as string | null, publishDate: null as string | null,
   categoryId: undefined as number | undefined,
-  price: undefined as number | undefined,
-  pages: undefined as number | undefined,
-  stockTotal: 5, location: '', description: '',
-  coverImage: '' as string | undefined,
+  price: undefined as number | null | undefined,
+  pages: undefined as number | null | undefined,
+  location: '' as string | null, description: '' as string | null,
+  coverImage: '' as string | null | undefined, status: 1 as number | null,
 })
 
 const rules: FormRules = {
   isbn: [{ required: true, message: '请输入ISBN', trigger: 'blur' }],
   title: [{ required: true, message: '请输入书名', trigger: 'blur' }],
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
-  stockTotal: [{ required: true, message: '请输入总库存', trigger: 'blur' }],
 }
 
 watch(() => props.visible, async (val) => {
   if (val) {
+    if (!canManage.value) return
+    loadError.value = ''; created.value = false
     try {
       categories.value = await getCategoryList() || []
     } catch {}
@@ -119,30 +127,21 @@ watch(() => props.visible, async (val) => {
 })
 
 async function loadBookDetail() {
+  loading.value = true
   try {
-    const book = await getBookById(props.bookId!)
-    Object.assign(form, {
-      isbn: book.isbn || '',
-      title: book.title || '',
-      author: book.author || '',
-      publisher: book.publisher || '',
-      publishDate: book.publishDate || '',
-      categoryId: book.categoryId,
-      price: book.price,
-      pages: book.pages,
-      stockTotal: book.stockTotal ?? undefined,
-      location: book.location || '',
-      description: book.description || '',
-      coverImage: book.coverImage || '',
-    })
+    const { book, metadataDigest: digest } = await getBookMetadata(props.bookId!)
+    const values = Object.fromEntries(metadataKeys.map(key => [key, book[key] ?? null]))
+    Object.assign(form, values); original.value = { ...values }; metadataDigest.value = digest
     previewUrl.value = ''
     pendingFile.value = null
-  } catch {}
+  } catch { loadError.value = '书目资料读取失败，请关闭后重试，当前不能保存。' }
+  finally { loading.value = false }
 }
 
 function resetForm() {
   if (formRef.value) formRef.value.resetFields()
-  Object.assign(form, { isbn: '', title: '', author: '', publisher: '', publishDate: '', categoryId: undefined, price: undefined, pages: undefined, stockTotal: 5, location: '', description: '', coverImage: '' })
+  Object.assign(form, { isbn: '', title: '', author: '', publisher: '', publishDate: null, categoryId: undefined, price: undefined, pages: undefined, location: '', description: '', coverImage: '', status: 1 })
+  metadataDigest.value = ''; original.value = {}; loadError.value = ''
   previewUrl.value = ''
   pendingFile.value = null
 }
@@ -168,35 +167,41 @@ function removeCover() {
   pendingFile.value = null
 }
 
-function handleClose() { emit('update:visible', false) }
+function handleClose() { if (!loading.value && !intakeVisible.value) emit('update:visible', false) }
+function beforeClose(done: () => void) { if (!loading.value && !intakeVisible.value) { handleClose(); done() } }
+function onIntakeVisible(value: boolean) { intakeVisible.value = value; if (!value && created.value) handleClose() }
+async function savePendingCover(bookId: number) {
+  const file = pendingFile.value
+  if (!file) return
+  uploadingCover.value = true
+  try { await uploadBookCover(bookId, file); pendingFile.value = null }
+  catch { ElMessage.warning('书目与入库已保存，封面上传失败；可稍后编辑封面，不要重复入库。') }
+  finally { uploadingCover.value = false }
+}
+async function onIntakeSuccess(receipt: IntakeReceipt) {
+  created.value = true
+  const bookId = receipt.copies[0]?.bookId
+  if (bookId) await savePendingCover(bookId)
+  emit('success')
+}
 
 async function handleSubmit() {
-  if (!formRef.value || loading.value) return
+  if (!canManage.value || !formRef.value || loading.value || loadError.value || intakeVisible.value) return
   try { await formRef.value.validate() } catch { return }
   if (loading.value) return
   loading.value = true
   try {
-    let bookId = props.bookId
+    const metadata: BookMetadata = { ...form, categoryId: form.categoryId!, publishDate: form.publishDate || null, price: form.price ?? null, pages: form.pages ?? null }
     if (isEdit.value) {
-      await updateBook({ id: props.bookId!, ...form, categoryId: form.categoryId! })
+      if (!metadataDigest.value) return
+      const changes = metadataChanges(original.value, metadata)
+      if (Object.keys(changes).length) await updateBookMetadata(props.bookId!, metadataDigest.value, changes)
+      await savePendingCover(props.bookId!)
+      ElMessage.success('书目资料已保存')
+      emit('update:visible', false); emit('success')
     } else {
-      const res = await createBook({ ...form, categoryId: form.categoryId! })
-      bookId = res?.id
+      preparedBook.value = metadata; intakeVisible.value = true
     }
-
-    if (pendingFile.value && bookId) {
-      uploadingCover.value = true
-      try {
-        const coverPath = await uploadBookCover(bookId, pendingFile.value)
-        form.coverImage = typeof coverPath === 'string' ? coverPath : (coverPath as any)?.data || ''
-      } catch (e: any) {
-        ElMessage.warning('图书保存成功，但封面上传失败')
-      } finally { uploadingCover.value = false }
-    }
-
-    ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
-    handleClose()
-    emit('success')
   } catch {
     // The request interceptor displays API errors; retain the form for correction.
   } finally { loading.value = false }

@@ -2,16 +2,16 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { defineComponent, h, inject, provide } from 'vue'
 import { beforeEach, expect, it, vi } from 'vitest'
 
-const api = vi.hoisted(() => ({ login: vi.fn(), captcha: vi.fn(), code: vi.fn(), borrow: vi.fn(), verify: vi.fn(), push: vi.fn(), myBorrows: vi.fn(), returnBook: vi.fn(), renew: vi.fn(), orders: vi.fn(), instock: vi.fn() }))
+const api = vi.hoisted(() => ({ login: vi.fn(), captcha: vi.fn(), code: vi.fn(), borrow: vi.fn(), verify: vi.fn(), push: vi.fn(), myBorrows: vi.fn(), returnBook: vi.fn(), renew: vi.fn(), orders: vi.fn(), instock: vi.fn(), role: 'READER' }))
 vi.mock('@/api/auth', () => ({ loginApi: api.login, getCaptchaImage: api.captcha, registerApi: vi.fn() }))
 vi.mock('@/api/book', () => ({ getBookById: vi.fn().mockResolvedValue({ id: 7, title: '测试图书', stockAvailable: 1 }), getBookPage: vi.fn() }))
 vi.mock('@/api/borrowCode', () => ({ generateBorrowCode: api.code, verifyBorrowCode: api.verify, getMyBorrowCodes: vi.fn().mockResolvedValue({ records: [] }), getBorrowCodePage: vi.fn().mockResolvedValue({ records: [], total: 0 }), invalidateBorrowCode: vi.fn() }))
 vi.mock('@/api/borrow', () => ({ borrowBook: api.borrow, getMyBorrows: api.myBorrows, selfReturnBook: api.returnBook, renewBook: api.renew }))
-vi.mock('@/api/purchase', () => ({ getPurchaseOrders: api.orders, quickInstock: api.instock, getPurchaseOrderById: vi.fn(), createPurchaseOrder: vi.fn(), updatePurchaseOrder: vi.fn(), deletePurchaseOrder: vi.fn(), submitPurchaseOrder: vi.fn(), approvePurchaseOrder: vi.fn() }))
+vi.mock('@/api/purchase', () => ({ getPurchaseOrders: api.orders, getPurchaseOrderById: vi.fn(), createPurchaseOrder: vi.fn(), updatePurchaseOrder: vi.fn(), deletePurchaseOrder: vi.fn(), submitPurchaseOrder: vi.fn(), approvePurchaseOrder: vi.fn() }))
 vi.mock('@/api/dept', () => ({ getDeptList: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/api/category', () => ({ getCategoryList: vi.fn().mockResolvedValue([]) }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: api.push }), useRoute: () => ({ query: {} }) }))
-vi.mock('@/store/modules/user', () => ({ useUserStore: () => ({ logout: vi.fn(), setToken: vi.fn(), setUserInfo: vi.fn(), role: 'READER' }) }))
+vi.mock('@/store/modules/user', () => ({ useUserStore: () => ({ logout: vi.fn(), setToken: vi.fn(), setUserInfo: vi.fn(), get role() { return api.role }, get isAdmin() { return api.role === 'ADMIN' }, get isLibrarian() { return api.role === 'LIBRARIAN' } }) }))
 vi.mock('element-plus', () => ({ ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn() }, ElMessageBox: { alert: vi.fn().mockResolvedValue(undefined), confirm: vi.fn().mockResolvedValue(undefined) } }))
 
 import Login from './login/index.vue'
@@ -33,7 +33,7 @@ const column = defineComponent({ props: ['prop'], setup(props, { slots }) { cons
 const actionButton = defineComponent({ setup(_, { slots }) { return () => h('button', slots.default?.()) } })
 const rowStubs = { ...stubs, ElTable: table, ElTableColumn: column, ElButton: actionButton, ElTabs: slot, ElTabPane: slot }
 
-beforeEach(() => { vi.clearAllMocks(); api.captcha.mockResolvedValue({ image: 'image', captchaKey: 'challenge' }); api.login.mockResolvedValue({ token: 'token', userInfo: { username: 'reader' } }); api.code.mockResolvedValue({ code: '123456' }) })
+beforeEach(() => { vi.clearAllMocks(); api.role = 'READER'; api.captcha.mockResolvedValue({ image: 'image', captchaKey: 'challenge' }); api.login.mockResolvedValue({ token: 'token', userInfo: { username: 'reader' } }); api.code.mockResolvedValue({ code: '123456' }) })
 
 it('submits credentials and captcha together and removes the recovery entry', async () => {
   const wrapper = mount(Login, { global: { stubs } }); await flushPromises()
@@ -94,13 +94,22 @@ it('overdue records remain visible and can be returned from the reader page', as
   wrapper.unmount()
 })
 
-it('approved procurement can be stocked from the order page and then refreshes the list', async () => {
+it('approved procurement opens explicit intake and refreshes only after a receipt', async () => {
+  api.role = 'LIBRARIAN'
   api.orders.mockResolvedValue({ records: [{ id: 15, orderNo: 'PO15', status: 'APPROVED' }], total: 1 })
-  api.instock.mockResolvedValue(undefined)
-  const wrapper = mount(Purchases, { global: { stubs: rowStubs } }); await flushPromises()
-  const button = wrapper.findAll('button').find(b => b.text().trim() === '入库')!
+  const wrapper = mount(Purchases, { global: { stubs: { ...rowStubs, IntakeDialog: true } } }); await flushPromises()
+  const button = wrapper.findAll('button').find(b => b.text().trim() === '登记入库')!
   await button.trigger('click'); await flushPromises()
-  expect(api.instock).toHaveBeenCalledWith(15)
+  expect(api.instock).not.toHaveBeenCalled()
+  expect(api.orders).toHaveBeenCalledTimes(1)
+  const intake = wrapper.findComponent({ name: 'IntakeDialog' })
+  expect(intake.props('visible')).toBe(true); expect(intake.props('purchaseOrderId')).toBe(15)
+  intake.vm.$emit('success', { intakeId: 7 }); await flushPromises()
   expect(api.orders).toHaveBeenCalledTimes(2)
   wrapper.unmount()
+})
+
+it('readers do not issue procurement management requests', async () => {
+  const wrapper = mount(Purchases, { global: { stubs: { ...rowStubs, IntakeDialog: true } } }); await flushPromises()
+  expect(api.orders).not.toHaveBeenCalled(); expect(api.instock).not.toHaveBeenCalled(); wrapper.unmount()
 })

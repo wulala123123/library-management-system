@@ -79,7 +79,8 @@ class BookCopyQueryControllerTest {
         assertSingleBook(request(get("/book-copies").param("keyword", "%_!"), "librarian", 200), target);
         assertSingleBook(request(get("/book-copies").param("location", "%_!"), "admin", 200), target);
         assertEquals(1, request(get("/book-copies/catalog-summary").param("keyword", "%_!"), "admin", 200).path("total").asLong());
-        assertEquals(0, request(get("/book-copies").param("keyword", "' OR 1=1 --"), "admin", 200).path("total").asLong());
+        request(get("/book-copies").param("keyword", "' OR 1=1 --"), "admin", 400);
+        assertEquals(0, new BookCopyQueryService(jdbc).copies(1, 20, "' OR 1=1 --", null, null, null, null, null).getTotal());
     }
 
     @Test

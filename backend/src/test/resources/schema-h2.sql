@@ -299,7 +299,8 @@ MERGE INTO inventory_mutex (id) KEY(id) VALUES (1);
 
 CREATE TABLE IF NOT EXISTS book_copy (
     id BIGINT AUTO_INCREMENT PRIMARY KEY, book_id BIGINT NOT NULL,
-    barcode VARCHAR(64) NOT NULL UNIQUE, status VARCHAR(20) DEFAULT 'AVAILABLE' NOT NULL,
+    barcode VARCHAR(64) NOT NULL, barcode_key VARBINARY(256) GENERATED ALWAYS AS (STRINGTOUTF8(barcode)) UNIQUE,
+    status VARCHAR(20) DEFAULT 'AVAILABLE' NOT NULL,
     location VARCHAR(200)
 );
 ALTER TABLE borrow_record ALTER COLUMN due_date DROP NOT NULL;
@@ -389,4 +390,24 @@ CREATE TABLE IF NOT EXISTS member_entitlement_change (
     id BIGINT AUTO_INCREMENT PRIMARY KEY, user_id BIGINT NOT NULL, operator_id BIGINT NOT NULL,
     action VARCHAR(30) NOT NULL, reason VARCHAR(1000) NOT NULL, before_json CLOB NOT NULL, after_json CLOB NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS inventory_intake_request (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY, idempotency_key VARBINARY(128) NOT NULL UNIQUE,
+    request_hash CHAR(64) NOT NULL, preview_digest CHAR(64) NOT NULL,
+    source_type VARCHAR(20) NOT NULL, purchase_order_id BIGINT, operator_id BIGINT NOT NULL,
+    request_json CLOB NOT NULL, preview_json CLOB NOT NULL, state VARCHAR(20) NOT NULL,
+    expires_at DATETIME NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    confirmed_at DATETIME, receipt_json CLOB,
+    CONSTRAINT ck_intake_source CHECK ((source_type='MANUAL' AND purchase_order_id IS NULL) OR (source_type='PURCHASE' AND purchase_order_id IS NOT NULL)),
+    CONSTRAINT ck_intake_state CHECK ((state='PREVIEWED' AND confirmed_at IS NULL AND receipt_json IS NULL) OR (state='COMMITTED' AND confirmed_at IS NOT NULL AND receipt_json IS NOT NULL))
+);
+CREATE TABLE IF NOT EXISTS inventory_intake_copy (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY, intake_id BIGINT NOT NULL, line_key VARBINARY(128) NOT NULL,
+    copy_ordinal INT NOT NULL CHECK(copy_ordinal>0), book_id BIGINT NOT NULL, copy_id BIGINT NOT NULL UNIQUE,
+    purchase_item_id BIGINT, stock_flow_id BIGINT NOT NULL,
+    barcode_input VARCHAR(20) NOT NULL CHECK(barcode_input IN ('SCANNED','GENERATED')),
+    UNIQUE(intake_id,line_key,copy_ordinal),
+    FOREIGN KEY(intake_id) REFERENCES inventory_intake_request(id),
+    FOREIGN KEY(copy_id) REFERENCES book_copy(id), FOREIGN KEY(stock_flow_id) REFERENCES stock_flow(id)
 );

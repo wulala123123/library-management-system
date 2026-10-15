@@ -35,6 +35,7 @@ class MySqlRegressionTest {
     @Autowired BorrowRecordService borrows;
     @Autowired BorrowCodeService codes;
     @Autowired PurchaseService purchases;
+    @Autowired InventoryIntakeService intakes;
     @Autowired UserMapper userMapper;
     @Autowired BookMapper bookMapper;
     @Autowired BookCopyMapper copyMapper;
@@ -44,6 +45,11 @@ class MySqlRegressionTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired org.springframework.test.web.servlet.MockMvc mvc;
     @Autowired com.library.security.JwtTokenProvider tokens;
+    @Autowired org.springframework.security.crypto.password.PasswordEncoder encoder;
+    @org.junit.jupiter.api.BeforeEach void ensureTestAdministrator() {
+        if (jdbc.queryForObject("SELECT COUNT(*) FROM sys_user WHERE username='review_admin'", Long.class) == 0)
+            jdbc.update("INSERT INTO sys_user(username,password,real_name,role,status) VALUES ('review_admin',?,'合成验收管理员','ADMIN',1)", encoder.encode("ReviewAdministrator123"));
+    }
 
     private User user() {
         UserRequest r = new UserRequest(); r.setUsername("it_" + UUID.randomUUID().toString().substring(0,8));
@@ -168,22 +174,45 @@ class MySqlRegressionTest {
     }
     @Test void existingIsbnProcurementIsMergedAndOrderCannotBeRestockedTwice() throws Exception {
         Book b=book(2); PurchaseOrder order=order(b,3);
-        assertEquals(1,parallel(4,i->purchases.quickInstock(order.getId())));
+        var request = intakeRequest(order.getId()); long actor = intakeActor(); var preview = intakes.preview(request, actor);
+        var confirm = new InventoryIntakeContracts.ConfirmRequest(); confirm.setIdempotencyKey(request.getIdempotencyKey()); confirm.setPreviewDigest(preview.previewDigest());
+        assertEquals(4,parallel(4,i->intakes.confirm(preview.intakeId(),confirm,actor)));
         Book current=bookMapper.selectById(b.getId()); assertEquals(5,current.getStockTotal()); assertEquals(5,current.getStockAvailable());
         assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM stock_flow WHERE related_id=?",Integer.class,order.getId()));
+        assertEquals(3,jdbc.queryForObject("SELECT COUNT(*) FROM book_copy WHERE book_id=?",Integer.class,b.getId()));
+        assertThrows(InventoryIntakeException.class,()->purchases.quickInstock(order.getId()));
     }
     @Test void twoOrdersWithSameIsbnBothIncreaseStock() throws Exception {
         Book b=book(1); List<PurchaseOrder> orders=List.of(order(b,2),order(b,3));
-        assertEquals(2,parallel(2,i->purchases.quickInstock(orders.get(i).getId())));
+        assertEquals(2,parallel(2,i->receive(orders.get(i).getId())));
         assertEquals(6,bookMapper.selectById(b.getId()).getStockAvailable());
+        assertEquals(5,jdbc.queryForObject("SELECT COUNT(*) FROM book_copy WHERE book_id=?",Integer.class,b.getId()));
     }
     @Test void procurementMetadataConflictRollsBack() {
         Book b=book(1); PurchaseOrder order=order(b,2);
         jdbc.update("UPDATE purchase_item SET book_title='不同书名' WHERE order_id=?",order.getId());
-        assertThrows(RuntimeException.class,()->purchases.quickInstock(order.getId()));
+        assertThrows(RuntimeException.class,()->receive(order.getId()));
         assertEquals(1,bookMapper.selectById(b.getId()).getStockAvailable());
         assertEquals("APPROVED",orderMapper.selectById(order.getId()).getStatus());
         assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM stock_flow WHERE related_id=?",Integer.class,order.getId()));
+    }
+
+    private long intakeActor() { return jdbc.queryForObject("SELECT id FROM sys_user WHERE username='review_admin'",Long.class); }
+    private InventoryIntakeContracts.PreviewRequest intakeRequest(long order) {
+        var request=new InventoryIntakeContracts.PreviewRequest(); request.setIdempotencyKey(UUID.randomUUID().toString()); request.setReason("合成采购入库验收");
+        var source=new InventoryIntakeContracts.SourceInput(); source.setType("PURCHASE"); source.setPurchaseOrderId(order); request.setSource(source);
+        var lines=new ArrayList<InventoryIntakeContracts.LineInput>();
+        for (PurchaseItem item:itemMapper.selectList(new LambdaQueryWrapper<PurchaseItem>().eq(PurchaseItem::getOrderId,order))) {
+            var line=new InventoryIntakeContracts.LineInput(); line.setLineKey(UUID.randomUUID().toString()); var target=new InventoryIntakeContracts.TargetInput(); target.setPurchaseItemId(item.getId()); line.setTarget(target);
+            var copies=new ArrayList<InventoryIntakeContracts.CopyInput>(); for(int n=item.getInstockQuantity();n<item.getQuantity();n++){var copy=new InventoryIntakeContracts.CopyInput();copy.setInput("GENERATE");copies.add(copy);} line.setCopies(copies); lines.add(line);
+        }
+        request.setLines(lines); return request;
+    }
+    private void receive(long order) {
+        for(int retry=0;retry<3;retry++) {
+            var request=intakeRequest(order); var preview=intakes.preview(request,intakeActor()); var confirm=new InventoryIntakeContracts.ConfirmRequest(); confirm.setIdempotencyKey(request.getIdempotencyKey());confirm.setPreviewDigest(preview.previewDigest());
+            try {intakes.confirm(preview.intakeId(),confirm,intakeActor());return;} catch(InventoryIntakeException e){if(!e.reasonCode().equals("PREVIEW_STALE") || retry==2)throw e;}
+        }
     }
 
     @Test void auditWriteFailureRollsBackUserAndBookChanges() throws Exception {

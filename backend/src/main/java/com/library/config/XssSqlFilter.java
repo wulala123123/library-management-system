@@ -46,8 +46,13 @@ public class XssSqlFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String pathInfo = request.getRequestURI();
         String queryString = request.getQueryString();
+        boolean literalBarcode = "GET".equals(request.getMethod()) && "/book-copies".equals(servletPath(request));
+        String[] barcodeValues = literalBarcode ? request.getParameterValues("barcode") : null;
+        boolean duplicateBarcode = barcodeValues != null && barcodeValues.length != 1;
         if (containsSqlInjection(pathInfo) || containsPathTraversal(pathInfo)
-                || (queryString != null && (containsSqlInjection(queryString) || containsPathTraversal(queryString)))) {
+                || duplicateBarcode
+                || (literalBarcode ? unsafeNonBarcodeParameters(request)
+                    : queryString != null && (containsSqlInjection(queryString) || containsPathTraversal(queryString)))) {
             log.warn("请求路径检测到攻击模式，已拦截: path={}", pathInfo);
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.setContentType("application/json;charset=UTF-8");
@@ -55,12 +60,54 @@ public class XssSqlFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (literalBarcode) {
+            filterChain.doFilter(new XssSqlRequestWrapper(request, true), response);
+            return;
+        }
+
         String contentType = request.getContentType();
         if (contentType != null && contentType.contains(MediaType.APPLICATION_JSON_VALUE)) {
+            // These strict DTO endpoints treat barcodes and metadata as literal text. Rewriting JSON
+            // would change identity (and the legacy chunk decoder may split a UTF-8 codepoint).
+            // Keep the path/query checks above and leave all other routes on the existing wrappers.
+            if (literalJsonRoute(request)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
             filterChain.doFilter(new XssSqlJsonRequestWrapper(request), response);
         } else {
             filterChain.doFilter(new XssSqlRequestWrapper(request), response);
         }
+    }
+
+    static boolean literalJsonRoute(HttpServletRequest request) {
+        String path = servletPath(request);
+        return ("POST".equals(request.getMethod()) &&
+                (path.equals("/inventory-intakes/previews") || path.matches("/inventory-intakes/[0-9]+/confirm")))
+                || ("PUT".equals(request.getMethod()) && path.matches("/books/[0-9]+/metadata"));
+    }
+
+    private static String servletPath(HttpServletRequest request) {
+        String path = request.getServletPath();
+        // Mock servlet requests and some servlet mappings expose only requestURI.
+        if (path == null || path.isEmpty()) {
+            String uri = request.getRequestURI(), context = request.getContextPath();
+            if (uri == null || context == null || !uri.startsWith(context)) return "";
+            path = uri.substring(context.length());
+        }
+        return path;
+    }
+
+    private static boolean unsafeNonBarcodeParameters(HttpServletRequest request) {
+        // Let the servlet container decode parameter names/values exactly once. Encoded names
+        // therefore cannot disguise a second barcode or another SQL-bearing parameter.
+        for (Map.Entry<String, String[]> parameter : request.getParameterMap().entrySet()) {
+            String name = parameter.getKey();
+            if (containsSqlInjection(name) || containsPathTraversal(name)) return true;
+            if ("barcode".equals(name)) continue;
+            for (String value : parameter.getValue()) if (containsSqlInjection(value) || containsPathTraversal(value)) return true;
+        }
+        return false;
     }
 
     @Override
@@ -90,14 +137,20 @@ public class XssSqlFilter extends OncePerRequestFilter {
     }
 
     private static class XssSqlRequestWrapper extends HttpServletRequestWrapper {
+        private final boolean literalBarcode;
 
         public XssSqlRequestWrapper(HttpServletRequest request) {
-            super(request);
+            this(request, false);
+        }
+
+        public XssSqlRequestWrapper(HttpServletRequest request, boolean literalBarcode) {
+            super(request); this.literalBarcode = literalBarcode;
         }
 
         @Override
         public String getParameter(String name) {
             String value = super.getParameter(name);
+            if (literalBarcode && "barcode".equals(name)) return value;
             return sanitize(value);
         }
 
@@ -105,6 +158,7 @@ public class XssSqlFilter extends OncePerRequestFilter {
         public String[] getParameterValues(String name) {
             String[] values = super.getParameterValues(name);
             if (values == null) return null;
+            if (literalBarcode && "barcode".equals(name)) return values.clone();
             String[] sanitized = new String[values.length];
             for (int i = 0; i < values.length; i++) {
                 sanitized[i] = sanitize(values[i]);

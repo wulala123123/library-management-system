@@ -1,5 +1,5 @@
 <template>
-  <div class="book-management">
+  <div v-if="canManage" class="book-management">
     <div class="search-form">
       <el-form :model="queryParams" inline size="default">
         <el-form-item label="关键词">
@@ -32,7 +32,7 @@
     <div class="card-container">
       <div class="table-toolbar">
         <div class="toolbar-left">
-          <el-button type="primary" @click="handleAdd">新增图书</el-button>
+          <el-button type="primary" @click="handleAdd">新书目与首批入库</el-button>
           <el-button @click="handleExport">导出本页书目</el-button>
         </div>
         <div class="toolbar-right"><span>共 {{ total }} 种图书</span></div>
@@ -66,9 +66,10 @@
             <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '在馆' : '下架' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" align="center" fixed="right">
+        <el-table-column label="操作" width="320" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button type="primary" link size="small" @click="handleEdit(row)">书目资料</el-button>
+            <el-button type="primary" link size="small" @click="handleIntake(row)">登记实体册</el-button>
             <el-button type="success" link size="small" @click="handleBorrow(row)">借阅</el-button>
             <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
@@ -88,14 +89,18 @@
     </div>
 
     <BookDialog v-model:visible="dialogVisible" :book-id="editBookId" @success="fetchBookList" />
+    <IntakeDialog v-model:visible="intakeVisible" :book-id="intakeBook?.id" :book-title="intakeBook?.title" @success="fetchBookList" />
   </div>
+  <el-empty v-else description="仅管理员和馆员可管理书目与实体册。" />
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BookDialog from './components/BookDialog.vue'
+import IntakeDialog from './components/IntakeDialog.vue'
+import { useUserStore } from '@/store/modules/user'
 import { getBookPage, deleteBook } from '@/api/book'
 import { getCategoryList } from '@/api/category'
 import type { Book, BookCategory } from '@/types'
@@ -103,6 +108,7 @@ import { displayValue } from '@/utils/display'
 import { downloadCsv } from '@/utils/statistics'
 
 const router = useRouter()
+const user = useUserStore(), canManage = computed(() => user.isAdmin || user.isLibrarian)
 
 const loading = ref(false)
 const bookList = ref<Book[]>([])
@@ -110,10 +116,12 @@ const total = ref(0)
 const categories = ref<BookCategory[]>([])
 const dialogVisible = ref(false)
 const editBookId = ref<number | null>(null)
+const intakeVisible = ref(false), intakeBook = ref<Book | null>(null)
 
 const queryParams = reactive({ page: 1, size: 10, keyword: '', categoryId: undefined as number | undefined, status: null as number | null })
 
 onMounted(() => {
+  if (!canManage.value) return
   fetchBookList()
   fetchCategories()
 })
@@ -125,6 +133,7 @@ async function fetchCategories() {
 }
 
 async function fetchBookList() {
+  if (!canManage.value) return
   loading.value = true
   try {
     const res = await getBookPage(queryParams)
@@ -142,6 +151,7 @@ function handleSearch() { queryParams.page = 1; fetchBookList() }
 function resetQuery() { Object.assign(queryParams, { page: 1, keyword: '', categoryId: undefined, status: null }); fetchBookList() }
 function handleAdd() { editBookId.value = null; dialogVisible.value = true }
 function handleEdit(row: Book) { editBookId.value = row.id; dialogVisible.value = true }
+function handleIntake(row: Book) { if (canManage.value) { intakeBook.value = row; intakeVisible.value = true } }
 function handleBorrow(row: Book) { router.push({ path: '/borrow/code', query: { bookId: String(row.id), bookTitle: row.title } }) }
 function getImageUrl(url: string) {
   if (!url) return ''

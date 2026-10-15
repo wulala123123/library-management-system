@@ -13,7 +13,6 @@ import com.library.mapper.BookMapper;
 import com.library.mapper.BorrowRecordMapper;
 import com.library.service.BookService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +34,8 @@ public class BookServiceImpl implements BookService {
     private final BookCategoryMapper categoryMapper;
     private final BorrowRecordMapper borrowRecordMapper;
     private final com.library.mapper.BookCopyMapper copyMapper;
+    private final com.library.service.IntakeCatalog intakeCatalog;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
@@ -83,12 +84,7 @@ public class BookServiceImpl implements BookService {
     @Override
     @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public Book create(BookRequest request) {
-        Book book = new Book();
-        BeanUtils.copyProperties(request, book);
-        book.setStockAvailable(request.getStockTotal());
-        book.setStatus(request.getStatus() != null ? request.getStatus() : 1);
-        bookMapper.insert(book);
-        return book;
+        throw com.library.service.IntakeCatalog.error(409, "INTAKE_PREVIEW_REQUIRED", "新增库存请先预览并确认实体册入库");
     }
 
     @Override
@@ -98,26 +94,24 @@ public class BookServiceImpl implements BookService {
             throw new RuntimeException("图书ID不能为空");
         }
 
+        bookMapper.lockCatalog();
         Book book = bookMapper.lockById(request.getId());
         if (book == null) {
             throw new RuntimeException("图书不存在");
         }
 
-        int stockDiff = request.getStockTotal() - book.getStockTotal();
-        long trackedCopies = copyMapper.selectCount(new LambdaQueryWrapper<com.library.entity.BookCopy>()
-                .eq(com.library.entity.BookCopy::getBookId, book.getId()));
-        if (request.getStockTotal() < trackedCopies) throw new RuntimeException("总库存不能小于已登记馆内条码的册数");
-        BeanUtils.copyProperties(request, book);
-        book.setStockAvailable(book.getStockAvailable() + stockDiff);
-        if (book.getStockAvailable() < 0) throw new RuntimeException("总库存不能小于未归还册数");
-
-        bookMapper.updateById(book);
-        return book;
+        if (!java.util.Objects.equals(request.getStockTotal(), book.getStockTotal()))
+            throw com.library.service.IntakeCatalog.error(409, "STOCK_EDIT_REQUIRES_INTAKE", "库存变化请通过实体册入库办理");
+        intakeCatalog.updateAll(book.getId(), new com.library.dto.InventoryIntakeContracts.Metadata(request.getIsbn(), request.getTitle(),
+                request.getAuthor(), request.getPublisher(), request.getPublishDate(), request.getCategoryId(), request.getPrice(), request.getPages(),
+                request.getCoverImage(), request.getDescription(), request.getLocation(), request.getStatus() == null ? book.getStatus() : request.getStatus()));
+        return intakeCatalog.view(book.getId()).book();
     }
 
     @Override
     @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void delete(Long id) {
+        bookMapper.lockCatalog();
         Book book = bookMapper.lockById(id);
         if (book == null) {
             throw new RuntimeException("图书不存在");
@@ -128,18 +122,21 @@ public class BookServiceImpl implements BookService {
         if (activeBorrows > 0) {
             throw new RuntimeException("该图书有未归还的借阅记录，无法删除");
         }
+        if (book.getStockTotal() > 0 || book.getStockAvailable() > 0 || copyMapper.selectCount(new LambdaQueryWrapper<com.library.entity.BookCopy>().eq(com.library.entity.BookCopy::getBookId, id)) > 0)
+            throw com.library.service.IntakeCatalog.error(409, "BOOK_HAS_INVENTORY", "书目仍有库存或已登记实体册，无法删除");
         bookMapper.deleteById(id);
     }
 
     @Override
     @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void updateStatus(Long id, Integer status) {
+        if (status == null || status != 0 && status != 1) com.library.service.IntakeCatalog.invalid();
+        bookMapper.lockCatalog();
         Book book = bookMapper.lockById(id);
         if (book == null) {
             throw new RuntimeException("图书不存在");
         }
-        book.setStatus(status);
-        bookMapper.updateById(book);
+        jdbc.update("UPDATE book SET status=?,update_time=CURRENT_TIMESTAMP WHERE id=? AND deleted=0", status, id);
     }
 
     @Override
@@ -170,6 +167,7 @@ public class BookServiceImpl implements BookService {
         if (!ALLOWED_EXTENSIONS.contains(ext)) {
             throw new RuntimeException("仅支持 JPG、PNG、GIF、WEBP 格式的图片");
         }
+        bookMapper.lockCatalog();
         Book book = bookMapper.lockById(bookId);
         if (book == null) {
             throw new RuntimeException("图书不存在");
@@ -186,8 +184,7 @@ public class BookServiceImpl implements BookService {
             }
             file.transferTo(filePath.toFile());
             String relativePath = "/uploads/" + datePath + "/" + fileName;
-            book.setCoverImage(relativePath);
-            bookMapper.updateById(book);
+            jdbc.update("UPDATE book SET cover_image=?,update_time=CURRENT_TIMESTAMP WHERE id=? AND deleted=0", relativePath, bookId);
             return relativePath;
         } catch (IOException e) {
             throw new RuntimeException("图片上传失败，请重试");

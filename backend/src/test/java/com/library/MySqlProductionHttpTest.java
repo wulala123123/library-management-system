@@ -38,11 +38,14 @@ class MySqlProductionHttpTest {
     @Autowired ObjectMapper json;
     @Autowired CaptchaService captcha;
     @Autowired JdbcTemplate jdbc;
+    @Autowired org.springframework.security.crypto.password.PasswordEncoder encoder;
     final HttpClient client=HttpClient.newHttpClient();
     int httpPort;
     String nginxContainer;
     Path nginxConfig;
     @BeforeAll void startProductionProxyWhenRequested() throws Exception {
+        if (jdbc.queryForObject("SELECT COUNT(*) FROM sys_user WHERE username='review_admin'",Long.class)==0)
+            jdbc.update("INSERT INTO sys_user(username,password,real_name,role,status) VALUES ('review_admin',?,'合成HTTP验收管理员','ADMIN',1)",encoder.encode("ReviewAdministrator123"));
         httpPort=port;
         if (!"true".equals(System.getenv("CI_NGINX_HTTP"))) return;
         // Linux CI only: reuse the shipped routing/limits without changing the production application.
@@ -135,8 +138,18 @@ class MySqlProductionHttpTest {
     private com.fasterxml.jackson.databind.JsonNode createBook(String token) throws Exception {
         long category=success("/categories","POST",Map.of("name","验收"+UUID.randomUUID().toString().substring(0,8),
                 "parentId",0,"sortOrder",0,"status",1),token).path("id").asLong();
-        return success("/books","POST",Map.of("isbn",UUID.randomUUID().toString().substring(0,20),
-                "title","生产验收图书","categoryId",category,"stockTotal",2),token);
+        return createIntakeBook(Map.of("isbn",UUID.randomUUID().toString().substring(0,20),
+                "title","生产验收图书","categoryId",category),token);
+    }
+    private com.fasterxml.jackson.databind.JsonNode intakePreview(Map<String,Object> source,Map<String,Object> target,int quantity,String key,String token) throws Exception {
+        List<Map<String,Object>> copies=new ArrayList<>(); for(int n=0;n<quantity;n++)copies.add(Map.of("input","GENERATE"));
+        return success("/inventory-intakes/previews","POST",Map.of("idempotencyKey",key,"reason","合成真实HTTP入库验收","source",source,
+                "lines",List.of(Map.of("lineKey",UUID.randomUUID().toString(),"target",target,"copies",copies))),token);
+    }
+    private com.fasterxml.jackson.databind.JsonNode createIntakeBook(Map<String,Object> metadata,String token) throws Exception {
+        String key=UUID.randomUUID().toString(); var preview=intakePreview(Map.of("type","MANUAL"),Map.of("newBook",metadata),2,key,token);
+        var receipt=success("/inventory-intakes/"+preview.path("intakeId").asLong()+"/confirm","POST",Map.of("idempotencyKey",key,"previewDigest",preview.path("previewDigest").asText()),token);
+        return success("/books/"+receipt.path("books").get(0).path("bookId").asLong(),"GET",null,token);
     }
     @Test void bookCrudAllowsOptionalLocationAndClearingAnExistingLocation() throws Exception {
         String token=login();
@@ -145,18 +158,19 @@ class MySqlProductionHttpTest {
         for(String location:new String[]{null,"","A区-3层-01架"}) {
             var body=new LinkedHashMap<String,Object>();
             body.put("isbn",UUID.randomUUID().toString().substring(0,20));
-            body.put("title","位置选填验收图书"); body.put("categoryId",category); body.put("stockTotal",2);
+            body.put("title","位置选填验收图书"); body.put("categoryId",category);
             if(location!=null) body.put("location",location);
-            long id=success("/books","POST",body,token).path("id").asLong();
+            long id=createIntakeBook(body,token).path("id").asLong();
             assertEquals(location,jdbc.queryForObject("SELECT location FROM book WHERE id=?",String.class,id));
-            body.put("id",id); body.put("location","B区-2层-03架");
-            success("/books","PUT",body,token);
-            body.put("location","");
-            assertEquals("",success("/books","PUT",body,token).path("location").asText());
+            String path="/books/"+id+"/metadata";
+            String digest=success(path,"GET",null,token).path("metadataDigest").asText();
+            var changed=success(path,"PUT",Map.of("expectedMetadataDigest",digest,"changes",Map.of("location","B区-2层-03架")),token);
+            changed=success(path,"PUT",Map.of("expectedMetadataDigest",changed.path("metadataDigest").asText(),"changes",Map.of("location","")),token);
+            assertEquals("",changed.path("book").path("location").asText());
             assertEquals("",jdbc.queryForObject("SELECT location FROM book WHERE id=?",String.class,id));
             for(String invalid:List.of("<script>","A".repeat(101))) {
-                body.put("location",invalid);
-                assertEquals(400,send("/books","PUT",json.writeValueAsString(body),token).statusCode());
+                var invalidBody=Map.of("expectedMetadataDigest",changed.path("metadataDigest").asText(),"changes",Map.of("location",invalid));
+                assertEquals(400,send(path,"PUT",json.writeValueAsString(invalidBody),token).statusCode());
                 assertEquals("",jdbc.queryForObject("SELECT location FROM book WHERE id=?",String.class,id));
             }
         }
@@ -216,12 +230,38 @@ class MySqlProductionHttpTest {
         long order=success("/purchases","POST",Map.of("items",List.of(item)),token).path("id").asLong();
         assertEquals("PENDING",success("/purchases/"+order+"/submit","PUT",Map.of(),token).path("status").asText());
         assertEquals("APPROVED",success("/purchases/"+order+"/approve","PUT",Map.of("action","APPROVE"),token).path("status").asText());
-        success("/purchases/"+order+"/instock","PUT",Map.of(),token);
+        long purchaseItem=success("/purchases/"+order,"GET",null,token).path("items").get(0).path("id").asLong();
+        String key=UUID.randomUUID().toString(); var preview=intakePreview(Map.of("type","PURCHASE","purchaseOrderId",order),Map.of("purchaseItemId",purchaseItem),3,key,token);
+        var confirmation=Map.of("idempotencyKey",key,"previewDigest",preview.path("previewDigest").asText());
+        String confirmPath="/inventory-intakes/"+preview.path("intakeId").asLong()+"/confirm";
+        var receipt=success(confirmPath,"POST",confirmation,token);
         assertEquals("COMPLETED",success("/purchases/"+order,"GET",null,token).path("status").asText());
         assertEquals(5,success("/books/"+id,"GET",null,token).path("stockTotal").asInt());
         var repeated=send("/purchases/"+order+"/instock","PUT","{}",token);
-        assertTrue(repeated.statusCode()>=400 || json.readTree(repeated.body()).path("code").asInt()>=400);
+        assertEquals(409,repeated.statusCode());
+        assertEquals(receipt,success(confirmPath,"POST",confirmation,token));
+        assertEquals(3,receipt.path("copies").size());
         assertEquals(5,success("/books/"+id,"GET",null,token).path("stockAvailable").asInt());
+    }
+    @Test void exactRawBarcodeQueriesUseDecodedParameterNamesAndRejectDuplicateAndOtherAttackParameters() throws Exception {
+        String token=login(); long book=createBook(token).path("id").asLong();
+        String mark=UUID.randomUUID().toString().substring(0,8);
+        String fullUtf8=UUID.randomUUID().toString().replace("-", "").codePoints().mapToObj(c->new String(Character.toChars(0x1F300+c))).collect(java.util.stream.Collectors.joining())+"😀".repeat(32);
+        List<String> barcodes=List.of("000Aa"+mark+" ","零000绘本é😀"+mark,"javascript:plain"+mark,"onload=plain"+mark,"' OR 1=1 --"+mark,fullUtf8);
+        List<Map<String,Object>> copies=new ArrayList<>();for(String barcode:barcodes)copies.add(Map.of("input","SCANNED","barcode",barcode));
+        String key=UUID.randomUUID().toString();var preview=success("/inventory-intakes/previews","POST",Map.of("idempotencyKey",key,"reason","合成原文查询验收","source",Map.of("type","MANUAL"),
+                "lines",List.of(Map.of("lineKey",UUID.randomUUID().toString(),"target",Map.of("bookId",book),"copies",copies))),token);
+        success("/inventory-intakes/"+preview.path("intakeId").asLong()+"/confirm","POST",Map.of("idempotencyKey",key,"previewDigest",preview.path("previewDigest").asText()),token);
+        for(String barcode:barcodes) {
+            String encoded=java.net.URLEncoder.encode(barcode,StandardCharsets.UTF_8);
+            for(String parameter:List.of("barcode","bar%63ode")) {
+                var page=success("/book-copies?bookId="+book+"&"+parameter+"="+encoded,"GET",null,token);
+                assertEquals(1,page.path("total").asLong());assertEquals(barcode,page.path("records").get(0).path("barcode").asText());
+            }
+        }
+        assertEquals(400,send("/book-copies?barcode=first&bar%63ode=second","GET",null,token).statusCode());
+        assertEquals(400,send("/book-copies?barcode=javascript%3Aplain&keyword=1%3D1","GET",null,token).statusCode());
+        assertEquals(400,send("/book-copies-extra?barcode=1=1","GET",null,token).statusCode());
     }
     private HttpResponse<String> upload(String path,String token,byte[] content,String name,String mime) throws Exception {
         String boundary="repair-boundary";

@@ -29,10 +29,6 @@ export function approvePurchaseOrder(id: number, data: { action: string; comment
   return put<PurchaseOrder>(`/purchases/${id}/approve`, data)
 }
 
-export function quickInstock(id: number) {
-  return put<void>(`/purchases/${id}/instock`, {})
-}
-
 export function getApprovalRecords(orderId: number) {
   return get<ApprovalRecord[]>(`/purchases/${orderId}/approvals`)
 }

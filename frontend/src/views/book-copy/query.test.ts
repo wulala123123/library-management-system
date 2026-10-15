@@ -23,7 +23,10 @@ afterEach(() => wrappers.splice(0).forEach(wrapper => wrapper.unmount()))
 
 it('keeps exact barcode bytes including leading zeroes and spaces while switching to copy queries', async () => {
   const wrapper = page(); await flushPromises()
+  expect(wrapper.find('input[placeholder="书名 / ISBN / 作者"]').exists()).toBe(true)
+  expect(wrapper.find('input[placeholder="书名 / ISBN / 作者 / 条码"]').exists()).toBe(false)
   await wrapper.get('[data-test="copies"]').trigger('click'); await flushPromises()
+  expect(wrapper.find('input[placeholder="书名 / ISBN / 作者 / 条码"]').exists()).toBe(true)
   await wrapper.get('input[placeholder="完整条码，保留前导零"]').setValue(' 0000123 ')
   await wrapper.findAll('button').find(button => button.text() === '查询')!.trigger('click'); await flushPromises()
   expect(api.list).toHaveBeenLastCalledWith(expect.objectContaining({ barcode: ' 0000123 ', page: 1 }))

@@ -2,7 +2,7 @@
   <div v-if="canRead">
     <div class="search-form">
       <el-form inline @submit.prevent="search">
-        <el-form-item label="关键词"><el-input v-model="query.keyword" placeholder="书名 / ISBN / 作者 / 条码" clearable @keyup.enter="search" /></el-form-item>
+        <el-form-item label="关键词"><el-input v-model="query.keyword" :placeholder="tab === 'catalog' ? '书名 / ISBN / 作者' : '书名 / ISBN / 作者 / 条码'" clearable @keyup.enter="search" /></el-form-item>
         <el-form-item v-if="tab === 'copies'" label="精确条码"><el-input v-model="query.barcode" placeholder="完整条码，保留前导零" clearable @keyup.enter="search" /></el-form-item>
         <el-form-item v-if="tab === 'copies'" label="册状态"><el-select v-model="query.status" clearable placeholder="全部状态" style="width: 130px"><el-option value="AVAILABLE" label="可借" /><el-option value="BORROWED" label="在借" /><el-option value="OTHER" label="其他原状态" /></el-select></el-form-item>
         <el-form-item v-if="tab === 'copies'" label="册位置"><el-input v-model="query.location" :disabled="query.unassignedLocation" placeholder="实体册实际位置" clearable /></el-form-item>

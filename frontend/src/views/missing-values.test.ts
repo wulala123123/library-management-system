@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 const api = vi.hoisted(() => ({ detail: vi.fn(), books: vi.fn(), members: vi.fn() }))
 vi.mock('@/api/book', () => ({ getBookById: api.detail, getBookPage: api.books, deleteBook: vi.fn(), createBook: vi.fn(), updateBook: vi.fn(), uploadBookCover: vi.fn() }))
 vi.mock('@/api/category', () => ({ getCategoryList: vi.fn().mockResolvedValue([]) }))
+vi.mock('@/store/modules/user', () => ({ useUserStore: () => ({ isAdmin: true, isLibrarian: false }) }))
 vi.mock('@/api/borrowCode', () => ({ generateBorrowCode: vi.fn() }))
 vi.mock('@/api/legacyData', () => ({ getMigratedMembers: api.members, getMigrationSummary: vi.fn().mockResolvedValue({ batches: [], types: [] }), getLegacyRecord: vi.fn(), getLegacyRecords: vi.fn() }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }))

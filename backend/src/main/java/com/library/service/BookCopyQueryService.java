@@ -29,7 +29,7 @@ public class BookCopyQueryService {
     public PageResult<CopyRow> copies(int page, int size, String keyword, Long bookId, String status,
                                       String location, Boolean unassignedLocation, String barcode) {
         int p = page(page), s = size(size);
-        checkText(keyword, 200); checkText(location, 200); checkText(barcode, 64); checkId(bookId);
+        checkText(keyword, 200); checkText(location, 200); checkBarcode(barcode); checkId(bookId);
         if (status != null && !STATUSES.contains(status)) throw new IllegalArgumentException("实体册状态筛选无效");
         if (Boolean.TRUE.equals(unassignedLocation) && hasText(location)) throw new IllegalArgumentException("未分配位置不能同时指定位置");
         if (barcode != null && barcode.isEmpty()) throw new IllegalArgumentException("精确条码不能为空");
@@ -129,6 +129,17 @@ public class BookCopyQueryService {
     private int size(int value) { return Math.max(1, Math.min(100, value)); }
     private void checkId(Long value) { if (value != null && value <= 0) throw new IllegalArgumentException("编号无效"); }
     private void checkText(String value, int max) { if (value != null && value.length() > max) throw new IllegalArgumentException("查询条件过长"); }
+    private void checkBarcode(String value) {
+        if (value == null) return;
+        if (value.codePointCount(0, value.length()) > 64 || value.getBytes(StandardCharsets.UTF_8).length > 256)
+            throw new IllegalArgumentException("精确条码过长");
+        for (int i = 0; i < value.length();) {
+            char c = value.charAt(i);
+            if (Character.isSurrogate(c) && (!Character.isHighSurrogate(c) || i + 1 >= value.length() || !Character.isLowSurrogate(value.charAt(i + 1))))
+                throw new IllegalArgumentException("精确条码字符无效");
+            int cp = value.codePointAt(i); if (Character.isISOControl(cp)) throw new IllegalArgumentException("精确条码字符无效"); i += Character.charCount(cp);
+        }
+    }
     private boolean hasText(String value) { return value != null && !value.isEmpty(); }
     private String literalLike(String value) { return "%" + value.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%"; }
     private LocalDate date(ResultSet rs, String name) throws SQLException { return rs.getDate(name) == null ? null : rs.getDate(name).toLocalDate(); }

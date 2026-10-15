@@ -9,20 +9,18 @@ export interface BookPageParams {
   status?: number | null
 }
 
-export interface BookFormData {
-  id?: number
+export interface BookMetadata {
   isbn: string
   title: string
-  author?: string
-  publisher?: string
-  publishDate?: string
+  author?: string | null
+  publisher?: string | null
+  publishDate?: string | null
   categoryId: number
-  price?: number
-  pages?: number
-  coverImage?: string
-  description?: string
-  location?: string
-  stockTotal: number
+  price?: number | null
+  pages?: number | null
+  coverImage?: string | null
+  description?: string | null
+  location?: string | null
   status?: number | null
 }
 
@@ -37,12 +35,10 @@ export function getBookById(id: number) {
 export interface BookCopy { id: number; bookId: number; barcode: string; status: string; location?: string }
 export function getBookCopies(id: number) { return get<BookCopy[]>(`/books/${id}/copies`) }
 
-export function createBook(data: BookFormData) {
-  return post<Book>('/books', data)
-}
-
-export function updateBook(data: BookFormData) {
-  return put<Book>('/books', data)
+export interface BookMetadataView { book: Book; metadataDigest: string }
+export function getBookMetadata(id: number) { return get<BookMetadataView>(`/books/${id}/metadata`) }
+export function updateBookMetadata(id: number, expectedMetadataDigest: string, changes: Partial<BookMetadata>) {
+  return put<BookMetadataView>(`/books/${id}/metadata`, { expectedMetadataDigest, changes })
 }
 
 export function deleteBook(id: number) {

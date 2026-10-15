@@ -8,10 +8,10 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | 阶段 3 B30–B32 手工与采购统一实体入库实现及验收 |
-| 工作项状态 | `231201c` 已上线并通过独立复核；B22 七户登记及全范围核对完成；查询 `88dc996` 完整 CI 成功；隔离工具 v1 的排序规则清理失败已留证，生产未变；v2 首次隔离已通过，正在第二次新备复验及发布；入库新批次开始实现 |
+| 工作项状态 | 用户于 2026-10-16 明确恢复；入库前后端及发布工具返工已由经理验收，准备候选提交与完整Verify；查询 `88dc996` 仍为生产版本，V8尚未上线 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
-| 应用代码基线 | 已验收生产 `88dc996`，V1–V7；工作分支含文档 checkpoint `b562240`，新的入库实现尚未提交/验证 |
+| 应用代码基线 | 已验收生产 `88dc996`，V1–V7；工作分支文档 checkpoint `1a96a5e`；新的入库实现尚未提交/验证 |
 | 完整 Verify | 线上 [38752876666](https://github.com/wulala123123/library-management-system/actions/runs/38752876666) 成功，产物 `11982183030`；新入库候选须另跑完整 Verify |
 | 最近维护结果 | [逐册查询验收及上线](docs/archive/2026-10/catalog-query-2026-10-15.md)；[套餐及来源登记](docs/archive/2026-10/member-entitlements-2026-10-15.md)；[第一批](docs/archive/2026-10/member-business-batch1-2026-10-15.md)保留 |
 | 恢复依据 | `git status --short`、当前阶段勾选、下述有效执行者与私有证据 |
@@ -19,8 +19,8 @@
 ## 下一步
 
 1. B22 七户登记已完成，保留首次预览、V7 新备及隔离复验证据，禁止重跑整批导入或会员完整保存。
-2. 按已验收入库设计和后端固定契约接收两个实现，经理定向验收 V8 保值、库存事务、并发/回滚、精确条码、权限和预览/贴标；不足交回原执行者并等待。
-3. 新提交完整 Verify、最新全备及隔离升级通过后才发布入库能力；逐套餐数值未核实不启用收费或限制。
+2. 实现与补验已验收，保存 `logs/catalog-stage3/intake-manager-acceptance.json`；提交目标并运行完整 Verify，使用其独立产物。
+3. 已审 V8/精确DDL契约，绑定CI产物后执行两次最新全备隔离升级及冻结回退策略发布；逐套餐数值未核实不启用收费或限制。
 
 ## 有效执行者
 
@@ -28,10 +28,11 @@
 
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
-| 阶段 3 入库后端 / v1 | `/root/mapping_correction` | backend/ 内 V8、统一 Intake 模块、Book/Purchase/Normalize 旧旁路和必要测试；独占 backend/target 与本机新 33079 | 设计已验收；固定契约并直接给前端；私有证据 `logs/catalog-stage3/intake-backend/`，不进查询固定产物 |
-| 阶段 3 入库前端 / v1 | `/root/statistics_backend` | frontend/ 入库 API、book/purchase 预览确认/回执/贴标及必要依赖/测试，查询 placeholder 小修 | 使用后端精确契约；私有证据 `logs/catalog-stage3/intake-frontend/`；禁止后端/服务器操作 |
+| 阶段 3 入库后端 / v1，验收通过 | `/root/mapping_correction` | backend/ 内 V8、统一 Intake 模块、Book/Purchase/Normalize 旧旁路和必要测试 | 原90项及补验4项通过，候选 `2e85d580`；干净DDL经理已审；`handoff-supplement.md`，target/33079已释放，无运行进程 |
+| 阶段 3 入库前端 / v1，定向验收通过 | `/root/statistics_backend` | frontend/ 入库 API、book/purchase 预览确认/回执/贴标及必要依赖/测试，查询 placeholder 小修 | `acceptance.json` 与 `source-manifest.json`（清单摘要 `7f0224ec`）；日期/可空数值返工15项及build通过，其他37项和合成浏览器证据复用；经理已审，实际集成及完整CI待验证；无运行服务 |
+| 阶段 3 入库发布准备 / v1，工具验收通过 | `/root/intake_release_prepare` | 仅 `logs/catalog-stage3/intake-release/`；无网络、服务器或数据库操作 | metadata返工35项离线通过，经理核对工具 `b19c2fbf`、固定字段和失败冻结方案；最终提交、DDL 契约与产物待绑定，实际恢复/发布未执行 |
 
-B22 登记与查询实现已交付验收；查询发布工具 v2 已验收，实际发布由经理执行。原前端代理已中止。后续不重复派发已完成任务。入库设计已验收并转入上述实现；同一可写范围仅一执行者。会员资料与来源登记已上线，收费、扣次及套餐拦截继续留待后续阶段。
+B22 登记与查询实现已交付验收；查询发布工具 v2 已验收，实际发布由经理执行。原前端代理已中止。后续不重复派发已完成任务。经理独占公共文档及 `scripts/container_smoke.py` 的新入库验收适配；后端 owner 同时处理精确条码参数的最小局部过滤修正及安全回归。入库设计已验收；同一可写范围仅一执行者。会员资料与来源登记已上线，收费、扣次及套餐拦截继续留待后续阶段。
 
 ## 已确认与未决
 

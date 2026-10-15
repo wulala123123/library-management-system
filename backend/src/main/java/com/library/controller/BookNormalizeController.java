@@ -56,6 +56,7 @@ public class BookNormalizeController {
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public Result<Book> normalizeBook(@PathVariable Long id, @RequestBody BookNormalizeRequest request,
                                       Authentication authentication) {
+        bookMapper.lockCatalog();
         Book book = bookMapper.lockById(id);
         if (book == null) return Result.error(404, "图书不存在");
 
@@ -91,8 +92,11 @@ public class BookNormalizeController {
     public Result<Integer> batchNormalize(@RequestBody List<BookNormalizeRequest> requests,
                                           Authentication authentication) {
         int count = 0;
+        bookMapper.lockCatalog();
         String operatorName = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
-        for (BookNormalizeRequest req : requests) {
+        List<BookNormalizeRequest> ordered = new ArrayList<>(requests);
+        ordered.sort(Comparator.comparing(BookNormalizeRequest::getId, Comparator.nullsLast(Comparator.naturalOrder())));
+        for (BookNormalizeRequest req : ordered) {
             if (req.getId() == null) continue;
             Book book = bookMapper.lockById(req.getId());
             if (book == null) continue;

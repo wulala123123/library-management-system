@@ -20,6 +20,9 @@ importers:
       element-plus:
         specifier: ^2.14.7
         version: 2.14.7(vue@3.5.43(typescript@5.9.3))
+      jsbarcode:
+        specifier: 3.12.3
+        version: 3.12.3
       nprogress:
         specifier: ^0.2.0
         version: 0.2.0
@@ -33,12 +36,15 @@ importers:
         specifier: ^4.6.4
         version: 4.6.4(vue@3.5.43(typescript@5.9.3))
     devDependencies:
+      '@types/jsbarcode':
+        specifier: 3.11.4
+        version: 3.11.4
       '@types/nprogress':
         specifier: ^0.2.3
         version: 0.2.3
       '@vitejs/plugin-vue':
         specifier: 6.0.10
-        version: 6.0.10(vite@7.3.7(sass@1.105.1))(vue@3.5.43(typescript@5.9.3))
+        version: 6.0.10(vite@7.3.7(@types/node@26.6.5)(sass@1.105.1))(vue@3.5.43(typescript@5.9.3))
       '@vue/test-utils':
         specifier: 2.5.1
         version: 2.5.1(@vue/compiler-dom@3.5.43)(@vue/server-renderer@3.5.43)(vue@3.5.43(typescript@5.9.3))
@@ -53,10 +59,10 @@ importers:
         version: 5.9.3
       vite:
         specifier: 7.3.7
-        version: 7.3.7(sass@1.105.1)
+        version: 7.3.7(@types/node@26.6.5)(sass@1.105.1)
       vitest:
         specifier: 5.0.4
-        version: 5.0.4(jsdom@30.1.2)(vite@7.3.7(sass@1.105.1))
+        version: 5.0.4(@types/node@26.6.5)(jsdom@30.1.2)(vite@7.3.7(@types/node@26.6.5)(sass@1.105.1))
       vue-tsc:
         specifier: 3.3.13
         version: 3.3.13(typescript@5.9.3)
@@ -566,11 +572,17 @@ packages:
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
+  '@types/jsbarcode@3.11.4':
+    resolution: {integrity: sha512-VBcpTAnEMH0Gbh8JpV14CgOtJjCYjsvR2FoDRyoYPE0gUxtApf8N4c+HKEOyz/iiIZkMzqrzBA3XX7+KgKxxsA==}
+
   '@types/lodash-es@4.17.12':
     resolution: {integrity: sha512-0NgftHUcV4v34VhXm8QBSftKVXtbkBG3ViCjs6+eJ5a6y6Mi/jiFGPc1sC7QK+9BFhWrURE3EOggmWaSxL9OzQ==}
 
   '@types/lodash@4.17.26':
     resolution: {integrity: sha512-48NWfiY6oNcKOh47Z4h+sIvwcQR91h6KPhaYKgeMIrkT2jV82Gy90SErj60vW8jQbeMSOSbhIv3bZ7JoqPPVhA==}
+
+  '@types/node@26.6.5':
+    resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
 
   '@types/nprogress@0.2.3':
     resolution: {integrity: sha512-k7kRA033QNtC+gLc4VPlfnue58CM1iQLgn1IMAU8VPHGOj7oIHPp9UlhedEnD/Gl8evoCjwkZjlBORtZ3JByUA==}
@@ -911,6 +923,9 @@ packages:
   js-cookie@3.0.8:
     resolution: {integrity: sha512-yeJd4aNAdYZQjaon2bpD/Gb0B/omw7HQOsynXXcOiWVCacbBcPlgn8S/d1X6blFSaHao7ozqtW7NZW19xpCtIw==}
 
+  jsbarcode@3.12.3:
+    resolution: {integrity: sha512-CuHU9hC6dPsHF5oVFMo8NW76uQVjH4L22CsP4hW+dNnGywJHC/B0ThA1CTDVLnxKLrrpYdicBLnd2xsgTfRnvg==}
+
   jsdom@30.1.2:
     resolution: {integrity: sha512-0FFE/jE1rppmVfUrJUgxqXjcwolZYIGtAgj1pTussMhNZxIxi7W/PvfWaMNroGi2B36X1IKHbexpZ9DhkoOPiQ==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
@@ -1104,6 +1119,9 @@ packages:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
+
+  undici-types@8.9.0:
+    resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
   undici@8.11.2:
     resolution: {integrity: sha512-u4UB2/IrKdU6lFxumHmmo1a3fCQO5tzQllRorfoRS63txhrB7xTpSn1PftwC4qEHkOaqP95fCWW4lJzwErwzhQ==}
@@ -1568,30 +1586,38 @@ snapshots:
 
   '@types/estree@1.0.9': {}
 
+  '@types/jsbarcode@3.11.4':
+    dependencies:
+      '@types/node': 26.6.5
+
   '@types/lodash-es@4.17.12':
     dependencies:
       '@types/lodash': 4.17.26
 
   '@types/lodash@4.17.26': {}
 
+  '@types/node@26.6.5':
+    dependencies:
+      undici-types: 8.9.0
+
   '@types/nprogress@0.2.3': {}
 
   '@types/web-bluetooth@0.0.21': {}
 
-  '@vitejs/plugin-vue@6.0.10(vite@7.3.7(sass@1.105.1))(vue@3.5.43(typescript@5.9.3))':
+  '@vitejs/plugin-vue@6.0.10(vite@7.3.7(@types/node@26.6.5)(sass@1.105.1))(vue@3.5.43(typescript@5.9.3))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
-      vite: 7.3.7(sass@1.105.1)
+      vite: 7.3.7(@types/node@26.6.5)(sass@1.105.1)
       vue: 3.5.43(typescript@5.9.3)
 
-  '@vitest/mocker@5.0.4(vite@7.3.7(sass@1.105.1))':
+  '@vitest/mocker@5.0.4(vite@7.3.7(@types/node@26.6.5)(sass@1.105.1))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.4
       estree-walker: 3.0.3
       magic-string: 1.4.3
     optionalDependencies:
-      vite: 7.3.7(sass@1.105.1)
+      vite: 7.3.7(@types/node@26.6.5)(sass@1.105.1)
 
   '@vitest/spy@5.0.4': {}
 
@@ -1966,6 +1992,8 @@ snapshots:
 
   js-cookie@3.0.8: {}
 
+  jsbarcode@3.12.3: {}
+
   jsdom@30.1.2:
     dependencies:
       '@asamuzakjp/css-color': 7.1.5
@@ -2164,9 +2192,11 @@ snapshots:
 
   typescript@5.9.3: {}
 
+  undici-types@8.9.0: {}
+
   undici@8.11.2: {}
 
-  vite@7.3.7(sass@1.105.1):
+  vite@7.3.7(@types/node@26.6.5)(sass@1.105.1):
     dependencies:
       esbuild: 0.28.2
       fdir: 6.5.0(picomatch@4.0.7)
@@ -2175,13 +2205,14 @@ snapshots:
       rollup: 4.64.5
       tinyglobby: 0.2.17
     optionalDependencies:
+      '@types/node': 26.6.5
       fsevents: 2.3.3
       sass: 1.105.1
 
-  vitest@5.0.4(jsdom@30.1.2)(vite@7.3.7(sass@1.105.1)):
+  vitest@5.0.4(@types/node@26.6.5)(jsdom@30.1.2)(vite@7.3.7(@types/node@26.6.5)(sass@1.105.1)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.4(vite@7.3.7(sass@1.105.1))
+      '@vitest/mocker': 5.0.4(vite@7.3.7(@types/node@26.6.5)(sass@1.105.1))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -2192,9 +2223,10 @@ snapshots:
       tinybench: 6.2.2
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 7.3.7(sass@1.105.1)
+      vite: 7.3.7(@types/node@26.6.5)(sass@1.105.1)
       why-is-node-running: 3.2.1
     optionalDependencies:
+      '@types/node': 26.6.5
       jsdom: 30.1.2
     transitivePeerDependencies:
       - msw

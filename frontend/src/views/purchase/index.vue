@@ -1,5 +1,5 @@
 <template>
-  <div class="purchase-management">
+  <div v-if="canManage" class="purchase-management">
     <div class="card-container">
       <div class="table-toolbar">
         <div class="toolbar-left">
@@ -34,7 +34,7 @@
             <el-button v-if="row.status === 'DRAFT' || row.status === 'REJECTED'" type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button v-if="row.status === 'DRAFT' || row.status === 'REJECTED'" type="success" link size="small" @click="handleSubmit(row)">提交</el-button>
             <el-button v-if="row.status === 'PENDING'" type="warning" link size="small" @click="handleApprove(row)">审批</el-button>
-            <el-button v-if="row.status === 'APPROVED'" type="success" link size="small" @click="handleInstock(row)">入库</el-button>
+            <el-button v-if="row.status === 'APPROVED'" type="success" link size="small" @click="handleInstock(row)">登记入库</el-button>
             <el-button v-if="row.status === 'DRAFT'" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -123,16 +123,23 @@
         <el-button type="primary" @click="handleDoApprove">确定</el-button>
       </template>
     </el-dialog>
+    <IntakeDialog v-model:visible="intakeVisible" :purchase-order-id="intakeOrderId" @success="fetchData" />
   </div>
+  <el-empty v-else description="仅管理员和馆员可管理采购与入库。" />
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getPurchaseOrders, getPurchaseOrderById, createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, submitPurchaseOrder, approvePurchaseOrder, quickInstock } from '@/api/purchase'
+import { getPurchaseOrders, getPurchaseOrderById, createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, submitPurchaseOrder, approvePurchaseOrder } from '@/api/purchase'
 import { getDeptList, type Dept } from '@/api/dept'
 import { getCategoryList } from '@/api/category'
 import type { BookCategory } from '@/types'
+import { useUserStore } from '@/store/modules/user'
+import IntakeDialog from '@/views/book/components/IntakeDialog.vue'
+
+const user = useUserStore(), canManage = computed(() => user.isAdmin || user.isLibrarian)
+const intakeVisible = ref(false), intakeOrderId = ref<number | null>(null)
 
 const statusMap: Record<string, { label: string; type: string }> = {
   DRAFT: { label: '草稿', type: 'info' },
@@ -167,6 +174,7 @@ const approveAction = ref('APPROVE')
 const approveComment = ref('')
 
 onMounted(() => {
+  if (!canManage.value) return
   fetchData()
   fetchDepts()
   fetchCategories()
@@ -181,6 +189,7 @@ async function fetchCategories() {
 }
 
 async function fetchData() {
+  if (!canManage.value) return
   loading.value = true
   try {
     const res = await getPurchaseOrders({ page: page.value, size: size.value, status: statusFilter.value })
@@ -252,14 +261,7 @@ async function handleDoApprove() {
   } catch (e: any) { ElMessage.error(e.message || '审批失败') }
 }
 
-async function handleInstock(row: any) {
-  try {
-    await ElMessageBox.confirm('确定要执行入库吗？已有 ISBN 将增加库存，新 ISBN 将创建图书记录。', '提示', { type: 'warning' })
-    await quickInstock(row.id)
-    ElMessage.success('入库成功')
-    fetchData()
-  } catch {}
-}
+function handleInstock(row: any) { if (canManage.value) { intakeOrderId.value = row.id; intakeVisible.value = true } }
 
 async function handleDelete(row: any) {
   try {

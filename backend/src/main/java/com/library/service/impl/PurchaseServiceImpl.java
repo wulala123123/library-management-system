@@ -27,11 +27,9 @@ public class PurchaseServiceImpl implements PurchaseService {
     private final PurchaseOrderMapper orderMapper;
     private final PurchaseItemMapper itemMapper;
     private final ApprovalRecordMapper approvalMapper;
-    private final BookMapper bookMapper;
     private final BookCategoryMapper categoryMapper;
     private final DeptMapper deptMapper;
     private final UserMapper userMapper;
-    private final StockFlowMapper stockFlowMapper;
 
     @Override
     public PageResult<PurchaseOrder> getPage(int page, int size, String status, Long deptId) {
@@ -170,62 +168,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     @Override
     @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void quickInstock(Long id) {
-        PurchaseOrder order = orderMapper.lockById(id);
-        if (order == null) throw new RuntimeException("采购单不存在");
-        if (!"APPROVED".equals(order.getStatus())) throw new RuntimeException("只有已通过的采购单可以入库");
-
-        List<PurchaseItem> items = itemMapper.selectList(
-                new LambdaQueryWrapper<PurchaseItem>().eq(PurchaseItem::getOrderId, id).orderByAsc(PurchaseItem::getIsbn).orderByAsc(PurchaseItem::getId)
-        );
-        bookMapper.lockCatalog();
-
-        for (PurchaseItem item : items) {
-            int pendingQty = item.getQuantity() - item.getInstockQuantity();
-            if (pendingQty <= 0) continue;
-
-            String isbn = StringUtils.hasText(item.getIsbn()) ? item.getIsbn().trim() : "PO-" + id + "-" + item.getId();
-            Book book = bookMapper.lockByIsbn(isbn);
-            if (book == null) {
-                book = new Book();
-                book.setIsbn(isbn);
-                book.setTitle(item.getBookTitle());
-                book.setAuthor(item.getAuthor());
-                book.setPublisher(item.getPublisher());
-                book.setCategoryId(item.getCategoryId());
-                book.setPrice(item.getPrice());
-                book.setStockTotal(pendingQty);
-                book.setStockAvailable(pendingQty);
-                book.setStatus(1);
-                bookMapper.insert(book);
-            } else {
-                if (Integer.valueOf(1).equals(book.getDeleted())) throw new RuntimeException("此ISBN对应图书已删除，请先恢复或更正ISBN");
-                if (!java.util.Objects.equals(book.getTitle().trim(), item.getBookTitle().trim())
-                        || (StringUtils.hasText(item.getAuthor()) && !java.util.Objects.equals(book.getAuthor(), item.getAuthor()))
-                        || (StringUtils.hasText(item.getPublisher()) && !java.util.Objects.equals(book.getPublisher(), item.getPublisher()))) {
-                    throw new RuntimeException("ISBN对应图书的书名、作者或出版社不一致，请核对采购明细");
-                }
-                book.setStockTotal(Math.addExact(book.getStockTotal(), pendingQty));
-                book.setStockAvailable(Math.addExact(book.getStockAvailable(), pendingQty));
-                bookMapper.updateById(book);
-            }
-
-            StockFlow flow = new StockFlow();
-            flow.setBookId(book.getId());
-            flow.setFlowType("IN");
-            flow.setQuantity(pendingQty);
-            flow.setRelatedId(id);
-            flow.setOperatorId(order.getApplicantId());
-            flow.setRemark("采购单[" + order.getOrderNo() + "]自动入库");
-            stockFlowMapper.insert(flow);
-
-            item.setInstockQuantity(item.getInstockQuantity() + pendingQty);
-            itemMapper.updateById(item);
-        }
-
-        order.setStatus("COMPLETED");
-        orderMapper.updateById(order);
+        throw com.library.service.IntakeCatalog.error(409, "INTAKE_PREVIEW_REQUIRED", "采购入库请先预览并确认实体册入库");
     }
-
     @Override
     public List<ApprovalRecord> getApprovalRecords(Long orderId) {
         return approvalMapper.selectList(
