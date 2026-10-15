@@ -14,11 +14,11 @@
 
 ## 当前阶段
 
-阶段 0 的备份恢复、字段对照与原权益核对已验收，关键规则部分确认；阶段 1 的 B10–B14 已完成真实数据修正、完整验收及上线，现推进阶段 2 的统一会员资料、搜索和权限。文档整理与技能接入成果保留。下一工作项及恢复位置由 [PLAN](PLAN.md)维护。
+阶段 0 的备份恢复、字段对照与原权益核对已验收，关键规则部分确认；阶段 1 的 B10–B14 已上线；阶段 2 的会员资料独立范围、搜索及权限已验收上线，现推进套餐版本管理。文档整理与技能接入成果保留。下一工作项及恢复位置由 [PLAN](PLAN.md)维护。
 
 已具备基础借还、逐册迁入、历史资料查询和公网 HTTPS 访问。会员经营规则及统计仍有待修正，现行行为由[领域规范](docs/specs/README.md)记录。
 
-当前已验收线上代码为 `f98539403c1a6d18afcc217de254938ecdbfed2a`，已通过 [Verify 38724073975](https://github.com/wulala123123/library-management-system/actions/runs/38724073975)。上线及浏览器结果见[第一批验收](docs/archive/2026-10/member-business-batch1-2026-10-15.md)；服务器操作前仍需现场核对实际版本。
+当前已验收线上代码为 `baf3a9a535845f9d814cf2a919e4b39f482a6e5e`，已通过 [Verify 38729764437](https://github.com/wulala123123/library-management-system/actions/runs/38729764437)。上线及浏览器结果见[会员档案验收](docs/archive/2026-10/member-profiles-2026-10-15.md)；服务器操作前仍需现场核对实际版本。
 
 ## 总体路线
 
