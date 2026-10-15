@@ -19,6 +19,12 @@ public class BorrowRecord {
 
     private Long bookId;
 
+    private Long copyId;
+
+    private String dueDateKind;
+
+    private String sourceKey;
+
     private LocalDate borrowDate;
 
     private LocalDate dueDate;
@@ -52,6 +58,9 @@ public class BorrowRecord {
 
     @TableField(exist = false)
     private String bookIsbn;
+
+    @TableField(exist = false)
+    private String copyBarcode;
 
     @TableField(exist = false)
     private String bookCoverImage;

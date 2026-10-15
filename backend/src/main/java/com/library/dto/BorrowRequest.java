@@ -14,6 +14,8 @@ public class BorrowRequest {
     @NotNull(message = "图书ID不能为空")
     private Long bookId;
 
+    private Long copyId;
+
     @Min(value = 1, message = "借阅天数至少1天")
     @Max(value = 90, message = "借阅天数最多90天")
     private Integer borrowDays;

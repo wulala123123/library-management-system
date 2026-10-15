@@ -20,12 +20,10 @@ public class BookRequest {
     @Size(max = 200, message = "书名长度不超过200个字符")
     private String title;
 
-    @Size(max = 100, message = "作者名长度不超过100个字符")
-    @Pattern(regexp = "^[\\p{L}\\s\\-,\\.']*$", message = "作者名包含非法字符")
+    @Size(max = 200, message = "作者名长度不超过200个字符")
     private String author;
 
     @Size(max = 200, message = "出版社名称不超过200个字符")
-    @Pattern(regexp = "^[\\p{L}\\s\\-,\\.()0-9]*$", message = "出版社名称包含非法字符")
     private String publisher;
 
     private LocalDate publishDate;
@@ -33,7 +31,7 @@ public class BookRequest {
     @NotNull(message = "分类不能为空")
     private Long categoryId;
 
-    @DecimalMin(value = "0.01", message = "价格必须大于0")
+    @DecimalMin(value = "0.00", message = "价格不能为负数")
     @DecimalMax(value = "99999.99", message = "价格超出范围")
     private BigDecimal price;
 

@@ -17,7 +17,7 @@ files = ['backend/target/library-backend.jar', 'backend/Dockerfile', 'backend/ng
          '.env.example', 'deploy.sh', 'README.md', 'docs/deployment.md',
          'docs/database-migrations.md', 'docs/release-notes.md', 'docs/repair-results-2026-10-13.md',
          'docs/release-readiness-2026-10-13.md', 'docs/server-trial-2026-10-14.md',
-         'docs/renewal-days-2026-10-14.md']
+         'docs/renewal-days-2026-10-14.md', 'docs/huiben-migration-2026-10-15.md']
 for folder in ['frontend/dist', 'backend/docker', 'scripts']:
     files.extend(str(p.relative_to(root)).replace('\\', '/') for p in (root/folder).rglob('*') if p.is_file() and '__pycache__' not in p.parts)
 for file in files:

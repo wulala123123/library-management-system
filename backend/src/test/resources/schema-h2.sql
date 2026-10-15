@@ -296,3 +296,30 @@ CREATE TABLE IF NOT EXISTS book_normalize_log (
 
 CREATE TABLE IF NOT EXISTS inventory_mutex (id INT NOT NULL PRIMARY KEY);
 MERGE INTO inventory_mutex (id) KEY(id) VALUES (1);
+
+CREATE TABLE IF NOT EXISTS book_copy (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY, book_id BIGINT NOT NULL,
+    barcode VARCHAR(64) NOT NULL UNIQUE, status VARCHAR(20) DEFAULT 'AVAILABLE' NOT NULL,
+    location VARCHAR(200)
+);
+ALTER TABLE borrow_record ALTER COLUMN due_date DROP NOT NULL;
+ALTER TABLE borrow_record ADD COLUMN IF NOT EXISTS copy_id BIGINT;
+ALTER TABLE borrow_record ADD COLUMN IF NOT EXISTS due_date_kind VARCHAR(20) DEFAULT 'DATED' NOT NULL;
+ALTER TABLE borrow_record ADD COLUMN IF NOT EXISTS source_key VARCHAR(128) UNIQUE;
+CREATE TABLE IF NOT EXISTS member_profile (
+    user_id BIGINT PRIMARY KEY, source_key VARCHAR(128) NOT NULL UNIQUE,
+    card_no VARCHAR(100), plan_name VARCHAR(200), service_start DATE, service_end DATE,
+    used_uses INT, total_uses INT, deposit_amount DECIMAL(12,2), deposit_status VARCHAR(50), paid_fee DECIMAL(12,2)
+);
+CREATE TABLE IF NOT EXISTS legacy_record (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY, source_system VARCHAR(50) NOT NULL,
+    record_type VARCHAR(30) NOT NULL, source_key VARCHAR(128) NOT NULL,
+    display_name VARCHAR(255) NOT NULL, summary VARCHAR(1000), details_json LONGTEXT NOT NULL,
+    user_id BIGINT, book_id BIGINT, source_time TIMESTAMP,
+    UNIQUE (source_system, record_type, source_key)
+);
+CREATE TABLE IF NOT EXISTS migration_batch (
+    batch_key VARCHAR(128) PRIMARY KEY, source_hash CHAR(64) NOT NULL,
+    summary_json TEXT NOT NULL, imported_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+CREATE TABLE IF NOT EXISTS migration_check (id INT PRIMARY KEY, ok INT NOT NULL CHECK (ok = 1));

@@ -8,7 +8,8 @@
         LEFT JOIN book_category c ON b.category_id = c.id
         WHERE b.deleted = 0
         <if test="keyword != null and keyword != ''">
-            AND (b.title LIKE CONCAT('%', #{keyword}, '%') OR b.author LIKE CONCAT('%', #{keyword}, '%') OR b.isbn LIKE CONCAT('%', #{keyword}, '%'))
+            AND (b.title LIKE CONCAT('%', #{keyword}, '%') OR b.author LIKE CONCAT('%', #{keyword}, '%') OR b.isbn LIKE CONCAT('%', #{keyword}, '%')
+                OR EXISTS (SELECT 1 FROM book_copy bc WHERE bc.book_id = b.id AND bc.barcode = #{keyword}))
         </if>
         <if test="categoryId != null">
             AND b.category_id = #{categoryId}

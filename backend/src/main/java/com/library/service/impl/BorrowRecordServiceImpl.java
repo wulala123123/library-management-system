@@ -25,6 +25,7 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
     private final BorrowRecordMapper borrowRecordMapper;
     private final BookMapper bookMapper;
     private final UserMapper userMapper;
+    private final com.library.mapper.BookCopyMapper copyMapper;
 
     @Override
     public PageResult<BorrowRecord> getPage(int page, int size, String keyword, String status, Long userId) {
@@ -86,15 +87,33 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
         int borrowDays = request.getBorrowDays() != null ? request.getBorrowDays() : 30;
         if (borrowDays < 1 || borrowDays > 90) throw new RuntimeException("借阅天数必须为1-90天");
 
+        // The book row is locked first for both borrowing and returns.
+        com.library.entity.BookCopy copy = request.getCopyId() == null
+                ? copyMapper.lockAvailable(book.getId()) : copyMapper.lockById(request.getCopyId());
+        if (request.getCopyId() != null && (copy == null || !book.getId().equals(copy.getBookId()) || !"AVAILABLE".equals(copy.getStatus()))) {
+            throw new RuntimeException("所选馆内条码已借出或不属于该图书");
+        }
+        if (copy == null && copyMapper.selectCount(new LambdaQueryWrapper<com.library.entity.BookCopy>()
+                .eq(com.library.entity.BookCopy::getBookId, book.getId())) >= book.getStockTotal()) {
+            throw new RuntimeException("馆内条码状态与库存不一致，请先核对库存");
+        }
+
         BorrowRecord record = new BorrowRecord();
         record.setUserId(request.getUserId());
         record.setBookId(request.getBookId());
+        record.setCopyId(copy != null ? copy.getId() : null);
+        record.setDueDateKind("DATED");
         record.setBorrowDate(LocalDate.now());
         record.setDueDate(LocalDate.now().plusDays(borrowDays));
         record.setRenewCount(0);
         record.setStatus("BORROWING");
         record.setRemark(request.getRemark());
         borrowRecordMapper.insert(record);
+
+        if (copy != null) {
+            copy.setStatus("BORROWED");
+            if (copyMapper.updateById(copy) != 1) throw new RuntimeException("馆内条码状态更新失败");
+        }
 
         book.setStockAvailable(book.getStockAvailable() - 1);
         if (bookMapper.updateById(book) != 1) throw new RuntimeException("库存更新失败，请重试");
@@ -120,6 +139,14 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
 
         Book book = bookMapper.lockById(record.getBookId());
         if (book == null) throw new RuntimeException("关联图书不存在，请联系管理员");
+        if (record.getCopyId() != null) {
+            var copy = copyMapper.lockById(record.getCopyId());
+            if (copy == null || !book.getId().equals(copy.getBookId()) || !"BORROWED".equals(copy.getStatus())) {
+                throw new RuntimeException("馆内条码状态不一致，请联系管理员");
+            }
+            copy.setStatus("AVAILABLE");
+            if (copyMapper.updateById(copy) != 1) throw new RuntimeException("馆内条码状态更新失败");
+        }
         book.setStockAvailable(book.getStockAvailable() + 1);
         if (bookMapper.updateById(book) != 1) throw new RuntimeException("库存更新失败，请重试");
 
@@ -141,6 +168,8 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
         if (record.getRenewCount() >= 2) {
             throw new RuntimeException("续借次数已达上限(2次)");
         }
+
+        if (record.getDueDate() == null) throw new RuntimeException("原记录未设置归还期限，无需续借");
 
         record.setDueDate(record.getDueDate().plusDays(days));
         record.setStatus(record.getDueDate().isBefore(LocalDate.now()) ? "OVERDUE" : "BORROWING");

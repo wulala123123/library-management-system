@@ -11,6 +11,7 @@ export interface BorrowPageParams {
 export interface BorrowFormData {
   userId?: number
   bookId: number
+  copyId?: number
   borrowDays?: number
   remark?: string
 }

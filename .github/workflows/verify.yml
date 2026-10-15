@@ -43,6 +43,10 @@ jobs:
         run: |
           mvn -B -ntp -f backend/pom.xml dependency:list -DincludeScope=runtime -DoutputFile=target/runtime-dependencies.txt
           python3 scripts/audit_backend.py backend/target/runtime-dependencies.txt
+      - name: Reconciled data import transaction acceptance
+        env:
+          LIBRARY_TRANSFER_ACCEPTANCE: "1"
+        run: python3 scripts/test_huiben_import.py
       - name: Locked frontend install, types, page flows, build and dependency audit
         working-directory: frontend
         run: |

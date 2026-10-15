@@ -115,6 +115,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '权限管理', icon: 'Lock', roles: ['ADMIN'] },
       },
       {
+        path: 'legacy-data',
+        name: 'LegacyData',
+        component: () => import('@/views/legacy-data/index.vue'),
+        meta: { title: '原系统资料', icon: 'DocumentChecked', roles: ['ADMIN'] },
+      },
+      {
         path: 'profile',
         name: 'Profile',
         component: () => import('@/views/profile/index.vue'),

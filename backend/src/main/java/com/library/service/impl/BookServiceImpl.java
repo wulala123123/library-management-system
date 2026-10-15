@@ -34,6 +34,7 @@ public class BookServiceImpl implements BookService {
     private final BookMapper bookMapper;
     private final BookCategoryMapper categoryMapper;
     private final BorrowRecordMapper borrowRecordMapper;
+    private final com.library.mapper.BookCopyMapper copyMapper;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
@@ -103,6 +104,9 @@ public class BookServiceImpl implements BookService {
         }
 
         int stockDiff = request.getStockTotal() - book.getStockTotal();
+        long trackedCopies = copyMapper.selectCount(new LambdaQueryWrapper<com.library.entity.BookCopy>()
+                .eq(com.library.entity.BookCopy::getBookId, book.getId()));
+        if (request.getStockTotal() < trackedCopies) throw new RuntimeException("总库存不能小于已登记馆内条码的册数");
         BeanUtils.copyProperties(request, book);
         book.setStockAvailable(book.getStockAvailable() + stockDiff);
         if (book.getStockAvailable() < 0) throw new RuntimeException("总库存不能小于未归还册数");

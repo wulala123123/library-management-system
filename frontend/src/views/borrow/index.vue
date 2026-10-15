@@ -53,6 +53,7 @@
               <div class="book-text">
                 <strong>{{ row.bookTitle }}</strong>
                 <span class="isbn">{{ row.bookIsbn || '-' }}</span>
+                <span v-if="row.copyBarcode" class="isbn">馆内条码：{{ row.copyBarcode }}</span>
               </div>
             </div>
           </template>
@@ -63,7 +64,7 @@
         <el-table-column prop="dueDate" label="应还日期" width="120">
           <template #default="{ row }">
             <span :class="{ 'text-danger': isOverdue(row), 'text-warning': isDueSoon(row) }">
-              {{ formatDate(row.dueDate) }}
+              {{ dueDateText(row) }}
             </span>
           </template>
         </el-table-column>
@@ -93,7 +94,7 @@
                 type="primary"
                 link
                 size="small"
-                :disabled="row.renewCount >= 2"
+                :disabled="row.renewCount >= 2 || !row.dueDate"
                 @click="handleRenew(row)"
               >续借</el-button>
             </template>
@@ -128,6 +129,7 @@ import { getBorrowPage, returnBook } from '@/api/borrow'
 import type { BorrowRecord } from '@/types'
 import BorrowDialog from './components/BorrowDialog.vue'
 import RenewDialog from './components/RenewDialog.vue'
+import { dueDateText } from '@/utils/borrowDates'
 
 const loading = ref(false)
 const borrowList = ref<BorrowRecord[]>([])
@@ -162,7 +164,7 @@ async function handleReturn(record: BorrowRecord) {
     await ElMessageBox.confirm(
       `确认归还《${record.bookTitle}》？\n读者：${record.userName}\n${isOverdue(record) ? '⚠️ 该书已逾期' : ''}`,
       '办理归还',
-      { confirmButtonText: '确认归还', cancelButtonText: '取消', type: 'info', dangerouslyUseHTMLString: true },
+      { confirmButtonText: '确认归还', cancelButtonText: '取消', type: 'info', dangerouslyUseHTMLString: false },
     )
     await returnBook(record.id)
     ElMessage.success(`《${record.bookTitle}》归还成功`)
@@ -179,11 +181,12 @@ function handleRenew(record: BorrowRecord) {
 function formatDate(dateStr?: string): string { if (!dateStr) return '-'; return dateStr.split('T')[0] }
 
 function isOverdue(record: BorrowRecord): boolean {
+  if (!record.dueDate) return false
   return record.status === 'OVERDUE' || (record.status === 'BORROWING' && new Date(record.dueDate) < new Date())
 }
 
 function isDueSoon(record: BorrowRecord): boolean {
-  if (record.status !== 'BORROWING') return false
+  if (record.status !== 'BORROWING' || !record.dueDate) return false
   const diff = new Date(record.dueDate).getTime() - new Date().getTime()
   return diff > 0 && diff <= 3 * 24 * 60 * 60 * 1000
 }

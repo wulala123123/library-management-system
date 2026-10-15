@@ -8,13 +8,19 @@
       </el-form-item>
 
       <el-form-item label="选择图书" prop="bookId">
-        <el-select v-model="form.bookId" filterable remote placeholder="搜索图书名称/ISBN" style="width: 100%" :remote-method="searchBooks" :loading="bookLoading">
+        <el-select v-model="form.bookId" filterable remote placeholder="搜索图书名称/ISBN/馆内条码" style="width: 100%" :remote-method="searchBooks" :loading="bookLoading" @change="loadCopies">
           <el-option v-for="b in bookOptions" :key="b.id" :label="`${b.title} (${b.isbn})`" :value="b.id">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span>{{ b.title }}</span>
               <span style="color: #999; font-size: 12px;">库存:{{ b.stockAvailable ?? b.stockTotal }}</span>
             </div>
           </el-option>
+        </el-select>
+      </el-form-item>
+
+      <el-form-item v-if="copyOptions.length" label="馆内条码">
+        <el-select v-model="form.copyId" placeholder="自动分配可借册" clearable style="width: 100%">
+          <el-option v-for="copy in copyOptions" :key="copy.id" :value="copy.id" :label="`${copy.barcode}${copy.status === 'AVAILABLE' ? '（可借）' : '（已借出）'}`" :disabled="copy.status !== 'AVAILABLE'" />
         </el-select>
       </el-form-item>
 
@@ -39,7 +45,7 @@ import { ref, reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { adminBorrowBook } from '@/api/borrow'
-import { getBookPage } from '@/api/book'
+import { getBookPage, getBookCopies, type BookCopy } from '@/api/book'
 import { searchUsers as searchUsersApi } from '@/api/user'
 
 interface Props { visible: boolean }
@@ -53,10 +59,14 @@ const bookLoading = ref(false)
 
 const userOptions = ref<any[]>([])
 const bookOptions = ref<any[]>([])
+const copyOptions = ref<BookCopy[]>([])
+const bookSearchText = ref('')
+let copyRequest = 0
 
 const form = reactive({
   userId: undefined as number | undefined,
   bookId: undefined as number | undefined,
+  copyId: undefined as number | undefined,
   borrowDays: 30,
   remark: '',
 })
@@ -73,9 +83,25 @@ watch(() => props.visible, (val) => {
 
 function resetForm() {
   if (formRef.value) formRef.value.resetFields()
-  Object.assign(form, { userId: undefined, bookId: undefined, borrowDays: 30, remark: '' })
+  Object.assign(form, { userId: undefined, bookId: undefined, copyId: undefined, borrowDays: 30, remark: '' })
   userOptions.value = []
   bookOptions.value = []
+  copyOptions.value = []
+  bookSearchText.value = ''
+  copyRequest++
+}
+
+async function loadCopies(id: number) {
+  const request = ++copyRequest
+  form.copyId = undefined
+  copyOptions.value = []
+  try {
+    const copies = await getBookCopies(id)
+    if (request !== copyRequest) return
+    copyOptions.value = copies || []
+    const exactCopy = copies?.find(c => c.barcode === bookSearchText.value)
+    form.copyId = exactCopy?.id
+  } catch { /* API displays the error; keep automatic allocation available. */ }
 }
 
 async function searchUsers(query: string) {
@@ -90,6 +116,7 @@ async function searchUsers(query: string) {
 async function searchBooks(query: string) {
   if (!query || query.length < 1) return
   bookLoading.value = true
+  bookSearchText.value = query
   try {
     const res = await getBookPage({ page: 1, size: 20, keyword: query })
     bookOptions.value = res?.records || []
@@ -107,6 +134,7 @@ async function handleSubmit() {
       await adminBorrowBook({
         userId: form.userId!,
         bookId: form.bookId!,
+        copyId: form.copyId,
         borrowDays: form.borrowDays,
         remark: form.remark || undefined,
       })

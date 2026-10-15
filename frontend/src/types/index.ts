@@ -50,7 +50,10 @@ export interface BorrowRecord {
   bookId: number
   bookTitle: string
   borrowDate: string
-  dueDate: string
+  dueDate: string | null
+  dueDateKind?: 'DATED' | 'UNLIMITED' | 'UNKNOWN'
+  copyId?: number
+  copyBarcode?: string
   returnDate: string
   renewCount: number
   status: 'BORROWING' | 'RETURNED' | 'OVERDUE'

@@ -30,7 +30,7 @@
           <el-table-column prop="dueDate" label="应还日期" width="120">
             <template #default="{ row }">
               <span :class="{ 'text-danger': isOverdue(row), 'text-warning': isDueSoon(row) }">
-                {{ formatDate(row.dueDate) }}
+                {{ dueDateText(row) }}
                 <el-tag v-if="isOverdue(row)" size="small" type="danger" effect="dark" style="margin-left: 4px;">逾期</el-tag>
                 <el-tag v-else-if="isDueSoon(row)" size="small" type="warning" effect="light" style="margin-left: 4px;">即将到期</el-tag>
               </span>
@@ -48,7 +48,7 @@
                   type="success"
                   link
                   size="small"
-                  :disabled="row.renewCount >= 2 || row.status === 'OVERDUE'"
+                  :disabled="row.renewCount >= 2 || row.status === 'OVERDUE' || !row.dueDate"
                   @click="handleRenew(row)"
                 >
                   续借
@@ -104,6 +104,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyBorrows, selfReturnBook } from '@/api/borrow'
 import type { BorrowRecord } from '@/types'
 import RenewDialog from './components/RenewDialog.vue'
+import { dueDateText } from '@/utils/borrowDates'
 
 const router = useRouter()
 const loading = ref(false)
@@ -162,11 +163,12 @@ async function handleReturn(record: BorrowRecord) {
 function formatDate(dateStr?: string): string { if (!dateStr) return '-'; return dateStr.split('T')[0] }
 
 function isOverdue(record: BorrowRecord): boolean {
+  if (!record.dueDate) return false
   return record.status === 'OVERDUE' || (record.status === 'BORROWING' && new Date(record.dueDate) < new Date())
 }
 
 function isDueSoon(record: BorrowRecord): boolean {
-  if (record.status !== 'BORROWING') return false
+  if (record.status !== 'BORROWING' || !record.dueDate) return false
   const due = new Date(record.dueDate)
   const now = new Date()
   const diff = due.getTime() - now.getTime()

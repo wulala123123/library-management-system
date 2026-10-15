@@ -9,10 +9,12 @@
                b.title AS book_title,
                b.isbn AS book_isbn,
                b.cover_image AS book_cover_image,
+               bc.barcode AS copy_barcode,
                COALESCE(f.fine_amount, 0) AS fine_amount
         FROM borrow_record br
         LEFT JOIN sys_user u ON br.user_id = u.id
         LEFT JOIN book b ON br.book_id = b.id
+        LEFT JOIN book_copy bc ON br.copy_id = bc.id
         LEFT JOIN (
             SELECT borrow_id, SUM(amount) AS fine_amount
             FROM fine_record
@@ -21,7 +23,8 @@
         ) f ON br.id = f.borrow_id
         WHERE br.deleted = 0
         <if test="keyword != null and keyword != ''">
-            AND (u.real_name LIKE CONCAT('%', #{keyword}, '%') OR b.title LIKE CONCAT('%', #{keyword}, '%'))
+            AND (u.real_name LIKE CONCAT('%', #{keyword}, '%') OR b.title LIKE CONCAT('%', #{keyword}, '%')
+                OR b.isbn LIKE CONCAT('%', #{keyword}, '%') OR bc.barcode = #{keyword})
         </if>
         <if test="status == 'ACTIVE'">
             AND br.status IN ('BORROWING', 'OVERDUE')

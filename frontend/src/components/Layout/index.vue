@@ -99,6 +99,10 @@
               <el-icon><Lock /></el-icon>
               <transition name="fade"><span v-if="!isCollapsed">权限管理</span></transition>
             </router-link>
+            <router-link v-if="isAdmin" to="/legacy-data" class="nav-item" :class="{ active: route.path === '/legacy-data' }">
+              <el-icon><DocumentChecked /></el-icon>
+              <transition name="fade"><span v-if="!isCollapsed">原系统资料</span></transition>
+            </router-link>
           </div>
         </nav>
 

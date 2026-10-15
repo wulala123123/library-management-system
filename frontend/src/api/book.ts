@@ -34,6 +34,9 @@ export function getBookById(id: number) {
   return get<Book>(`/books/${id}`)
 }
 
+export interface BookCopy { id: number; bookId: number; barcode: string; status: string; location?: string }
+export function getBookCopies(id: number) { return get<BookCopy[]>(`/books/${id}/copies`) }
+
 export function createBook(data: BookFormData) {
   return post<Book>('/books', data)
 }

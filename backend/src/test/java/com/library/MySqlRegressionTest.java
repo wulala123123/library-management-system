@@ -37,6 +37,7 @@ class MySqlRegressionTest {
     @Autowired PurchaseService purchases;
     @Autowired UserMapper userMapper;
     @Autowired BookMapper bookMapper;
+    @Autowired BookCopyMapper copyMapper;
     @Autowired BorrowRecordMapper borrowMapper;
     @Autowired PurchaseOrderMapper orderMapper;
     @Autowired PurchaseItemMapper itemMapper;
@@ -86,7 +87,7 @@ class MySqlRegressionTest {
     @Test void allMappedEntityColumnsExist() {
         for (String name : List.of("User","Book","BookCategory","BorrowRecord","FineRecord","Publisher","Dept",
                 "Bookshelf","BookshelfStorey","BookLocation","PurchaseTemplate","PurchaseOrder","PurchaseItem",
-                "ApprovalRecord","BookResource","Notice","BorrowCode","StockFlow","PermissionLog","BookNormalizeLog")) {
+                "ApprovalRecord","BookResource","Notice","BorrowCode","StockFlow","PermissionLog","BookNormalizeLog","BookCopy")) {
             try {
                 var info = com.baomidou.mybatisplus.core.metadata.TableInfoHelper.getTableInfo(Class.forName("com.library.entity."+name));
                 assertNotNull(info, name);
@@ -98,6 +99,18 @@ class MySqlRegressionTest {
         Book b=book(1); List<User> readers=new ArrayList<>(); for(int i=0;i<8;i++)readers.add(user());
         assertEquals(1,parallel(8,i->borrow(readers.get(i),b)));
         assertEquals(0,bookMapper.selectById(b.getId()).getStockAvailable());
+    }
+
+    @Test void concurrentScansCannotLendTheSameBarcodeTwice() throws Exception {
+        Book b = book(2);
+        BookCopy copy = new BookCopy(); copy.setBookId(b.getId()); copy.setBarcode(UUID.randomUUID().toString()); copy.setStatus("AVAILABLE"); copyMapper.insert(copy);
+        List<User> readers = new ArrayList<>(); for (int i = 0; i < 6; i++) readers.add(user());
+        assertEquals(1, parallel(6, i -> {
+            BorrowRequest request = new BorrowRequest(); request.setUserId(readers.get(i).getId()); request.setBookId(b.getId()); request.setCopyId(copy.getId());
+            borrows.borrow(request);
+        }));
+        assertEquals("BORROWED", copyMapper.selectById(copy.getId()).getStatus());
+        assertEquals(1, bookMapper.selectById(b.getId()).getStockAvailable());
     }
     @Test void sameReaderCannotBypassLimitWithDifferentBooks() throws Exception {
         User u=user(); List<Book> titles=new ArrayList<>(); for(int i=0;i<12;i++)titles.add(book(1));
