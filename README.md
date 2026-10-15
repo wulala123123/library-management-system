@@ -2,7 +2,7 @@
 
 Vue 3、TypeScript、Element Plus 前端与 Java 17、Spring Boot 3、MyBatis Plus、MySQL 8 后端。提供读者注册、图书分类与目录、借还续借、借阅码、采购、库存、文件、用户和权限日志。
 
-修复计划 52/52 项完成，当前后端 81 项、前端 16 项、生产 Nginx HTTP 和实际容器启动、更新、回退、备份恢复均通过。服务器在本机 `127.0.0.1:18080` 试运行；2026 年 10 月 15 日已更新自定义续借天数，默认 30 天，可选 1–90 天。详情见 [续借天数与验收](docs/renewal-days-2026-10-14.md)、[服务器试运行](docs/server-trial-2026-10-14.md)、[修复记录](docs/repair-results-2026-10-13.md) 和 [部署复审](docs/release-readiness-2026-10-13.md)。部署前先阅读 [部署与恢复](docs/deployment.md) 和 [数据库迁移](docs/database-migrations.md)。
+修复计划 52/52 项完成，当前后端 82 项、前端 20 项、生产 Nginx HTTP 和实际容器启动、更新、回退、备份恢复均通过。服务器在本机 `127.0.0.1:18080` 试运行；2026 年 10 月 15 日已更新自定义续借天数（默认 30 天，可选 1–90 天）及馆藏位置选填修复。详情见 [续借天数与验收](docs/renewal-days-2026-10-14.md)、[服务器试运行](docs/server-trial-2026-10-14.md)、[修复记录](docs/repair-results-2026-10-13.md) 和 [部署复审](docs/release-readiness-2026-10-13.md)。部署前先阅读 [部署与恢复](docs/deployment.md) 和 [数据库迁移](docs/database-migrations.md)。
 
 ## 本地开发
 
