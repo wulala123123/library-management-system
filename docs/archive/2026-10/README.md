@@ -15,6 +15,7 @@
 - [会员整合第一批](member-business-batch1-2026-10-15.md)
 - [统一会员档案](member-profiles-2026-10-15.md)
 - [套餐版本与会员权益](member-entitlements-2026-10-15.md)
+- [书目与实体册查询](catalog-query-2026-10-15.md)
 
 ## 候选包来源
 
