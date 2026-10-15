@@ -2,6 +2,7 @@ package com.library.controller;
 
 import com.library.common.PageResult;
 import com.library.common.Result;
+import com.library.dto.LegacyMemberResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,8 +26,9 @@ public class LegacyDataController {
     }
 
     @GetMapping("/members")
-    public Result<List<Map<String, Object>>> members() {
-        return Result.success(jdbc.queryForList("SELECT p.*, u.real_name, u.phone, u.username FROM member_profile p JOIN sys_user u ON p.user_id = u.id WHERE u.deleted = 0 ORDER BY p.service_end DESC, p.user_id"));
+    public Result<List<LegacyMemberResponse>> members() {
+        return Result.success(jdbc.queryForList("SELECT p.*, u.real_name, u.phone, u.username FROM member_profile p JOIN sys_user u ON p.user_id = u.id WHERE u.deleted = 0 ORDER BY p.service_end DESC, p.user_id")
+                .stream().map(LegacyMemberResponse::new).toList());
     }
 
     @GetMapping("/records")

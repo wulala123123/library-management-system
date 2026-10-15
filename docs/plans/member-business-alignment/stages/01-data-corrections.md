@@ -15,3 +15,7 @@
 2026 年 10 月 15 日：B12–B14 实现已完成经理技术验收，尚未上线。后端 7 项定向测试通过；前端 Node 24.19.0 / pnpm 11.25.0 下 34 项测试、类型检查与生产构建通过。统计包含十项统一指标、逐册与库存差异核对、同源基础指标 CSV；空值保留已知零值和字符串标识。完整 Verify CI、隔离真实快照升级及生产效果尚待验收，因此任务暂不勾选。
 
 候选证据：`backend/target/surefire-reports/com.library.controller.StatisticsControllerTest.txt`，私有 `logs/member-business-batch1/frontend-evidence.json`、`frontend-candidate-sha256.txt`、测试和构建日志。B10–B11 v2 工具已接纳：13 项单测、独立 MySQL 8.4 事务及权限验收通过，包含回滚、漂移拦截、并发、幂等、定向恢复及触发器检查。v1 的 DML 连接权限缺口已返工，不用于生产。工具文件哈希及报告在私有 `logs/b10-b11-unlimited-tests/candidate-evidence-v2.json`；MySQL 8.0.44 及完整发布验收待 CI，真实修正尚未执行。
+
+后续现场：`e70b33f` 已通过完整 [Verify 38721357111](https://github.com/wulala123123/library-management-system/actions/runs/38721357111)，完成真实备份隔离演练、正式预览、校验备份、定向修正与首次部署。修正前后全表及字段核对通过，重复执行零变化。但生产后置验收发现全局 NON_NULL 使会员接口省略 NULL `total_uses`，页面将明确不限显示为待核实，因此整批仍未完成。原隔离脚本用 `get()` 比较 None 的断言不足，现补充字段必须存在的验收；原后端执行者负责显式空值接口返工。服务健康，首次结果保留，后续只升级代码，不重复修正真实数据。
+
+接口返工已技术验收：`LegacyMemberResponse` 仅对 `total_uses` 明确输出 NULL，保留零、有限次数和其余原列，管理员权限不变。实际应用序列化配置下先以字段存在断言复现，再通过 7 项 MockMvc 用例。二次隔离脚本加强字段存在检查，使用独立 `member-business-batch1-null-contract` 私有目录、项目和端口，保留首次证据；等待新候选完整 CI 和再次上线核对。
