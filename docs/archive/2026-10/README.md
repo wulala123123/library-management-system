@@ -12,6 +12,7 @@
 - [续借天数更新](renewal-days-2026-10-14.md)
 - [绘本馆数据迁入](huiben-migration-2026-10-15.md)
 - [文档体系维护](documentation-maintenance-2026-10-15.md)
+- [会员整合第一批](member-business-batch1-2026-10-15.md)
 
 ## 候选包来源
 

@@ -7,43 +7,46 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | 第一批 B10–B14 交付验收、完整 CI 与发布；B03 剩余规则确认 |
-| 工作项状态 | 首次真实修正已核对；NULL 接口契约修复已接纳，准备新候选完整 CI，整批未完成 |
-| 阶段定义 | [阶段 0 基线与规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
-| 工作分支 | `codex/member-business-batch1`，保留既有文档整理与技能接入差异 |
-| 应用代码基线 | 生产 `9ebf526`；候选 `e70b33ff104ec37ee65c777376993616d7820ccd`，已推送 main |
-| 完整 Verify | [38721357111](https://github.com/wulala123123/library-management-system/actions/runs/38721357111) 已全部通过；分发产物 `11965677465` |
-| 最近维护结果 | [文档体系整理已验证](docs/archive/2026-10/documentation-maintenance-2026-10-15.md)，[项目经理技能](docs/development/skills.md)已接入；本地变更待提交 |
-| 恢复依据 | `git status --short`、本文件及当前阶段的勾选状态 |
+| 下一工作项 | 阶段 2 统一会员资料、搜索、现有权益展示及权限 |
+| 工作项状态 | 进行中；B24–B25 完整套餐版本及后续收费/借还限制另行验收 |
+| 阶段定义 | [阶段 2](docs/plans/member-business-alignment/stages/02-membership.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
+| 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
+| 应用代码基线 | 已验收生产及本地 HEAD `f98539403c1a6d18afcc217de254938ecdbfed2a`，新阶段实现尚未提交 |
+| 完整 Verify | [38724073975](https://github.com/wulala123123/library-management-system/actions/runs/38724073975) 全部通过；产物 `11968080287` 只对应已发布第一批 |
+| 最近维护结果 | [B00–B02、B10–B14 第一批验收及上线](docs/archive/2026-10/member-business-batch1-2026-10-15.md) |
+| 恢复依据 | `git status --short`、当前阶段勾选、下述有效执行者与私有证据 |
 
 ## 下一步
 
-1. B00–B02 已验证；完整备份已在新隔离项目恢复，数据库全表与上传文件一致，生产未变。来源快照继续使用原迁入批次。
-2. `e70b33f` 的真实修正及部署已完成；后置验收发现 `/legacy-data/members` 省略 NULL `total_uses`，页面显示待核实。服务已恢复且健康；由原后端代理修复显式空值契约，补字段存在断言后提交新候选。
-3. 真实修正先核对预览、来源哈希及备份，执行后验证无关记录与幂等；更新阶段和生效规范。
+1. 优先接收下述阶段 2 已派任务，经理直接验收；不要重复派工或交叉写入。
+2. 核对迁入与新会员同入口、缺失/不限/零值、乐观版本、卡号唯一、权限及来源预填只读；完成独立范围后明确 B24–B25 依赖。
+3. 未提交实现不能用旧生产 CI 证明通过；候选需定向验证，正式发布仍通过目标提交完整 Verify、隔离升级与备份校验。
 
-## 本批执行者与恢复
+## 有效执行者
 
-经理为当前任务；用户授权当前任务内委派及满足门槛后的生产更新，不创建独立长期会话或自动化。
-经理实际模型与强度不可由工具核实；子代理均按技能默认显式指定 `gpt-6.1-sol` / `xhigh`。
+经理为当前任务。用户授权当前任务内委派和满足门槛后的生产更新，不创建独立长期会话或自动化。经理模型与强度工具不可核实；子代理显式配置按技能默认 `gpt-6.1-sol` / `xhigh`。
 
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
-| B10–B11 / v2（取代 v1） | `/root/mapping_correction` | 导入解析、独立修正脚本及其测试；Verify 仅新增对应调用行 | 返工已接纳：13 项单测、MySQL 8.4 事务及维护账号权限/触发器实测通过；停止写入 |
-| B12–B13 后端 / v1 | `/root/statistics_backend` | 后端统计 controller/service/dto/mapper 与测试 | 已交付并接纳，7 项定向测试通过，停止写入 |
-| B12–B14 前端 / v1 | `/root/statistics_frontend` | 前端统计、空值展示、API 类型及定向测试 | 已交付并接纳，34 项测试及构建通过，停止写入 |
-| B11–B14 隔离升级准备 / v1 | `/root/statistics_backend` | 仅私有 `logs/member-business-batch1/verified_upgrade_trial.py` | 已交付并完成脚本审查，等待通过的 CI 产物，由经理运行 |
-| B10/B14 NULL 接口契约 / v1 | `/root/statistics_backend` | LegacyDataController、必要 DTO/定向测试；私有隔离脚本加字段存在断言 | 已接纳：实际 NON_NULL 配置先复现失败，再通过 7 项定向验收；已停止写入，二次隔离用独立目录/资源 |
-| 阶段 2 接续准备 / v1 | `/root/statistics_frontend` | 只读阶段 2、会员接口及表单，无文件写入 | 已交付：会员资料/搜索/状态展示可独立推进；套餐完整权益待 B24–B25，馆员编辑与敏感字段权限待确认 |
+| 阶段 2 后端 / v1 | `/root/statistics_backend` | 后端 member 模块、必要用户候选/Profile、V5 新迁移及相应用例/H2支持 | 当前任务子代理最终输出；经理核对事务、权限、升级及字段契约 |
+| 阶段 2 前端 / v1 | `/root/statistics_frontend` | `frontend/src` 的 member/API/types、必要导航、用户/借阅候选/profile 及定向测试 | 当前任务子代理最终输出；经理核对新旧同入口及保留失败输入 |
 
-私有现场与运行证据入口：`logs/member-business-batch1/`；服务器对应迁入目录下保存备份及真实核对结果。
-`e70b33f` 分发包 SHA256：`1868432e171a74cdc3fb2c267b1ee47f800868f859da091ac11285bb12ebf811`。服务器 `migrations/member-business-batch1/` 的隔离、预览、`correction-verified.json`、`deployment-complete.json` 均存在；`online-verification.json` 尚未通过。首次修正结果必须保留，新候选只升级代码，不重复修改已修正数据。
-中断后优先接收上述执行者已有交付，不重复派工；经理负责所有状态文档及共享发布资源。
+状态文档、共享提交与发布资源仅经理写。后端已发准确 API 契约并转交前端；馆员仅必要资料只读、管理员维护完整档案，禁止新增收费/扣次/拦截。
 
-## 未决事项
+## 已确认与未决
 
-阶段 0 中 B03 的单次限额、累计在借、计次、到期宽限、续费起算和退款规则需要逐项确定。它们只阻止依赖这些选择的限制启用；基线核对和已明确映射错误的准备可继续。
+已确认规则维护在[会员规范](docs/specs/membership.md)、[财务规范](docs/specs/finance-reporting.md)：单次与累计上限分开、成功按订单扣一次、到期无宽限禁新借续借、续费起算、退押金条件、管理员核定会费退款及馆员资料权限。
+
+逐套餐数值、套餐变更差额、成功办理后的撤销/换书、套装及不限期选项仍需核实。卡号暂保守精确唯一并保留历史占用，不自动重用；如要重用需明确规则。未决只阻止相关限制或办理启用，资料、搜索与展示继续。
+
+## 证据与恢复边界
+
+新阶段私有证据：`logs/member-business-stage2/`。第一批原记录在 `logs/member-business-batch1/`、`logs/member-business-batch1-null-contract/` 及服务器同名 `migrations/` 私有目录。
+
+第一批真实修正已经完成，后续不得重跑整批导入或用旧备份覆盖新业务。首次结果保留；最终代码更新只升级应用。收尾直接 Compose 必须设置 `APP_VERSION`，最后启动后再次核对镜像和字节。
+
+浏览器验收接入用户已登录的 Codex 内置浏览器，已通过第一批不限、空值、统计与 CSV 下载检查；不要再要求用户到 Edge 重复登录。
 
 ## 更新规则
 
-任务切换、阻塞解除或完成交付时更新本文件。只保留最新游标与恢复依据；较长验收记录进入阶段记录，完成计划按 WORKFLOW 归档。
+任务切换、阻塞解除或完成交付时更新本文件。较长验收进入原阶段或历史档案，已确认规则更新唯一 owner。
