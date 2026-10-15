@@ -2,6 +2,7 @@ package com.library.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.library.dto.BorrowRequest;
+import com.library.dto.UserRequest;
 import com.library.entity.Book;
 import com.library.entity.BorrowRecord;
 import com.library.entity.User;
@@ -9,6 +10,7 @@ import com.library.mapper.BookMapper;
 import com.library.mapper.UserMapper;
 import com.library.security.JwtTokenProvider;
 import com.library.service.BorrowRecordService;
+import com.library.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -21,6 +23,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -33,24 +36,39 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BorrowRenewalTest {
     @Autowired MockMvc mvc;
     @Autowired BorrowRecordService borrows;
+    @Autowired UserService userService;
     @Autowired UserMapper users;
     @Autowired BookMapper books;
     @Autowired JwtTokenProvider tokens;
+    private String readerUsername;
 
     private User account(String username) {
         return users.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
     }
 
     private BorrowRecord borrow() {
-        Book book = books.selectOne(new LambdaQueryWrapper<Book>().eq(Book::getIsbn, "9787111698809"));
+        UserRequest userRequest = new UserRequest();
+        readerUsername = "renew_" + UUID.randomUUID().toString().substring(0, 8);
+        userRequest.setUsername(readerUsername);
+        userRequest.setPassword("RenewReaderPassword123");
+        userRequest.setRealName("续借测试读者");
+        userRequest.setRole("READER");
+        User reader = userService.create(userRequest);
+        Book book = new Book();
+        book.setIsbn(UUID.randomUUID().toString().replace("-", "").substring(0, 20));
+        book.setTitle("续借测试图书");
+        book.setStockTotal(1);
+        book.setStockAvailable(1);
+        book.setStatus(1);
+        books.insert(book);
         BorrowRequest request = new BorrowRequest();
-        request.setUserId(account("reader").getId());
+        request.setUserId(reader.getId());
         request.setBookId(book.getId());
         return borrows.borrow(request);
     }
 
     private ResultActions renew(BorrowRecord record, String body, String username) throws Exception {
-        User user = account(username);
+        User user = account("reader".equals(username) ? readerUsername : username);
         String token = tokens.generateToken(user.getId(), user.getUsername(), user.getRole(), user.getTokenVersion());
         return mvc.perform(put("/borrows/" + record.getId() + "/renew")
                 .header("Authorization", "Bearer " + token).contentType("application/json").content(body));
