@@ -7,20 +7,20 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | 阶段 2 套餐/来源预填/权益快照合并候选的完整 Verify 及隔离发布 |
-| 工作项状态 | `231201c` 完整 Verify、本次备份和第一次隔离升级通过，正在第二次备份复验及发布；真实来源候选未自动应用 |
-| 阶段定义 | [阶段 2](docs/plans/member-business-alignment/stages/02-membership.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
+| 下一工作项 | 阶段 3 逐册查询隔离发布，随后推进实体册登记及库存事务 |
+| 工作项状态 | `231201c` 已上线并通过独立复核；B22 七户登记及全范围核对完成；查询 `88dc996` 完整 CI 成功；隔离工具 v1 在角色清理失败，已清理且生产未变，正返工 v2 |
+| 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
-| 应用代码基线 | 已验收生产 `baf3a9a`；套餐/来源/权益候选 `231201c` 已提交推 main，尚未上线 |
-| 完整 Verify | 新候选 [38749239069](https://github.com/wulala123123/library-management-system/actions/runs/38749239069) 全部通过，产物 `11981815173`；旧 CI 仅证明已上线 V5 |
-| 最近维护结果 | [统一会员档案验收及上线](docs/archive/2026-10/member-profiles-2026-10-15.md)；[第一批](docs/archive/2026-10/member-business-batch1-2026-10-15.md)保留 |
+| 应用代码基线 | 已验收生产 `231201c`，V1–V7；查询候选 `88dc996` 已推 main，尚未上线 |
+| 完整 Verify | 线上 [38749239069](https://github.com/wulala123123/library-management-system/actions/runs/38749239069) 成功；查询 [38752876666](https://github.com/wulala123123/library-management-system/actions/runs/38752876666) 成功，产物 `11982183030` |
+| 最近维护结果 | [套餐与权益验收及上线](docs/archive/2026-10/member-entitlements-2026-10-15.md)；[第一批](docs/archive/2026-10/member-business-batch1-2026-10-15.md)保留 |
 | 恢复依据 | `git status --short`、当前阶段勾选、下述有效执行者与私有证据 |
 
 ## 下一步
 
-1. B24/B22/B25 合并候选已经理定向验收，提交后跑完整 Verify，使用对应新产物。
-2. 新发布工具已验收，第一次全备恢复升级通过，继续第二次隔离复验、发布及最后启动字节核对。
-3. 后续 B22 实际存量登记需定向预览和备份，不把来源预览误标为数据已更改；逐套餐数值未核实不启用办理或限制。
+1. B22 七户登记已完成，保留首次预览、V7 新备及隔离复验证据，禁止重跑整批导入或会员完整保存。
+2. 查询候选 `88dc996` 完整 Verify 与发布工具 19 项门槛均已验收，经理使用对应产物和登记后的最新全备隔离发布。
+3. 逐套餐数值未核实不启用办理或限制；库存登记及状态写入在查询批次后推进。
 
 ## 有效执行者
 
@@ -28,12 +28,9 @@
 
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
-| 阶段 3 查询交付已验收；查询发布准备 / v1 | `/root/statistics_backend` | 仅 `logs/catalog-stage3/query-release/`，不操作服务器 | H2 11、MySQL 1、前端 5 和构建/合成浏览器通过；准备 V7 原数据保值发布工具 |
-| 阶段 3 逐册查询前端 / v1 | 经理，已验收 | 新查询 API/页面/定向测试，router 及 Layout 导航 | 即将提交并运行独立完整 CI；不进 `231201c` 固定产物 |
-| B24 前端 / v1；B22/B25 前端 | 经理完成；原 `/root/statistics_frontend` 已中止 | 已完成候选，待正式提交 | 51 项会员用例及类型构建通过；合成浏览器无错误；证据 `logs/member-business-stage2/entitlement-frontend/` |
-| 完整候选发布工具已验收；B22 定向登记工具 / v1 | `/root/mapping_correction` | 仅 `logs/member-business-stage2-complete/source-registration/` 私有工具和合成验收；禁止生产操作 | 窄事务只改宝宝、目标会员统一版本和审计，原权益物理列全保留；经理收到后验收 |
+| 阶段 3 查询发布工具返工 / v2 | `/root/statistics_backend` | 仅 `logs/catalog-stage3/query-release/` 新 v2 文件，不改 v1/应用/旧依赖 | 补 MySQL 角色 SQL 与主/清理错误独立诊断；新 WORK 后缀 `-v2`，28092/28093，99/100 子网；经理收交付直接验收 |
 
-状态文档、共享提交与发布资源仅经理写。后端已发准确 API 契约并转交前端；馆员仅必要资料只读、管理员维护完整档案，禁止新增收费/扣次/拦截。
+B22 登记与查询实现已交付验收；查询发布工具按上述有效返工继续。原前端代理已中止。后续不重复派发已完成任务。会员资料与来源登记已上线，收费、扣次及套餐拦截继续留待后续阶段。
 
 ## 已确认与未决
 
@@ -53,7 +50,7 @@
 
 浏览器验收接入用户已登录的 Codex 内置浏览器，已通过第一批不限、空值、统计与 CSV 下载检查；不要再要求用户到 Edge 重复登录。
 
-会员资料独立范围已完成 `baf3a9a` 发布，V5 保留全部旧业务列；两次恢复升级、最后启动字节及只读API核对通过。Codex 浏览器验收通过且未保存资料，当前保留 `/members`。后续发布须采用新目标提交对应完整 Verify 产物。
+会员完整范围已完成 `231201c` 发布，V6/V7 保留全部旧业务列；两次恢复升级、最后启动字节及独立只读 API 核对通过。Codex 浏览器验收通过且未保存资料，当前保留 `/members`。新证据在 `logs/member-business-stage2-complete/`；后续发布采用新目标完整 Verify 产物。
 
 ## 更新规则
 
