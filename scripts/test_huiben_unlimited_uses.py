@@ -229,7 +229,7 @@ def mysql_acceptance(db):
             key = str(uid)
             db.run("INSERT INTO sys_user(id,username,password,real_name,role) VALUES (" + key + ",'synthetic_" + key + "','synthetic-only-password','合成会员','READER');"
                 "INSERT INTO member_profile(user_id,source_key,total_uses,used_uses,card_no,plan_name,service_start,service_end,deposit_amount,deposit_status,paid_fee) VALUES ("
-                + key + "," + literal("huiben:" + key) + "," + literal(total) + ",2,'000001','合成套餐','2026-01-01','2027-01-01',100,'合成状态',50);"
+                + key + "," + literal("huiben:" + key) + "," + literal(total) + ",2," + literal(key.zfill(6)) + ",'合成套餐','2026-01-01','2027-01-01',100,'合成状态',50);"
                 "INSERT INTO legacy_record(source_system,record_type,source_key,display_name,details_json,user_id) VALUES ('huiben','MEMBER',"
                 + literal(key) + ",'合成会员'," + literal(compact(archives[key])) + "," + key + ");")
         db.run("INSERT INTO sys_user(id,username,password,real_name,role) VALUES (999,'unrelated','synthetic-only-password','无关账号','ADMIN');"
