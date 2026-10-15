@@ -1,0 +1,11 @@
+{
+  "workflow_run": 38661313669,
+  "workflow_url": "https://github.com/wulala123123/library-management-system/actions/runs/38661313669",
+  "source_commit": "d542ff9c62578d1a88d00f8d4505327b070e0e8d",
+  "artifact_id": 11939441045,
+  "artifact_sha256": "7310151a3d82b5cebff05f6c525057d10d4ffebca87231405f5aa5217107f3d4",
+  "package": "library-management-system-ci-d542ff9c62578d1a88d00f8d4505327b070e0e8d.zip",
+  "package_sha256": "97901c20c8c880093423ca7647725a21aa6065289a2a57a2650d22b6a14b30bc",
+  "package_bytes": 46411212,
+  "zip_entries": 83
+}

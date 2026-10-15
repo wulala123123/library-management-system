@@ -11,7 +11,21 @@
 - Maven `verify` 成功：共 81 项，57 项执行通过；24 项专用 MySQL 用例因本地未设置 `MYSQL_TEST_URL` 跳过。
 - 新增 11 项后端 HTTP 回归，覆盖自定义天数与上下限、旧请求默认值、非法范围不消耗续借次数、最多两次及已归还拒绝。
 - 前端 16 项测试通过，类型检查与生产构建通过；新增 4 项实际 Element Plus 表单测试，覆盖默认值与重开重置、自定义提交、清空阻断、失败重试。
-- MySQL 生产 HTTP 流程增加精确的默认 30 天及自定义 7 天断言，并更新并发续借用例的服务调用。完整 MySQL/容器 CI 和服务器更新尚待执行。
+- MySQL 生产 HTTP 流程增加精确的默认 30 天及自定义 7 天断言，并更新并发续借用例的服务调用。2026 年 10 月 15 日完整 CI 和服务器更新均已通过，见下文。
 - 首次完整 CI 发现新用例依赖共享的种子读者和图书，与全套测试留下的数据冲突；已改为每个用例创建独立读者和图书，并由事务回滚，防止测试顺序影响结果。
 
 本地验证日志位于忽略的 `logs/renewal-backend-verify.log`、`logs/renewal-frontend-test.log` 和 `logs/renewal-frontend-build.log`。此前未提交的发布包来源与校验记录由原任务保留。
+
+## 完整 CI 与服务器更新
+
+[Verify 38661313669](https://github.com/wulala123123/library-management-system/actions/runs/38661313669) 在源码 `d542ff9c62578d1a88d00f8d4505327b070e0e8d` 上通过：后端 81 项全部执行通过，无跳过；前端 16 项、类型检查、构建、依赖审计、14 个运维场景以及完整容器启动、重建、更新、失败启动回退、备份和隔离恢复均成功。
+
+部署使用该次 CI 的 `verified-distribution` 产物。外层 ZIP 校验与 GitHub artifact digest 一致，内层发布包 SHA256 为 `97901c20c8c880093423ca7647725a21aa6065289a2a57a2650d22b6a14b30bc`。完整来源见 `release-candidate-2026-10-15.json`，部署前另行核对关键脚本与对应源码一致。
+
+更新前备份 `/opt/library-management-system/backups/20261015T004653Z` 的数据库、上传文件、环境配置和原应用版本全部通过 SHA256 校验。当前 `current` 指向 `library-management-system-ci-d542ff9c62578d1a88d00f8d4505327b070e0e8d`，三个容器健康。版本目录的数据库初始化脚本绑定路径改变，使 Compose 重建 MySQL 容器；数据库继续使用原有 `library_mysql-data` 卷。
+
+现场只读核对及非法参数检查通过：首页 200、健康 `UP`、验证码图像正常，55 个前端 JS/CSS 全部与发布包一致，续借组件资源包含新天数表单，实际运行 JAR 与验收包哈希一致。接口拒绝 0 天和 91 天，检查前后借阅列表完全一致；现场没有执行真实续借或消耗用户续借次数。自定义 7 天及默认 30 天的成功流程由 CI 的真实 MySQL/Nginx HTTP 测试验证。
+
+更新前后 4 个用户、1 本图书、2 条借阅记录数量一致，环境文件哈希一致，其他项目容器的 ID、启动时间和重启次数一致。仍仅监听服务器 `127.0.0.1:18080`。本机 SSH 隧道在本次更新时未运行，因此未在真实浏览器刷新并提交续借；打开隧道后刷新即可查看新弹窗。
+
+现场证据保存在忽略的 `logs/renewal-server-update-20261015.log`、`logs/renewal-verification-20261015.json` 和 `logs/ci-38661313669.zip`；服务器 `verified-distribution.json` 已同步当前来源。
