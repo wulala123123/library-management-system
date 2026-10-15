@@ -53,5 +53,7 @@ export function adminChangePassword(id: number, newPassword: string) {
 }
 
 export function searchUsers(keyword: string) {
-  return get<PageResult<Pick<User, 'id' | 'username' | 'realName'>>>('/users/borrowers', { keyword })
+  return get<PageResult<BorrowerSummary>>('/users/borrowers', { keyword })
 }
+
+export interface BorrowerSummary { id: number; username: string; realName: string; phone?: string | null; cardNo?: string | null }

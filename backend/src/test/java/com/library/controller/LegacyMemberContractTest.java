@@ -117,7 +117,7 @@ class LegacyMemberContractTest {
         users.insert(user);
         jdbc.update("INSERT INTO member_profile (user_id,source_key,card_no,plan_name,service_start,service_end,"
                         + "used_uses,total_uses,deposit_amount,deposit_status,paid_fee) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                user.getId(), "huiben:synthetic-" + (deleted ? "deleted" : "active"), "000123", "合成套餐",
+                user.getId(), "huiben:synthetic-" + (deleted ? "deleted" : "active"), deleted ? "000124" : "000123", "合成套餐",
                 "2020-01-02", "2020-02-28", 3, totalUses, "30.00", "合成缴纳状态", "120.50");
         return user.getId();
     }

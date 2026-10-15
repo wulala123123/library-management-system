@@ -154,7 +154,10 @@ class SecurityRegressionTest {
         String token=tokens.generateToken(librarian.getId(),librarian.getUsername(),librarian.getRole(),librarian.getTokenVersion());
         mvc.perform(get("/users/borrowers").param("keyword","reader").header("Authorization","Bearer "+token))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.records[0].username").value("reader"))
-                .andExpect(jsonPath("$.data.records[0].phone").doesNotExist())
+                .andExpect(jsonPath("$.data.records[0].phone").exists())
+                .andExpect(jsonPath("$.data.records[0].email").doesNotExist())
+                .andExpect(jsonPath("$.data.records[0].paidFee").doesNotExist())
+                .andExpect(jsonPath("$.data.records[0].children").doesNotExist())
                 .andExpect(jsonPath("$.data.records[0].password").doesNotExist());
         mvc.perform(get("/users").header("Authorization","Bearer "+token)).andExpect(status().isForbidden());
     }

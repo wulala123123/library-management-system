@@ -5,7 +5,7 @@
         <el-form-item label="关键词">
           <el-input
             v-model="queryParams.keyword"
-            placeholder="用户名/姓名"
+            placeholder="姓名/手机号/卡号/登录账号"
             clearable
             style="width: 200px"
             @keyup.enter="handleSearch"
@@ -34,7 +34,8 @@
     <div class="card-container">
       <div class="table-toolbar">
         <div class="toolbar-left">
-          <el-button type="primary" @click="handleAdd">新增用户</el-button>
+          <el-button type="primary" @click="handleAdd">新增账号</el-button>
+          <el-button @click="router.push('/members')">会员档案</el-button>
         </div>
         <div class="toolbar-right">
           <span>共 {{ total }} 条记录</span>
@@ -71,8 +72,9 @@
         <el-table-column prop="createTime" label="创建时间" width="170">
           <template #default="{ row }">{{ row.createTime?.split('T')[0] || '-' }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="240" align="center" fixed="right">
+        <el-table-column label="操作" width="310" align="center" fixed="right">
           <template #default="{ row }">
+            <el-button v-if="row.role === 'READER'" type="success" link size="small" @click="router.push({ path: '/members', query: { userId: String(row.id) } })">会员档案</el-button>
             <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button type="warning" link size="small" @click="handleResetPwd(row)">重置密码</el-button>
             <el-button type="info" link size="small" @click="handleChangePwd(row)">修改密码</el-button>
@@ -103,12 +105,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import UserDialog from './components/UserDialog.vue'
 import { getUserPage, deleteUser, updateUserStatus, resetUserPassword, adminChangePassword } from '@/api/user'
 import type { User } from '@/types'
 
 const loading = ref(false)
+const router = useRouter()
 const userList = ref<User[]>([])
 const total = ref(0)
 const dialogVisible = ref(false)

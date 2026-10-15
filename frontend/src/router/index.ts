@@ -34,7 +34,13 @@ const routes: RouteRecordRaw[] = [
         path: 'users',
         name: 'UserManagement',
         component: () => import('@/views/user/index.vue'),
-        meta: { title: '用户管理', icon: 'User', roles: ['ADMIN'] },
+        meta: { title: '账号管理', icon: 'User', roles: ['ADMIN'] },
+      },
+      {
+        path: 'members',
+        name: 'MemberManagement',
+        component: () => import('@/views/member/index.vue'),
+        meta: { title: '会员档案', icon: 'User', roles: ['ADMIN', 'LIBRARIAN'] },
       },
       {
         path: 'books',

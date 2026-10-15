@@ -27,15 +27,16 @@ public class UserController {
     private final UserService userService;
     private final com.library.mapper.UserMapper userMapper;
     private final PermissionLogService permissionLogService;
+    private final com.library.service.MemberService memberService;
 
-    public record BorrowerSummary(Long id, String username, String realName) {}
+    public record BorrowerSummary(Long id, String username, String realName, String phone, String cardNo) {}
 
     @GetMapping("/borrowers")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public Result<PageResult<BorrowerSummary>> searchBorrowers(@RequestParam(required = false) String keyword) {
-        PageResult<User> page = userService.getPage(1, 20, keyword, null, 1);
+        var page = memberService.list(1, 20, keyword, 1, null);
         var summaries = page.getRecords().stream()
-                .map(user -> new BorrowerSummary(user.getId(), user.getUsername(), user.getRealName())).toList();
+                .map(user -> new BorrowerSummary(user.getId(), user.getUsername(), user.getRealName(), user.getPhone(), user.getCardNo())).toList();
         return Result.success(new PageResult<>(summaries, page.getTotal(), page.getPage(), page.getSize()));
     }
 

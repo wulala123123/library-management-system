@@ -113,6 +113,18 @@ public class UserServiceImpl implements UserService {
     @Override
     public PageResult<User> getPage(int page, int size, String keyword, String role, Integer status) {
         Page<User> pageParam = new Page<>(page, size);
+        // Account administration uses the same four identity search fields as member selection.
+        if (keyword != null && !keyword.isBlank()) {
+            String term = "%" + keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+            var query = new LambdaQueryWrapper<User>().and(q -> q.apply("username LIKE {0} ESCAPE '!'", term)
+                    .or().apply("real_name LIKE {0} ESCAPE '!'", term).or().apply("phone LIKE {0} ESCAPE '!'", term)
+                    .or().apply("id IN (SELECT user_id FROM member_profile WHERE card_no LIKE {0} ESCAPE '!')", term));
+            if (role != null && !role.isBlank()) query.eq(User::getRole, role);
+            if (status != null) query.eq(User::getStatus, status);
+            query.orderByDesc(User::getCreateTime);
+            IPage<User> matches = userMapper.selectPage(pageParam, query);
+            return new PageResult<>(matches.getRecords(), matches.getTotal(), (long) page, (long) size);
+        }
         IPage<User> result = userMapper.selectPageWithKeyword(pageParam, keyword, role, status);
         return new PageResult<>(result.getRecords(), result.getTotal(), (long) page, (long) size);
     }
@@ -167,6 +179,7 @@ public class UserServiceImpl implements UserService {
         if (request.getEmail() != null) user.setEmail(request.getEmail());
         if (request.getRole() != null) user.setRole(request.getRole());
         if (request.getStatus() != null) user.setStatus(request.getStatus());
+        user.setMemberRevision(user.getMemberRevision() + 1);
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
@@ -191,6 +204,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("该用户有未归还的借阅记录，无法删除");
         }
         user.setTokenVersion(user.getTokenVersion() + 1);
+        user.setMemberRevision(user.getMemberRevision() + 1);
         userMapper.updateById(user);
         userMapper.deleteById(id);
     }
@@ -204,6 +218,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("用户不存在");
         }
         user.setStatus(status);
+        user.setMemberRevision(user.getMemberRevision() + 1);
         user.setTokenVersion(user.getTokenVersion() + 1);
         userMapper.updateById(user);
     }
@@ -291,6 +306,7 @@ public class UserServiceImpl implements UserService {
         if (request.getEmail() != null) {
             user.setEmail(request.getEmail());
         }
+        user.setMemberRevision(user.getMemberRevision() + 1);
         userMapper.updateById(user);
     }
 

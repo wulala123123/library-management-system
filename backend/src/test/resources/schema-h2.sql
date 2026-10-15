@@ -323,3 +323,33 @@ CREATE TABLE IF NOT EXISTS migration_batch (
     summary_json TEXT NOT NULL, imported_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 CREATE TABLE IF NOT EXISTS migration_check (id INT PRIMARY KEY, ok INT NOT NULL CHECK (ok = 1));
+
+ALTER TABLE member_profile ADD COLUMN IF NOT EXISTS notes VARCHAR(2000);
+ALTER TABLE sys_user ADD COLUMN IF NOT EXISTS member_revision BIGINT DEFAULT 0 NOT NULL;
+ALTER TABLE member_profile ADD COLUMN IF NOT EXISTS address VARCHAR(500);
+ALTER TABLE member_profile ADD COLUMN IF NOT EXISTS usage_type VARCHAR(20) DEFAULT 'UNKNOWN' NOT NULL;
+ALTER TABLE member_profile ADD COLUMN IF NOT EXISTS revision BIGINT DEFAULT 0 NOT NULL;
+ALTER TABLE member_profile ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
+ALTER TABLE member_profile ADD COLUMN IF NOT EXISTS updated_by BIGINT;
+ALTER TABLE member_profile ADD COLUMN IF NOT EXISTS source_system VARCHAR(50);
+ALTER TABLE member_profile ADD COLUMN IF NOT EXISTS source_archive_id BIGINT;
+ALTER TABLE member_profile ADD COLUMN IF NOT EXISTS card_no_key VARBINARY(400)
+    GENERATED ALWAYS AS (CASE WHEN card_no IS NULL OR LENGTH(card_no)=0 THEN NULL ELSE CAST(card_no AS VARBINARY(400)) END);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_member_card_exact ON member_profile(card_no_key);
+CREATE TABLE IF NOT EXISTS member_card_history (
+    card_no VARBINARY(400) PRIMARY KEY, user_id BIGINT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+CREATE TABLE IF NOT EXISTS member_child (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY, user_id BIGINT NOT NULL,
+    name VARCHAR(100), gender VARCHAR(50), birth_date DATE,
+    birth_date_precision VARCHAR(10) DEFAULT 'UNKNOWN' NOT NULL,
+    source_birth_text VARCHAR(300), source_key VARCHAR(128), notes VARCHAR(1000),
+    CONSTRAINT ck_child_precision CHECK (birth_date_precision IN ('DAY','MONTH','YEAR','UNKNOWN')),
+    CONSTRAINT ck_child_date_precision CHECK (birth_date IS NULL OR birth_date_precision='DAY')
+);
+CREATE TABLE IF NOT EXISTS member_profile_change (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY, user_id BIGINT NOT NULL, operator_id BIGINT NOT NULL,
+    change_source VARCHAR(50) NOT NULL, change_reason VARCHAR(500) NOT NULL,
+    before_json CLOB NOT NULL, after_json CLOB NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);

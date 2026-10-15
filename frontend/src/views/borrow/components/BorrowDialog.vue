@@ -2,8 +2,8 @@
   <el-dialog :model-value="visible" title="办理借阅" width="520px" :close-on-click-modal="false" @close="handleClose">
     <el-form ref="formRef" :model="form" :rules="rules" label-width="90px" size="default">
       <el-form-item label="选择读者" prop="userId">
-        <el-select v-model="form.userId" filterable remote placeholder="搜索读者用户名/姓名" style="width: 100%" :remote-method="searchUsers" :loading="userLoading">
-          <el-option v-for="u in userOptions" :key="u.id" :label="`${u.username} (${u.realName || '未设置姓名'})`" :value="u.id" />
+        <el-select v-model="form.userId" filterable remote placeholder="搜索姓名/手机号/卡号/登录账号" style="width: 100%" :remote-method="searchUsers" :loading="userLoading">
+          <el-option v-for="u in userOptions" :key="u.id" :label="borrowerLabel(u)" :value="u.id" />
         </el-select>
       </el-form-item>
 
@@ -46,7 +46,8 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { adminBorrowBook } from '@/api/borrow'
 import { getBookPage, getBookCopies, type BookCopy } from '@/api/book'
-import { searchUsers as searchUsersApi } from '@/api/user'
+import { searchUsers as searchUsersApi, type BorrowerSummary } from '@/api/user'
+import { displayValue } from '@/utils/display'
 
 interface Props { visible: boolean }
 const props = defineProps<Props>()
@@ -57,11 +58,13 @@ const submitting = ref(false)
 const userLoading = ref(false)
 const bookLoading = ref(false)
 
-const userOptions = ref<any[]>([])
+const userOptions = ref<BorrowerSummary[]>([])
 const bookOptions = ref<any[]>([])
 const copyOptions = ref<BookCopy[]>([])
 const bookSearchText = ref('')
 let copyRequest = 0
+let userRequest = 0
+const borrowerLabel = (user: BorrowerSummary) => `${displayValue(user.realName, '未设置姓名')} · ${user.username} · 卡号 ${displayValue(user.cardNo)} · ${displayValue(user.phone, '未设置手机号')}`
 
 const form = reactive({
   userId: undefined as number | undefined,
@@ -89,6 +92,7 @@ function resetForm() {
   copyOptions.value = []
   bookSearchText.value = ''
   copyRequest++
+  userRequest++
 }
 
 async function loadCopies(id: number) {
@@ -105,12 +109,14 @@ async function loadCopies(id: number) {
 }
 
 async function searchUsers(query: string) {
-  if (!query || query.length < 2) return
+  const request = ++userRequest
+  if (!query.trim()) { userOptions.value = []; userLoading.value = false; return }
   userLoading.value = true
   try {
-    const res = await searchUsersApi(query)
+    const res = await searchUsersApi(query.trim())
+    if (request !== userRequest) return
     userOptions.value = res?.records || []
-  } catch { userOptions.value = [] } finally { userLoading.value = false }
+  } catch { if (request === userRequest) userOptions.value = [] } finally { if (request === userRequest) userLoading.value = false }
 }
 
 async function searchBooks(query: string) {

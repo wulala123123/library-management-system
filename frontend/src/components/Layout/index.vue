@@ -35,7 +35,12 @@
 
             <router-link v-if="isAdmin" to="/users" class="nav-item" :class="{ active: route.path === '/users' }">
               <el-icon><User /></el-icon>
-              <transition name="fade"><span v-if="!isCollapsed">用户管理</span></transition>
+              <transition name="fade"><span v-if="!isCollapsed">账号管理</span></transition>
+            </router-link>
+
+            <router-link v-if="isAdmin || isLibrarian" to="/members" class="nav-item" :class="{ active: route.path === '/members' }">
+              <el-icon><User /></el-icon>
+              <transition name="fade"><span v-if="!isCollapsed">会员档案</span></transition>
             </router-link>
 
             <router-link v-if="isAdmin || isLibrarian" to="/categories" class="nav-item" :class="{ active: route.path === '/categories' }">

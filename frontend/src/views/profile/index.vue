@@ -31,6 +31,7 @@
             <p style="padding: 8px 0; color: var(--text-regular); font-size: 14px;"><span style="color: var(--text-secondary); margin-right: 8px;">邮箱:</span>{{ userInfo?.email || '未设置' }}</p>
           </div>
         </el-card>
+        <MyMembershipCard v-if="userStore.isReader" />
       </el-col>
 
       <el-col :xs="24" :lg="16">
@@ -84,6 +85,7 @@ import { getProfileStats, updateProfile, changePassword, uploadAvatar } from '@/
 import { getMyBorrows } from '@/api/borrow'
 import { get as apiGet } from '@/api/request'
 import type { BorrowRecord } from '@/types'
+import MyMembershipCard from '@/views/member/components/MyMembershipCard.vue'
 
 const userStore = useUserStore()
 const avatarInput = ref<HTMLInputElement | null>(null)

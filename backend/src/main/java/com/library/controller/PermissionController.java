@@ -35,7 +35,10 @@ public class PermissionController {
                 {"self_borrow", "自助借阅"},
                 {"self_return", "自助归还"},
                 {"renew", "续借"},
-                {"user_manage", "用户管理"},
+                {"user_manage", "账号管理"},
+                {"member_manage", "会员档案（办理所需资料只读）"},
+                {"member_edit", "会员档案编辑"},
+                {"member_sensitive", "会员家庭、宝宝、财务事实及来源"},
                 {"inventory", "库存管理"},
                 {"statistics", "统计报表"},
                 {"publisher", "出版社管理"},
@@ -50,12 +53,12 @@ public class PermissionController {
         rolePerms.put("ADMIN", new HashSet<>(Arrays.asList(
                 "dashboard", "book_catalog", "book_manage", "category_manage",
                 "borrow_manage", "self_borrow", "self_return", "renew",
-                "user_manage", "inventory", "statistics", "publisher",
+                "user_manage", "member_manage", "member_edit", "member_sensitive", "inventory", "statistics", "publisher",
                 "bookshelf", "purchase", "notice", "borrow_code", "profile")));
         rolePerms.put("LIBRARIAN", new HashSet<>(Arrays.asList(
                 "dashboard", "book_catalog", "book_manage", "category_manage",
                 "borrow_manage", "self_borrow", "self_return", "renew",
-                "inventory", "statistics", "publisher",
+                "member_manage", "inventory", "statistics", "publisher",
                 "bookshelf", "purchase", "notice", "borrow_code", "profile")));
         rolePerms.put("READER", new HashSet<>(Arrays.asList(
                 "dashboard", "book_catalog", "self_borrow", "self_return",
