@@ -42,7 +42,13 @@
       </div>
 
       <el-table v-loading="loading" :data="userList" stripe border size="default">
-        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column
+          type="index"
+          label="序号"
+          :index="(index: number) => (queryParams.page - 1) * queryParams.size + index + 1"
+          width="70"
+          align="center"
+        />
         <el-table-column prop="username" label="用户名" width="120" />
         <el-table-column prop="realName" label="真实姓名" width="120" />
         <el-table-column prop="role" label="角色" width="120" align="center">

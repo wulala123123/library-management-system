@@ -39,7 +39,13 @@
       </div>
 
       <el-table v-loading="loading" :data="bookList" stripe border size="default">
-        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column
+          type="index"
+          label="序号"
+          :index="(index: number) => (queryParams.page - 1) * queryParams.size + index + 1"
+          width="70"
+          align="center"
+        />
         <el-table-column label="封面" width="70" align="center">
           <template #default="{ row }">
             <el-image v-if="row.coverImage" :src="getImageUrl(row.coverImage)" fit="cover" style="width: 40px; height: 52px;" />
