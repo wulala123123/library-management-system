@@ -39,6 +39,7 @@ public class PermissionController {
                 {"member_manage", "会员档案（办理所需资料只读）"},
                 {"member_edit", "会员档案编辑"},
                 {"member_sensitive", "会员家庭、宝宝、财务事实及来源"},
+                {"membership_plan_manage", "套餐版本管理"},
                 {"inventory", "库存管理"},
                 {"statistics", "统计报表"},
                 {"publisher", "出版社管理"},
@@ -53,7 +54,7 @@ public class PermissionController {
         rolePerms.put("ADMIN", new HashSet<>(Arrays.asList(
                 "dashboard", "book_catalog", "book_manage", "category_manage",
                 "borrow_manage", "self_borrow", "self_return", "renew",
-                "user_manage", "member_manage", "member_edit", "member_sensitive", "inventory", "statistics", "publisher",
+                "user_manage", "member_manage", "member_edit", "member_sensitive", "membership_plan_manage", "inventory", "statistics", "publisher",
                 "bookshelf", "purchase", "notice", "borrow_code", "profile")));
         rolePerms.put("LIBRARIAN", new HashSet<>(Arrays.asList(
                 "dashboard", "book_catalog", "book_manage", "category_manage",

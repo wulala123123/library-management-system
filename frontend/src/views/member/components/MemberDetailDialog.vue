@@ -31,6 +31,7 @@
         </section>
         <MemberBenefits :plan-name="member.planName" :service-state="member.serviceStatus" :service-start="member.serviceStart" :service-end="member.serviceEnd" :uses-type="member.usageType" :used-uses="member.usedUses" :total-uses="member.totalUses" :remaining-uses="member.remainingUses" :as-of-date="member.asOfDate" />
         <p v-if="member.overused" class="warning">已用次数超过总次数，请核对来源及调整记录。</p>
+        <MemberEntitlementPanel v-if="userStore.isAdmin" :member-id="member.id" @saved="refresh" />
         <section v-if="userStore.isAdmin" class="finance-section">
           <h3>历史费用与押金</h3>
           <el-descriptions :column="3" border>
@@ -71,6 +72,7 @@ import { useUserStore } from '@/store/modules/user'
 import { displayValue } from '@/utils/display'
 import { dueDateText } from '@/utils/borrowDates'
 import MemberBenefits from './MemberBenefits.vue'
+import MemberEntitlementPanel from './MemberEntitlementPanel.vue'
 const props = defineProps<{ visible: boolean; memberId: number | null }>()
 const emit = defineEmits<{ (e: 'update:visible', value: boolean): void; (e: 'edit', value: MemberDetail): void }>()
 const userStore = useUserStore()

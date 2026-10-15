@@ -7,8 +7,8 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | 阶段 2 B22 来源候选预填、B25 权益快照与版本关联 |
-| 工作项状态 | 会员资料独立范围已上线；B24 已实现并定向验收，B22/B25 进行中；尚未发布后续套餐能力 |
+| 下一工作项 | 阶段 2 套餐/来源预填/权益快照合并候选的完整 Verify 及隔离发布 |
+| 工作项状态 | B24/B25/B22 界面与接口已定向验收，待新候选发布；真实来源候选未自动应用，未启用借阅限制 |
 | 阶段定义 | [阶段 2](docs/plans/member-business-alignment/stages/02-membership.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
 | 应用代码基线 | 已验收生产 `baf3a9a`，B24 新增模块尚未提交，不属于线上版本 |
@@ -18,9 +18,9 @@
 
 ## 下一步
 
-1. 接收 B22 来源预览及表单交付，核对空槽不造宝宝、只按来源键更新、不从年龄推生日、原总次数不可预填。
-2. B25 新模块先实施，待 B22 后端停止写入才放行 MemberService 集成，前端 B22 交付后再派 B25。
-3. B24/B22/B25 合并候选再跑正式发布门槛，减少重复全量验收；逐套餐数值未核实不启用办理或限制。
+1. B24/B22/B25 合并候选已经理定向验收，提交后跑完整 Verify，使用对应新产物。
+2. 新发布工具已交付，经理核对 V6/V7 最终字节及 API后执行本次新备份、两次隔离恢复升级和发布。
+3. 后续 B22 实际存量登记需定向预览和备份，不把来源预览误标为数据已更改；逐套餐数值未核实不启用办理或限制。
 
 ## 有效执行者
 
@@ -28,9 +28,9 @@
 
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
-| B24 后端 / v1 已验收；B25 后端 / v1 | `/root/statistics_backend` | 新 MemberEntitlement 模块、V7、新用例/H2；MemberService 暂不允许修改 | B25 实施中，等待 B22 停止后再集成；证据 `logs/member-business-stage2/entitlement-backend/` |
-| B24 前端 / v1 已验收；B22 前端 / v1 | `/root/statistics_frontend` | member API、sourceReview、MemberFormDialog及来源/表单用例；不改套餐模块 | B22 实施中；证据 `logs/member-business-stage2/source-prefill-frontend/` |
-| B22 核对已验收；B22 后端 / v1 | `/root/mapping_correction` | MemberService 仅来源预览/宝宝来源键校验及辅助类、新 SourcePreviewTest；不改迁移/H2或旧会员测试 | B22 实施中；证据 `logs/member-business-stage2/source-prefill-backend/` |
+| B24 后端 / v1；B25 后端 / v2 | `/root/statistics_backend` | 已停止写入及进程 | 已验收；证据 `logs/member-business-stage2/entitlement-backend/`，33079 已关闭 |
+| B24 前端 / v1；B22/B25 前端 | 经理完成；原 `/root/statistics_frontend` 已中止 | 已完成候选，待正式提交 | 51 项会员用例及类型构建通过；合成浏览器无错误；证据 `logs/member-business-stage2/entitlement-frontend/` |
+| B22 后端；完整候选发布准备 / v1 | `/root/mapping_correction` | 已停止写入，无服务器操作 | B22 及工具已交付，经理审查发布准备；证据 `logs/member-business-stage2-complete/` |
 
 状态文档、共享提交与发布资源仅经理写。后端已发准确 API 契约并转交前端；馆员仅必要资料只读、管理员维护完整档案，禁止新增收费/扣次/拦截。
 

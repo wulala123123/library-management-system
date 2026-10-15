@@ -119,3 +119,33 @@ it('does not allow non-admin callers to save or read source previews', async () 
   expect(wrapper.text()).not.toContain('读取来源预填预览')
   expect(api.source).not.toHaveBeenCalled(); expect(api.update).not.toHaveBeenCalled()
 })
+
+it('applies selected child sources only to the form, preserves manual rows and audits the source on save', async () => {
+  const child = { id: 9, name: '手工宝宝', gender: null, birthDate: null, birthDatePrecision: 'UNKNOWN' as const, sourceBirthText: null, notes: '保留' }
+  const candidate = { sourceKey: 'huiben:5:child:1', sourceSlot: 1, sourceFields: ['宝宝名字', '宝宝生日'], currentValue: null, sourceValue: { name: '来源宝宝', gender: null, birthDate: '2020-02-29', birthDatePrecision: 'DAY', sourceBirthText: '2020-02-29', sourceKey: 'huiben:5:child:1', notes: null }, selectable: true, reasonCode: 'READY', conflict: false, reviewOnlyAge: '六岁' }
+  api.source.mockResolvedValue({ sourceAvailable: true, sourceKey: 'huiben:5', archiveId: 21, fields: [], unmappedFields: [], asOfDate: '2026-10-15', childCandidates: [candidate] })
+  const wrapper = await dialog({ ...member, children: [child] })
+  await click(wrapper, '读取来源预填预览')
+  await wrapper.get('.source-child input[type="checkbox"]').setValue(true)
+  await click(wrapper, '将已选来源值预填到表单')
+  expect(api.update).not.toHaveBeenCalled()
+  expect(wrapper.findAll('.child-form')).toHaveLength(2)
+  await wrapper.get('.source-child input[type="checkbox"]').setValue(true)
+  await click(wrapper, '将已选来源值预填到表单')
+  expect(wrapper.findAll('.child-form')).toHaveLength(2)
+  await wrapper.get('textarea[placeholder="说明创建或修订依据"]').setValue('核对来源')
+  await click(wrapper, '保存会员')
+  const body = api.update.mock.calls[0][1]
+  expect(body.children[0]).toEqual(child)
+  expect(body.children[1]).toEqual(expect.objectContaining({ sourceKey: candidate.sourceKey, birthDate: '2020-02-29' }))
+  expect(body.changeReason).toContain('原档案21，宝宝槽位1')
+  expect(body.totalUses).toBe(0)
+})
+
+it('retains the known raw total when its usage meaning remains unknown', async () => {
+  const wrapper = await dialog({ ...member, usageType: 'UNKNOWN', totalUses: 12, remainingUses: null })
+  expect(wrapper.text()).toContain('来源总次数原值（含义待核实）：12')
+  await wrapper.get('textarea[placeholder="说明创建或修订依据"]').setValue('只核对联系方式')
+  await click(wrapper, '保存会员')
+  expect(api.update).toHaveBeenCalledWith(5, expect.objectContaining({ usageType: 'UNKNOWN', totalUses: 12 }))
+})

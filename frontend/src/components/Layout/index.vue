@@ -43,6 +43,11 @@
               <transition name="fade"><span v-if="!isCollapsed">会员档案</span></transition>
             </router-link>
 
+            <router-link v-if="isAdmin" to="/membership-plans" class="nav-item" :class="{ active: route.path === '/membership-plans' }">
+              <el-icon><Tickets /></el-icon>
+              <transition name="fade"><span v-if="!isCollapsed">套餐版本</span></transition>
+            </router-link>
+
             <router-link v-if="isAdmin || isLibrarian" to="/categories" class="nav-item" :class="{ active: route.path === '/categories' }">
               <el-icon><Menu /></el-icon>
               <transition name="fade"><span v-if="!isCollapsed">分类管理</span></transition>

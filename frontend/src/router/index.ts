@@ -43,6 +43,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '会员档案', icon: 'User', roles: ['ADMIN', 'LIBRARIAN'] },
       },
       {
+        path: 'membership-plans',
+        name: 'MembershipPlans',
+        component: () => import('@/views/membership-plan/index.vue'),
+        meta: { title: '套餐版本', icon: 'Tickets', roles: ['ADMIN'] },
+      },
+      {
         path: 'books',
         name: 'BookManagement',
         component: () => import('@/views/book/index.vue'),

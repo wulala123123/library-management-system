@@ -83,6 +83,19 @@ export interface MemberSourceField {
   sourceValue: unknown
   conflict: boolean
   reviewOnly?: boolean
+  selectable?: boolean
+  reasonCode?: string
+}
+export interface MemberSourceChildCandidate {
+  sourceKey: string
+  sourceSlot: 1 | 2 | 3
+  sourceFields: string[]
+  currentValue: MemberChild | null
+  sourceValue: Omit<MemberChild, 'id'>
+  selectable: boolean
+  reasonCode: string
+  conflict: boolean
+  reviewOnlyAge: string | null
 }
 export interface MemberSourcePreview {
   sourceAvailable: boolean
@@ -90,6 +103,8 @@ export interface MemberSourcePreview {
   archiveId: number | null
   fields: MemberSourceField[]
   unmappedFields: string[]
+  asOfDate?: string
+  childCandidates?: MemberSourceChildCandidate[]
 }
 
 export const getMemberPage = (params: MemberPageParams) => get<PageResult<MemberSummary>>('/members', params)

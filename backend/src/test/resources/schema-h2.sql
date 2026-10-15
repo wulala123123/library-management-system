@@ -353,3 +353,40 @@ CREATE TABLE IF NOT EXISTS member_profile_change (
     change_source VARCHAR(50) NOT NULL, change_reason VARCHAR(500) NOT NULL,
     before_json CLOB NOT NULL, after_json CLOB NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS membership_plan (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(200) NOT NULL, draft_json CLOB NOT NULL,
+    revision BIGINT DEFAULT 0 NOT NULL, enabled BOOLEAN DEFAULT FALSE NOT NULL, selected_version_id BIGINT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, updated_by BIGINT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS membership_plan_version (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY, plan_id BIGINT NOT NULL, version_number BIGINT NOT NULL,
+    definition_json CLOB NOT NULL, confirmation_basis VARCHAR(2000) NOT NULL, idempotency_key VARBINARY(128) NOT NULL,
+    request_hash CHAR(64) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, created_by BIGINT NOT NULL,
+    UNIQUE(plan_id,version_number), UNIQUE(plan_id,idempotency_key),
+    FOREIGN KEY(plan_id) REFERENCES membership_plan(id)
+);
+CREATE TABLE IF NOT EXISTS membership_plan_change (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY, plan_id BIGINT NOT NULL, operator_id BIGINT NOT NULL,
+    action VARCHAR(30) NOT NULL, change_reason VARCHAR(500) NOT NULL, before_json CLOB NOT NULL, after_json CLOB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, FOREIGN KEY(plan_id) REFERENCES membership_plan(id)
+);
+
+CREATE TABLE IF NOT EXISTS member_entitlement_snapshot (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY, user_id BIGINT NOT NULL, member_revision BIGINT NOT NULL,
+    plan_version_id BIGINT, version_json CLOB, facts_json CLOB NOT NULL, rules_json CLOB NOT NULL,
+    source_references_json CLOB NOT NULL, reason VARCHAR(1000) NOT NULL, history_basis VARCHAR(2000),
+    confirmed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, confirmed_by BIGINT NOT NULL,
+    FOREIGN KEY(plan_version_id) REFERENCES membership_plan_version(id)
+);
+ALTER TABLE member_profile ADD COLUMN IF NOT EXISTS current_entitlement_snapshot_id BIGINT;
+CREATE TABLE IF NOT EXISTS member_entitlement_request (
+    user_id BIGINT NOT NULL, idempotency_key VARBINARY(128) NOT NULL, request_hash CHAR(64) NOT NULL,
+    snapshot_id BIGINT NOT NULL, resulting_revision BIGINT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY(user_id,idempotency_key), FOREIGN KEY(snapshot_id) REFERENCES member_entitlement_snapshot(id)
+);
+CREATE TABLE IF NOT EXISTS member_entitlement_change (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY, user_id BIGINT NOT NULL, operator_id BIGINT NOT NULL,
+    action VARCHAR(30) NOT NULL, reason VARCHAR(1000) NOT NULL, before_json CLOB NOT NULL, after_json CLOB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 const api = vi.hoisted(() => ({ list: vi.fn(), detail: vi.fn(), me: vi.fn(), source: vi.fn(), create: vi.fn(), update: vi.fn(), push: vi.fn(), user: { isAdmin: true, isLibrarian: false, isReader: false }, route: { query: {} as Record<string, string> } }))
 vi.mock('@/api/member', () => ({ getMemberPage: api.list, getMemberById: api.detail, getMyMembership: api.me, getMemberSourcePreview: api.source, createMember: api.create, updateMember: api.update }))
+vi.mock('@/api/memberEntitlement', () => ({ getMyEntitlement: api.me }))
 vi.mock('@/store/modules/user', () => ({ useUserStore: () => api.user }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: api.push }), useRoute: () => api.route }))
 vi.mock('element-plus', () => ({ ElMessage: { success: vi.fn(), error: vi.fn() } }))
@@ -12,6 +13,7 @@ import MemberDetailDialog from './components/MemberDetailDialog.vue'
 import MyMembershipCard from './components/MyMembershipCard.vue'
 import MemberBenefits from './components/MemberBenefits.vue'
 import type { MemberDetail } from '@/api/member'
+import { emptyDefinition } from '@/views/membership-plan/planDefinition'
 
 const slot = defineComponent({ setup(_, { slots }) { return () => h('div', [slots.header?.(), slots.default?.(), slots.footer?.()]) } })
 const provider = defineComponent({ props: ['row'], setup(props, { slots }) { provide('row', computed(() => props.row)); return () => h('div', { class: 'test-row' }, slots.default?.()) } })
@@ -20,13 +22,13 @@ const column = defineComponent({ props: ['prop', 'label'], setup(props, { slots 
 const description = defineComponent({ props: ['label'], setup(props, { slots }) { return () => h('div', [props.label, ': ', slots.default?.()]) } })
 const button = defineComponent({ setup(_, { slots, attrs }) { return () => h('button', attrs, slots.default?.()) } })
 const input = defineComponent({ props: ['modelValue', 'placeholder'], emits: ['update:modelValue'], setup(props, { emit, attrs }) { return () => h('input', { ...attrs, value: props.modelValue, placeholder: props.placeholder, onInput: (event: Event) => emit('update:modelValue', (event.target as HTMLInputElement).value) }) } })
-const stubs = { ElCard: slot, ElDialog: slot, ElDescriptions: slot, ElDescriptionsItem: description, ElTable: table, ElTableColumn: column, ElButton: button, ElForm: slot, ElFormItem: slot, ElInput: input, ElSelect: true, ElOption: true, ElTag: slot, ElAlert: true, ElPagination: true, ElRow: slot, ElCol: slot, ElInputNumber: true, ElDatePicker: true, ElEmpty: slot }
+const stubs = { ElCard: slot, ElDialog: slot, ElDescriptions: slot, ElDescriptionsItem: description, ElTable: table, ElTableColumn: column, ElButton: button, ElForm: slot, ElFormItem: slot, ElInput: input, ElSelect: true, ElOption: true, ElTag: slot, ElAlert: true, ElPagination: true, ElRow: slot, ElCol: slot, ElInputNumber: true, ElDatePicker: true, ElEmpty: slot, MemberEntitlementPanel: true }
 const wrappers: ReturnType<typeof mount>[] = []
 function page(component: any, props = {}) { const wrapper = mount(component, { props, global: { stubs, directives: { loading: () => {} } } }); wrappers.push(wrapper); return wrapper }
 const member: MemberDetail = { id: 5, username: 'reader_5', realName: '合成会员', phone: '13800138000', email: null, cardNo: '000005', planName: '原套餐', accountStatus: 0, profilePresent: true, revision: 3, serviceStart: '2026-10-15', serviceEnd: '2026-10-15', serviceStatus: 'ACTIVE', asOfDate: '2026-10-15', usageType: 'LIMITED', usedUses: 0, totalUses: 0, remainingUses: 0, overused: false, notes: '家庭备注', address: '敏感家庭地址', children: [{ id: 9, name: '宝宝资料', gender: null, birthDate: null, birthDatePrecision: 'YEAR', sourceBirthText: '2020年', notes: null }], financialFacts: { paidFee: 0, depositAmount: 0, depositStatus: '未退' }, sourceKey: 'huiben:5', sourceSystem: 'huiben', borrowHistory: [{ id: 1, bookId: 1, bookTitle: '合成绘本', borrowDate: '2026-10-15', dueDate: null, dueDateKind: 'UNLIMITED', returnDate: null, status: 'BORROWING' }] }
 beforeEach(() => {
   vi.clearAllMocks(); Object.assign(api.user, { isAdmin: true, isLibrarian: false, isReader: false }); api.route.query = {}
-  api.list.mockResolvedValue({ records: [member], total: 1 }); api.detail.mockResolvedValue(member); api.me.mockResolvedValue(member)
+  api.list.mockResolvedValue({ records: [member], total: 1 }); api.detail.mockResolvedValue(member); api.me.mockResolvedValue({ member, effectiveRules: emptyDefinition().rules, snapshotPresent: false })
 })
 afterEach(() => wrappers.splice(0).forEach(wrapper => wrapper.unmount()))
 

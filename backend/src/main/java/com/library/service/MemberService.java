@@ -34,6 +34,7 @@ public class MemberService {
     private final ObjectMapper json;
     private final Validator validator;
     private final MemberAuditWriter auditWriter;
+    private final MemberEntitlementService entitlements;
     private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
     private static final String FROM = " FROM sys_user u LEFT JOIN member_profile p ON p.user_id=u.id "
             + "LEFT JOIN legacy_record l ON l.user_id=u.id AND l.source_system='huiben' AND l.record_type='MEMBER' "
@@ -141,6 +142,7 @@ public class MemberService {
             insertProfile(created.getId(), "manual:" + UUID.randomUUID());
             write(created.getId(), request, 0, operator);
             MemberDetail after = detail(created.getId());
+            entitlements.memberFactsChanged(null, after, operator, request.getChangeReason());
             auditWriter.save(created.getId(), operator, request.getChangeReason(), null, after);
             return after;
         } catch (DuplicateKeyException error) {
@@ -162,6 +164,7 @@ public class MemberService {
             reserveCard(before.getCardNo(), id);
             write(id, request, before.getRevision(), operator);
             MemberDetail after = detail(id);
+            entitlements.memberFactsChanged(before, after, operator, request.getChangeReason());
             auditWriter.save(id, operator, request.getChangeReason(), before, after);
             return after;
         } catch (DuplicateKeyException error) {
@@ -218,9 +221,12 @@ public class MemberService {
             throw new IllegalArgumentException("服务开始日不能晚于结束日");
         if ("LIMITED".equals(request.getUsageType()) && request.getTotalUses() == null)
             throw new IllegalArgumentException("有限次数必须填写总次数");
-        if (!"LIMITED".equals(request.getUsageType()) && request.getTotalUses() != null)
-            throw new IllegalArgumentException("未知或不限次数不能填写有限总次数");
+        if ("UNLIMITED".equals(request.getUsageType()) && request.getTotalUses() != null)
+            throw new IllegalArgumentException("不限次数不能填写有限总次数");
+        Set<String> childSources = new HashSet<>();
         for (MemberChildRequest child : request.getChildren()) {
+            if (child.getSourceKey() != null && !child.getSourceKey().isEmpty() && !childSources.add(child.getSourceKey()))
+                throw new IllegalArgumentException("宝宝来源键重复，请核对后重试");
             if (child.getBirthDate() != null && (!"DAY".equals(child.getBirthDatePrecision()) || child.getBirthDate().isAfter(LocalDate.now(ZONE))))
                 throw new IllegalArgumentException("宝宝生日须保留已知精度且不能晚于当天");
             if ("DAY".equals(child.getBirthDatePrecision()) && child.getBirthDate() == null)
@@ -248,40 +254,23 @@ public class MemberService {
         MemberDetail current = detail(id);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("sourceAvailable", false); result.put("sourceKey", current.getSourceKey()); result.put("archiveId", current.getSourceArchiveId());
-        result.put("fields", List.of()); result.put("unmappedFields", List.of());
+        LocalDate asOfDate = LocalDate.now(ZONE);
+        result.put("asOfDate", asOfDate);
+        result.put("fields", List.of()); result.put("childCandidates", List.of()); result.put("unmappedFields", List.of());
         if (!"huiben".equals(current.getSourceSystem()) || current.getSourceArchiveId() == null) return result;
-        List<String> archives = jdbc.query("SELECT details_json FROM legacy_record WHERE id=? AND user_id=? AND source_system='huiben' AND record_type='MEMBER'",
-                (rs, i) -> rs.getString(1), current.getSourceArchiveId(), id);
+        List<String> archives = jdbc.query("SELECT details_json FROM legacy_record WHERE id=? AND user_id=? AND source_system='huiben' AND record_type='MEMBER' AND CONCAT('huiben:',source_key)=?",
+                (rs, i) -> rs.getString(1), current.getSourceArchiveId(), id, current.getSourceKey());
         if (archives.size() != 1) throw new IllegalArgumentException("原始档案关联不一致");
         try {
             JsonNode archive = json.readTree(archives.get(0));
             if (!archive.isObject()) throw new IllegalArgumentException("原始档案格式无效");
-            Map<String, String> mapping = new LinkedHashMap<>();
-            mapping.put("realName", "会员名字"); mapping.put("phone", "手机号"); mapping.put("cardNo", "卡号");
-            mapping.put("planName", "借阅计划类型"); mapping.put("serviceStart", "服务开始时间"); mapping.put("serviceEnd", "服务结束时间");
-            mapping.put("usedUses", "已借阅次数"); mapping.put("totalUses", "总次数");
-            JsonNode currentJson = json.valueToTree(current);
-            List<Map<String, Object>> fields = new ArrayList<>();
-            mapping.forEach((field, sourceField) -> {
-                if (!archive.has(sourceField)) return;
-                Map<String, Object> item = new LinkedHashMap<>();
-                JsonNode sourceValue = archive.get(sourceField), currentValue = currentJson.get(field);
-                // Source strings (including '不限') are returned verbatim for explicit review; no age/date/rights inference.
-                item.put("field", field); item.put("sourceField", sourceField);
-                item.put("currentValue", currentValue); item.put("sourceValue", sourceValue);
-                item.put("reviewOnly", field.equals("totalUses"));
-                item.put("conflict", !equivalent(currentValue, sourceValue)); fields.add(item);
-            });
-            List<String> unmapped = new ArrayList<>(); archive.fieldNames().forEachRemaining(key -> { if (!mapping.containsValue(key)) unmapped.add(key); });
-            result.put("sourceAvailable", true); result.put("fields", fields); result.put("unmappedFields", unmapped); return result;
+            MemberSourcePreviewBuilder.populate(result, archive, current, json, asOfDate);
+            return result;
         } catch (JsonProcessingException error) {
             throw new IllegalArgumentException("原始档案格式无效");
         }
     }
 
-    private boolean equivalent(JsonNode a, JsonNode b) {
-        return a == null ? b == null || b.isNull() : a.isNull() ? b == null || b.isNull() : b != null && a.asText().equals(b.asText());
-    }
     private static String first(String a, String b) { return a != null ? a : b; }
     private static Long number(ResultSet rs, String column) throws SQLException { return rs.getObject(column) == null ? null : rs.getLong(column); }
     private static LocalDate date(ResultSet rs, String column) throws SQLException { return rs.getDate(column) == null ? null : rs.getDate(column).toLocalDate(); }

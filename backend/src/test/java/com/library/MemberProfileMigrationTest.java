@@ -38,7 +38,7 @@ class MemberProfileMigrationTest {
                 s.executeUpdate("INSERT INTO member_profile(user_id,source_key,card_no,total_uses) VALUES (102,'huiben:102','" + (duplicate ? "000Ab" : "000ab") + "',0)");
                 s.executeUpdate("INSERT INTO legacy_record(source_system,record_type,source_key,display_name,details_json,user_id) VALUES ('huiben','MEMBER','101','合成原始记录','{\"known\":true}',101)");
             }
-            Flyway next = Flyway.configure().dataSource(url, user, password).locations("classpath:db/migration").load();
+            Flyway next = Flyway.configure().dataSource(url, user, password).locations("classpath:db/migration").target("5").load();
             if (duplicate) assertThrows(Exception.class, next::migrate);
             else { next.migrate(); assertEquals(0, next.migrate().migrationsExecuted); }
             try (Connection c = DriverManager.getConnection(url, user, password); Statement s = c.createStatement()) {
