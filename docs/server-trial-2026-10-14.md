@@ -1,6 +1,6 @@
 # 服务器本机端口试运行
 
-状态：服务器本机端口试运行已部署并通过现场验收。现场追加的静态资源目录权限问题已修复，并通过完整 CI 和实际服务器更新验证。尚未向公网发布。
+状态：服务器已部署并通过现场验收。2026 年 10 月 15 日启用公网域名 [https://library.webuihub.com](https://library.webuihub.com)，Let's Encrypt 证书、强制 HTTPS 和自动续期配置完成。本机端口保留用于运维。静态资源目录权限、用户联系方式选填、续借天数和馆藏位置选填修复均已生效。
 
 ## 已确认的环境
 
@@ -12,7 +12,7 @@
 
 当前馆藏位置选填版本使用 [Verify 38684772003](https://github.com/wulala123123/library-management-system/actions/runs/38684772003) 实际验收的包：源码 `9b24f88269ad563ee9953786162d65ed65f11c91`，SHA256 `50d437fa9251d6048beb76326863bd78fc969d0a235831286282202435e73ed0`。完整产物来源见 `release-candidate-location-2026-10-15.json`。此前续借天数版本的来源保留在 `release-candidate-2026-10-15.json`；静态资源权限修复与手机号选填版本分别由 Verify 38567733813、38576845080 验收，10 月 14 日的来源保留在 `release-candidate-2026-10-14.json`。旧版本目录保留。
 
-安装根目录 `/opt/library-management-system`，Compose 项目 `library`，前端仅映射 `127.0.0.1:18080`，数据库和后端不映射主机端口。没有启用 `use-sub2api` 或接入外部 `proxy` 网络，不修改 Nginx Proxy Manager、DNS、防火墙、现有容器或业务库。只补装部署必需的 unzip，未升级系统或重启已有服务。
+安装根目录 `/opt/library-management-system`，Compose 项目 `library`，前端主机端口仍仅映射 `127.0.0.1:18080`，数据库和后端不映射主机端口。首次试运行时未启用外部代理；10 月 15 日为绑定域名启用 `use-sub2api` 和外部 `proxy` 网络，并在 Nginx Proxy Manager 添加图书馆专用代理及证书，详情见末节。首次部署只补装必需的 unzip，未升级系统。
 
 ## 访问和凭据
 
@@ -26,7 +26,7 @@ ssh -N -L 127.0.0.1:18080:127.0.0.1:18080 sub2api
 
 管理员用户名 `admin`。初始密码在服务器 `.env` 的 `ADMIN_PASSWORD` 中，仅通过有权限的 SSH 会话读取。本机忽略目录中的 `logs/server-trial-login-20261014.txt` 保存登录信息，NTFS 权限仅授予当前用户、SYSTEM 和本机管理员，值没有输出到工具日志或 Git。登录后修改管理员密码；这不会修改 `.env` 中已失效的首次引导值，应用重启不覆盖账号密码。不要公开整个环境文件。
 
-公网域名、代理接入、TLS 和真实旧库迁移继续留在后续发布步骤。使用实际域名前须同步 CORS、核对代理 IP 和外部网络，再安排发布。
+公网域名、代理接入和 TLS 已于 10 月 15 日完成，CORS、代理 IP 与外部网络已同步。真实旧库迁移仍需按独立迁移步骤执行。
 
 ## 现场追加检查
 
@@ -69,3 +69,17 @@ ssh -N -L 127.0.0.1:18080:127.0.0.1:18080 sub2api
 部署缓存防回归修复为提交 `35a295298b2abd9b33a23bbf4230e94056223630`，完整 [Verify 38686324983](https://github.com/wulala123123/library-management-system/actions/runs/38686324983) 已通过，包括同大小文件更新、运行产物校验、失败回退及隔离恢复。服务器实际应用为上面已校验的 `9b24f88` 发布包；通过上述 CI 的补修部署入口另存为 `/opt/library-management-system/deploy-cache-verified-35a2952.sh`，后续更新可使用该脚本，或新验收包自带的补修脚本。
 
 浏览器另开临时页面核对“选填”提示，用户原有未提交表单保留。现场证据位于忽略的 `logs/location-verification-20261015.json`、`logs/location-cache-repair-20261015.log` 和 `logs/location-form-20261015.jpg`。
+
+## 2026 年 10 月 15 日域名与 HTTPS
+
+用户确认 Cloudflare 仅 DNS 的 A 记录 `library.webuihub.com → 136.110.120.0` 后，已完成 HTTPS 配置。公共 DNS 与服务器解析一致，无 AAAA 或阻止签发的 CAA 记录。
+
+通过现有 Nginx Proxy Manager API 创建 Let's Encrypt 证书 6，使用 HTTP webroot 验证及现有 ACME 账号。证书覆盖 `library.webuihub.com`，到期时间为 2027 年 1 月 13 日 14:09:18（Asia/Shanghai），由 NPM 原有自动续期任务管理，续期配置已落盘。没有新增独立计划任务。
+
+图书馆前端已加入 `proxy` 网络，别名 `library-web`；NPM Proxy Host 3 使用 `http://library-web:80`，绑定证书 6，开启强制 HTTPS 和 HTTP/2。代理上传上限 52MiB，读写超时 120 秒。`.env` 保留原有本机来源并添加 `https://library.webuihub.com`，可信边缘代理限定为现场核对的 `172.20.0.4/32`。凭据、数据库和上传文件保持原值，数据库及后端仍未映射公网端口。
+
+更新前的图书馆备份为 `/opt/library-management-system/backups/https-library-20261015T070913Z`，数据库、上传文件、环境文件及版本记录校验全部通过；NPM 数据库使用 SQLite 在线备份，原代理配置与证书文件哈希保存在受保护的 `/opt/library-management-system/backups/https-preflight-20261015T070729Z`。现场逐项比较原代理记录、原证书记录及文件、其他服务容器的 ID/启动时间/重启次数，全部一致；图书馆用户、图书和借阅数据与更新前备份一致。
+
+服务器及本机公共域名验证通过：HTTP `/login` 返回 301 到 HTTPS，HTTPS 登录页及入口 JS/CSS 返回 200，健康为 `UP`，验证码图像正常，匿名用户管理请求仍为 401，实际域名 CORS 预检通过。TLS 1.3，系统信任链及域名校验均通过，证书 SHA256 为 `b6a3478e03e4105d56c297ce905b5f3d07afa6f3908e1a056941264f195e9527`。浏览器实际打开 HTTPS 登录页并显示验证码，无需 SSH 隧道。
+
+服务端证据为 `https-activation-20261015.json`、`https-verification-20261015.json`；本机证据及截图保存在忽略的 `logs/library-https-final-20261015.log`、`logs/library-https-external-20261015.json` 和 `logs/library-https-login-20261015.jpg`。私钥、原始环境配置和备份不进入 Git。

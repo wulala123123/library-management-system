@@ -1,6 +1,6 @@
 # 部署、更新与恢复
 
-本版修复了发布目录、迁移、持久化和代理配置，追加严格 umask 和前端实际资源验收后通过 [Verify 38567733813](https://github.com/wulala123123/library-management-system/actions/runs/38567733813)。2026 年 10 月 14 日已在 sub2api 本机端口试运行，尚未接入公网代理，见 [服务器记录](server-trial-2026-10-14.md)。后续版本仍须运行 `scripts/container-acceptance.sh` 或通过 Verify。修复记录见 [验收记录](repair-results-2026-10-13.md)，本次放行判断见 [部署复审](release-readiness-2026-10-13.md)。部署使用通过 Verify 的 `verified-distribution` 产物和配套校验文件；此前所有不含严格 umask 补修的候选包不再用于新安装。
+本版修复了发布目录、迁移、持久化和代理配置，追加严格 umask 和前端实际资源验收后通过 [Verify 38567733813](https://github.com/wulala123123/library-management-system/actions/runs/38567733813)。2026 年 10 月 14 日在 sub2api 本机端口试运行，10 月 15 日完成域名 `https://library.webuihub.com` 和 HTTPS 接入，见 [服务器记录](server-trial-2026-10-14.md)。后续版本仍须运行 `scripts/container-acceptance.sh` 或通过 Verify。修复记录见 [验收记录](repair-results-2026-10-13.md)，本次放行判断见 [部署复审](release-readiness-2026-10-13.md)。部署使用通过 Verify 的 `verified-distribution` 产物和配套校验文件；此前所有不含严格 umask 补修的候选包不再用于新安装。
 
 ## 发布目录
 
@@ -46,7 +46,9 @@ docker compose -p library --project-directory /opt/library-management-system/cur
 
 检查 `APP_NETWORK_SUBNET` 与现有 Docker/VPN 网络没有重叠；默认 `172.30.88.0/24`，若调整，须同步修改 `FRONTEND_INTERNAL_IP`。镜像中 Nginx 使用官方模板机制替换 `EDGE_PROXY_CIDR`，不要把未替换的模板直接当普通 Nginx 配置加载。
 
-服务器 Ubuntu 25.10 的系统维护与本项目上线分开安排。试运行期间仍可通过 SSH 隧道访问本机端口；当前文档不表示已经创建代理、修改 DNS 或开放公网。
+服务器 Ubuntu 25.10 的系统维护与本项目上线分开安排。当前 `library.webuihub.com` 使用仅 DNS 的 A 记录指向 `136.110.120.0`，Nginx Proxy Manager Proxy Host 3 转发到 `library-web:80`，绑定 Let's Encrypt 证书 6，启用 HTTP 到 HTTPS 跳转及 HTTP/2。证书有效期至 2027 年 1 月 13 日，由 NPM 的续期任务管理；ACME HTTP 验证继续使用现有 80 端口。公开域名无需 SSH 隧道，本机端口仍可用于运维。
+
+服务器 `.env` 的 `CORS_ORIGINS` 已包含 `https://library.webuihub.com`，`EDGE_PROXY_CIDR=172.20.0.4/32`，安装根目录保留 `use-sub2api` 标记。后续更新需加载两个 Compose 配置以保留代理网络。NPM 上游额外配置 52MiB 请求体上限和 120 秒代理超时，与应用上传入口一致。私钥仅保存在服务器 NPM 的持久化证书目录；证书申请与续期不需要将 DNS API 密钥写入项目。
 
 ## 更新与回退
 
