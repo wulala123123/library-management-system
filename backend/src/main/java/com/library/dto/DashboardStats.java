@@ -1,14 +1,14 @@
 package com.library.dto;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class DashboardStats {
+@EqualsAndHashCode(callSuper = true)
+public class DashboardStats extends StatisticsSummary {
 
     private Long totalBooks;
     private Long totalUsers;
-    private Long todayBorrows;
-    private Long overdueCount;
     private Long totalBorrows;
     private Long availableBooks;
 }

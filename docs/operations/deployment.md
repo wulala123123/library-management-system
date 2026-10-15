@@ -1,6 +1,6 @@
 # 部署、更新与恢复
 
-本版修复了发布目录、迁移、持久化和代理配置，追加严格 umask 和前端实际资源验收后通过 [Verify 38567733813](https://github.com/wulala123123/library-management-system/actions/runs/38567733813)。2026 年 10 月 14 日在 sub2api 本机端口试运行，10 月 15 日完成域名 `https://library.webuihub.com` 和 HTTPS 接入，见 [服务器记录](server-trial-2026-10-14.md)。后续版本仍须运行 `scripts/container-acceptance.sh` 或通过 Verify。修复记录见 [验收记录](repair-results-2026-10-13.md)，本次放行判断见 [部署复审](release-readiness-2026-10-13.md)。部署使用通过 Verify 的 `verified-distribution` 产物和配套校验文件；此前所有不含严格 umask 补修的候选包不再用于新安装。
+本页维护当前安装、更新、代理和恢复步骤。项目状态见 [PROJECT](../../PROJECT.md)，发布前通过[完整验证](../development/testing.md)，使用目标提交的 `verified-distribution` 及配套校验文件。历史服务器操作与验收见[档案](../archive/README.md)。
 
 ## 发布目录
 

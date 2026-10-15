@@ -4,7 +4,7 @@ import type { PageResult } from '@/types'
 export interface MigratedMember {
   user_id: number; username: string; real_name: string; phone?: string; card_no?: string
   plan_name?: string; service_start?: string; service_end?: string
-  used_uses?: number; total_uses: number | null; deposit_amount?: number | string
+  used_uses?: number; total_uses?: number | null; deposit_amount?: number | string
   deposit_status?: string; paid_fee?: number | string
 }
 export interface LegacyRecord {

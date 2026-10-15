@@ -17,10 +17,10 @@
         <el-table v-loading="loading" :data="members" stripe border>
           <el-table-column prop="real_name" label="会员" width="110" />
           <el-table-column prop="phone" label="手机号" width="140" />
-          <el-table-column prop="card_no" label="卡号" width="120"><template #default="{row}">{{ row.card_no || '未设置' }}</template></el-table-column>
+          <el-table-column prop="card_no" label="卡号" width="120"><template #default="{row}">{{ displayValue(row.card_no) }}</template></el-table-column>
           <el-table-column prop="plan_name" label="借阅计划" min-width="130" />
-          <el-table-column label="服务期限" min-width="210"><template #default="{row}">{{ row.service_start || '-' }} 至 {{ row.service_end || '-' }}</template></el-table-column>
-          <el-table-column label="已用 / 总次数" min-width="130"><template #default="{row}">{{ row.used_uses ?? '-' }} / {{ row.total_uses ?? '不限' }}</template></el-table-column>
+          <el-table-column label="服务期限" min-width="210"><template #default="{row}">{{ displayValue(row.service_start, '待核实') }} 至 {{ displayValue(row.service_end, '待核实') }}</template></el-table-column>
+          <el-table-column label="已用 / 总次数" min-width="130"><template #default="{row}">{{ displayValue(row.used_uses, '待核实') }} / {{ displayTotalUses(row.total_uses) }}</template></el-table-column>
           <el-table-column label="实缴押金（元）" min-width="150"><template #default="{row}">{{ row.deposit_amount ?? '未记录' }}（{{ row.deposit_status || '未记录' }}）</template></el-table-column>
           <el-table-column label="实缴费用（元）" min-width="120"><template #default="{row}">{{ row.paid_fee ?? '未记录' }}</template></el-table-column>
           <el-table-column label="操作" width="90" fixed="right"><template #default="{row}"><el-button link type="primary" @click="showMember(row.user_id)">完整资料</el-button></template></el-table-column>
@@ -46,7 +46,7 @@
     </el-tabs>
     <el-dialog v-model="detailVisible" :title="detailTitle" width="min(850px, 94vw)">
       <el-descriptions :column="1" border>
-        <el-descriptions-item v-for="(value, label) in detail" :key="label" :label="String(label)"><span class="detail-value">{{ value == null || value === '' ? '未记录' : value }}</span></el-descriptions-item>
+        <el-descriptions-item v-for="(value, label) in detail" :key="label" :label="String(label)"><span class="detail-value">{{ displayValue(value, '未记录') }}</span></el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </div>
@@ -56,6 +56,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getLegacyRecord, getLegacyRecords, getMigratedMembers, getMigrationSummary, type LegacyRecord, type MigratedMember } from '@/api/legacyData'
+import { displayValue, displayTotalUses } from '@/utils/display'
 
 const tab = ref('SUMMARY'), keyword = ref(''), page = ref(1), total = ref(0), loading = ref(false)
 const records = ref<LegacyRecord[]>([]), members = ref<MigratedMember[]>([])
@@ -63,9 +64,9 @@ const summary = ref<Record<string, number | string> | null>(null)
 const detailVisible = ref(false), detailTitle = ref(''), detail = ref<Record<string, unknown>>({})
 const isRecordsTab = computed(() => ['ORDER', 'BOOK', 'PLAN'].includes(tab.value))
 const summaryItems = [
-  { key: 'copies', label: '馆藏册数', unit: ' 本' }, { key: 'bookKinds', label: '图书种数', unit: ' 种' },
-  { key: 'available', label: '可借库存', unit: ' 本' }, { key: 'members', label: '会员', unit: ' 人' },
-  { key: 'activeLoans', label: '在借图书', unit: ' 本' }, { key: 'returnedLoans', label: '已归还明细', unit: ' 条' },
+  { key: 'copies', label: '迁入实体册总数', unit: ' 册' }, { key: 'bookKinds', label: '迁入图书种数', unit: ' 种' },
+  { key: 'available', label: '迁入可借册数', unit: ' 册' }, { key: 'members', label: '迁入会员', unit: ' 人' },
+  { key: 'activeLoans', label: '迁入在借册数', unit: ' 册' }, { key: 'returnedLoans', label: '已归还明细', unit: ' 条' },
   { key: 'loanRecords', label: '全部借还明细', unit: ' 条' }, { key: 'orders', label: '原始订单', unit: ' 单' },
   { key: 'plans', label: '借阅计划', unit: ' 种' }, { key: 'paidDeposits', label: '实缴押金合计', unit: ' 元' },
 ]

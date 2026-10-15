@@ -27,4 +27,4 @@ jobs:
             echo 'This release already exists; use a new version tag.' >&2
             exit 1
           fi
-          gh release create "$LIBRARY_TAG" release-files/*.zip release-files/*.sha256 --verify-tag --title "$LIBRARY_TAG" --notes-file docs/release-notes.md
+          gh release create "$LIBRARY_TAG" release-files/*.zip release-files/*.sha256 --verify-tag --title "$LIBRARY_TAG" --notes-file docs/releases/release-notes.md

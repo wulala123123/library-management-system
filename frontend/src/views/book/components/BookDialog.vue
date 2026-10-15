@@ -45,7 +45,7 @@
           <el-form-item label="出版社"><el-input v-model="form.publisher" placeholder="请输入出版社" /></el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="出版日期"><el-date-picker v-model="form.publishDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item>
+          <el-form-item label="出版日期"><el-date-picker v-model="form.publishDate" type="date" value-format="YYYY-MM-DD" placeholder="未设置" style="width: 100%" /></el-form-item>
         </el-col>
       </el-row>
 
@@ -54,15 +54,15 @@
           <el-form-item label="价格(元)"><el-input-number v-model="form.price" :min="0" :precision="2" style="width: 100%" /></el-form-item>
         </el-col>
         <el-col :span="8">
-          <el-form-item label="页数"><el-input-number v-model="form.pages" :min="0" style="width: 100%" /></el-form-item>
+          <el-form-item label="页数"><el-input-number v-model="form.pages" :min="0" placeholder="未设置" style="width: 100%" /></el-form-item>
         </el-col>
         <el-col :span="8">
-          <el-form-item label="总库存" prop="stockTotal"><el-input-number v-model="form.stockTotal" :min="1" style="width: 100%" /></el-form-item>
+          <el-form-item label="总库存" prop="stockTotal"><el-input-number v-model="form.stockTotal" :min="isEdit ? 0 : 1" style="width: 100%" /></el-form-item>
         </el-col>
       </el-row>
 
-      <el-form-item label="馆藏位置"><el-input v-model="form.location" placeholder="选填，例如：A区-3层-01架" :maxlength="100" /></el-form-item>
-      <el-form-item label="简介"><el-input v-model="form.description" type="textarea" :rows="3" placeholder="可选填图书简介" /></el-form-item>
+      <el-form-item label="馆藏位置"><el-input v-model="form.location" placeholder="未设置，选填，例如：A区-3层-01架" :maxlength="100" /></el-form-item>
+      <el-form-item label="简介"><el-input v-model="form.description" type="textarea" :rows="3" placeholder="待补充（选填图书简介）" /></el-form-item>
     </el-form>
 
     <template #footer>
@@ -130,7 +130,7 @@ async function loadBookDetail() {
       categoryId: book.categoryId,
       price: book.price,
       pages: book.pages,
-      stockTotal: book.stockTotal || 5,
+      stockTotal: book.stockTotal ?? undefined,
       location: book.location || '',
       description: book.description || '',
       coverImage: book.coverImage || '',

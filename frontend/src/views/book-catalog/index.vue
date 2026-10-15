@@ -58,7 +58,7 @@
             </div>
 
             <span v-if="book.stockAvailable <= 0" class="stock-tag tag-empty">已借完</span>
-            <span v-else-if="book.stockAvailable <= 3" class="stock-tag tag-low">仅剩{{ book.stockAvailable }}本</span>
+            <span v-else-if="book.stockAvailable <= 3" class="stock-tag tag-low">仅剩{{ book.stockAvailable }}册</span>
             <span v-else-if="book.stockAvailable >= 10" class="stock-tag tag-hot">热销</span>
           </div>
 
@@ -69,8 +69,8 @@
               <span v-if="book.categoryName" class="cat-label">{{ book.categoryName }}</span>
             </p>
             <div class="card-footer">
-              <span class="avail"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2L2 6v7a1 1 0 001 1h10a1 1 0 001-1V6L8 2z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg> 可借 {{ book.stockAvailable }}</span>
-              <span v-if="book.price" class="price">¥{{ (book.price || 0).toFixed(2) }}</span>
+              <span class="avail"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2L2 6v7a1 1 0 001 1h10a1 1 0 001-1V6L8 2z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg> 可借 {{ displayValue(book.stockAvailable, '待核实') }} 册</span>
+              <span class="price">{{ displayPrice(book.price) }}</span>
             </div>
           </div>
         </div>
@@ -121,6 +121,7 @@ import { getCategoryList } from '@/api/category'
 import { generateBorrowCode } from '@/api/borrowCode'
 import type { Book, BookCategory } from '@/types'
 import BookDetailDialog from './components/BookDetailDialog.vue'
+import { displayPrice, displayValue } from '@/utils/display'
 
 const loading = ref(false)
 const bookList = ref<Book[]>([])

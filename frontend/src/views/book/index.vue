@@ -33,9 +33,9 @@
       <div class="table-toolbar">
         <div class="toolbar-left">
           <el-button type="primary" @click="handleAdd">新增图书</el-button>
-          <el-button @click="handleExport">导出数据</el-button>
+          <el-button @click="handleExport">导出本页书目</el-button>
         </div>
-        <div class="toolbar-right"><span>共 {{ total }} 条记录</span></div>
+        <div class="toolbar-right"><span>共 {{ total }} 种图书</span></div>
       </div>
 
       <el-table v-loading="loading" :data="bookList" stripe border size="default">
@@ -56,7 +56,11 @@
         <el-table-column prop="author" label="作者" width="120" show-overflow-tooltip />
         <el-table-column prop="isbn" label="ISBN" width="140" show-overflow-tooltip />
         <el-table-column prop="publisher" label="出版社" width="140" show-overflow-tooltip />
-        <el-table-column prop="stockTotal" label="库存" width="80" align="center" />
+        <el-table-column label="出版日期" width="120"><template #default="{ row }">{{ displayValue(row.publishDate?.split('T')[0]) }}</template></el-table-column>
+        <el-table-column label="页数" width="85" align="center"><template #default="{ row }">{{ displayValue(row.pages) }}</template></el-table-column>
+        <el-table-column label="库位" min-width="140" show-overflow-tooltip><template #default="{ row }">{{ displayValue(row.location) }}</template></el-table-column>
+        <el-table-column label="简介" min-width="160" show-overflow-tooltip><template #default="{ row }">{{ displayValue(row.description, '待补充') }}</template></el-table-column>
+        <el-table-column prop="stockTotal" label="实体册总数（册）" width="140" align="center" />
         <el-table-column prop="status" label="状态" width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '在馆' : '下架' }}</el-tag>
@@ -95,6 +99,8 @@ import BookDialog from './components/BookDialog.vue'
 import { getBookPage, deleteBook } from '@/api/book'
 import { getCategoryList } from '@/api/category'
 import type { Book, BookCategory } from '@/types'
+import { displayValue } from '@/utils/display'
+import { downloadCsv } from '@/utils/statistics'
 
 const router = useRouter()
 
@@ -148,24 +154,23 @@ function handleExport() {
     ElMessage.warning('暂无数据可导出')
     return
   }
-  const headers = ['ID', 'ISBN', '书名', '作者', '出版社', '库存', '状态']
+  const headers = ['书目ID', 'ISBN', '书名', '作者', '出版社', '出版日期', '页数', '库位', '简介', '实体册总数（册）', '状态']
   const rows = bookList.value.map((row: Book) => [
     row.id,
     row.isbn,
     row.title,
     row.author || '',
     row.publisher || '',
-    row.stockTotal || 0,
+    displayValue(row.publishDate?.split('T')[0]),
+    displayValue(row.pages),
+    displayValue(row.location),
+    displayValue(row.description, '待补充'),
+    displayValue(row.stockTotal, '待核实'),
     row.status === 1 ? '在馆' : '下架',
   ])
-  const csvContent = [headers, ...rows].map(r => r.join(',')).join('\n')
+  const csvContent = [headers, ...rows].map(r => r.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\r\n')
   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `图书数据_${new Date().toISOString().slice(0, 10)}.csv`
-  link.click()
-  URL.revokeObjectURL(url)
+  downloadCsv(blob, '本页书目.csv')
   ElMessage.success('导出成功')
 }
 async function handleDelete(row: Book) {

@@ -1,5 +1,7 @@
 # 修复实施与验收记录
 
+> 历史记录：正文中的状态、版本和验收结论适用于记录当时。当前项目状态见 [PROJECT](../../../PROJECT.md)，现行规范见[文档中心](../../README.md)。
+
 2026 年 10 月 13 日，修复计划 52/52 项完成验证。[Verify 38420811037](https://github.com/wulala123123/library-management-system/actions/runs/38420811037) 已通过后端 69 项、前端 8 项、生产 Nginx HTTP 和完整 Docker 容器演练，可以进入服务器部署准备与受控试运行。
 
 2026 年 10 月 14 日追加现场验证：已在 sub2api 新空库、本机 `127.0.0.1:18080` 试运行。现场发现严格 umask 造成前端 JS 403，已补修并通过 [Verify 38567733813](https://github.com/wulala123123/library-management-system/actions/runs/38567733813)；实际页面、验证码登录、14 个模块查询、更新与备份通过。原有运行服务未变，未接入公网代理。当前状态以 [服务器试运行](server-trial-2026-10-14.md) 为准，以下首轮记录保留其原验收范围。
@@ -67,4 +69,4 @@
 
 业务规则已采用：生成码不预留库存，核销时借阅；同 ISBN 元数据冲突要求人工核对；资源限额 50MiB。3 张历史头像原字节整理到 `legacy-data/uploads/`，停止 Git 跟踪运行目录，本机原文件保留；归档及运行数据均不随发布包分发。旧环境升级应迁移完整真实上传目录。
 
-部署时间、域名和服务器系统维护继续留在后续部署任务。执行步骤见 [部署文档](deployment.md)，数据库接管见 [迁移文档](database-migrations.md)。
+部署时间、域名和服务器系统维护继续留在后续部署任务。执行步骤见 [部署文档](../../operations/deployment.md)，数据库接管见 [迁移文档](../../operations/database-migrations.md)。

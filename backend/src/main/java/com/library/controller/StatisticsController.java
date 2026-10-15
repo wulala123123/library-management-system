@@ -4,19 +4,26 @@ import com.library.common.Result;
 import com.library.entity.Book;
 import com.library.entity.BookCategory;
 import com.library.entity.BorrowRecord;
+import com.library.dto.StatisticsSummary;
 import com.library.mapper.BookCategoryMapper;
 import com.library.mapper.BookMapper;
 import com.library.mapper.BorrowRecordMapper;
-import com.library.mapper.UserMapper;
+import com.library.mapper.StatisticsMapper;
+import com.library.service.StatisticsService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,23 +34,32 @@ import java.util.stream.Collectors;
 public class StatisticsController {
 
     private final BookMapper bookMapper;
-    private final UserMapper userMapper;
     private final BorrowRecordMapper borrowRecordMapper;
     private final BookCategoryMapper categoryMapper;
+    private final StatisticsService statisticsService;
+    private final StatisticsMapper statisticsMapper;
 
     @Operation(summary = "获取统计数据")
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public Result<Map<String, Object>> getStatistics() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalBooks", bookMapper.selectCount(null));
-        stats.put("totalUsers", userMapper.selectCount(null));
-        stats.put("totalBorrows", borrowRecordMapper.selectCount(null));
-        stats.put("activeBorrows", borrowRecordMapper.selectCount(
-                new LambdaQueryWrapper<BorrowRecord>()
-                        .in(BorrowRecord::getStatus, "BORROWING", "OVERDUE")
-        ));
+        StatisticsSummary summary = statisticsService.getSummary();
+        Map<String, Object> stats = summary.toMap();
+        stats.put("totalBooks", summary.getCatalogTitles());
+        stats.put("totalUsers", summary.getAccountCount());
+        stats.put("totalBorrows", summary.getBorrowRecordCount());
+        stats.put("activeBorrows", summary.getBorrowedCopies());
         return Result.success(stats);
+    }
+
+    @Operation(summary = "导出与统计汇总相同口径的基础指标 CSV")
+    @GetMapping(value = "/export", produces = "text/csv")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    public ResponseEntity<byte[]> export() {
+        return ResponseEntity.ok()
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=library-statistics.csv")
+                .body(statisticsService.exportCsv().getBytes(StandardCharsets.UTF_8));
     }
 
     @Operation(summary = "获取借阅趋势数据（近7天）")
@@ -52,14 +68,11 @@ public class StatisticsController {
     public Result<List<Map<String, Object>>> getBorrowTrend() {
         List<Map<String, Object>> trend = new ArrayList<>();
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MM-dd");
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Shanghai"));
         for (int i = 6; i >= 0; i--) {
-            LocalDate date = LocalDate.now().minusDays(i);
-            String dateStr = date.toString();
+            LocalDate date = today.minusDays(i);
             String label = date.format(fmt);
-            Long count = borrowRecordMapper.selectCount(
-                    new LambdaQueryWrapper<BorrowRecord>()
-                            .apply("DATE(borrow_date) = {0}", dateStr)
-            );
+            Long count = statisticsMapper.countBorrowsOnDate(date);
             Map<String, Object> item = new HashMap<>();
             item.put("label", label);
             item.put("value", count);
@@ -105,8 +118,13 @@ public class StatisticsController {
     @GetMapping("/hot-books")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN', 'READER')")
     public Result<List<Map<String, Object>>> getHotBooks() {
+        Map<Long, Book> activeBooks = bookMapper.selectList(
+                new LambdaQueryWrapper<Book>().eq(Book::getStatus, 1))
+                .stream().collect(Collectors.toMap(Book::getId, book -> book));
+        if (activeBooks.isEmpty()) return Result.success(List.of());
         List<BorrowRecord> records = borrowRecordMapper.selectList(null);
         Map<Long, Long> bookBorrowCount = records.stream()
+                .filter(record -> activeBooks.containsKey(record.getBookId()))
                 .collect(Collectors.groupingBy(BorrowRecord::getBookId, Collectors.counting()));
 
         List<Map<String, Object>> result = new ArrayList<>();
@@ -114,7 +132,7 @@ public class StatisticsController {
                 .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
                 .limit(10)
                 .forEach(entry -> {
-                    Book book = bookMapper.selectById(entry.getKey());
+                    Book book = activeBooks.get(entry.getKey());
                     if (book != null) {
                         Map<String, Object> item = new HashMap<>();
                         item.put("title", book.getTitle());

@@ -1,19 +1,57 @@
-import { get } from './request'
+import request, { get } from './request'
 
-export interface DashboardStats {
-  totalBooks: number
-  totalUsers: number
+export interface BasicStats {
+  catalogTitles: number
+  totalCopies: number
+  availableCopies: number
+  borrowedCopies: number
+  availableTitles: number
+  lowStockTitles: number
+  accountCount: number
+  memberCount: number
+  validMemberCount: number
+  unknownValidityMemberCount: number
+  asOfDate: string
+  statisticalScope: Record<string, string>
+}
+
+export interface DashboardStats extends BasicStats {
   todayBorrows: number
   overdueCount: number
   totalBorrows: number
-  availableBooks: number
 }
 
-export interface InventoryStats {
-  totalBooks: number
-  availableBooks: number
-  borrowedBooks: number
-  lowStockBooks: number
+export type InventoryStats = BasicStats
+
+export interface InventoryReconciliationItem {
+  bookId: number
+  title: string
+  totalCopies: number
+  availableCopies: number
+  borrowedCopies: number
+  registeredCopies: number
+  registeredAvailableCopies: number
+  registeredBorrowedCopies: number
+  registeredOtherCopies?: number
+  totalDifference: number
+  availableDifference: number
+  borrowedDifference: number
+  stockBalanceDifference: number
+  consistent: boolean
+}
+
+export interface InventoryReconciliation {
+  asOfDate: string
+  statisticalScope: Record<string, string>
+  totalCopies: number
+  availableCopies: number
+  borrowedCopies: number
+  registeredCopies: number
+  registeredAvailableCopies: number
+  registeredBorrowedCopies: number
+  registeredOtherCopies?: number
+  mismatchedTitles: number
+  items: InventoryReconciliationItem[]
 }
 
 export function getDashboardStats() {
@@ -22,6 +60,18 @@ export function getDashboardStats() {
 
 export function getInventoryStats() {
   return get<InventoryStats>('/inventory/stats')
+}
+
+export function getStatistics() {
+  return get<DashboardStats>('/statistics')
+}
+
+export function getInventoryReconciliation() {
+  return get<InventoryReconciliation>('/inventory/reconciliation')
+}
+
+export function exportStatistics() {
+  return request.get<unknown, Blob>('/statistics/export', { responseType: 'blob' })
 }
 
 export function getBorrowTrend() {

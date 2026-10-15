@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex 项目经理"
+  short_description: "在 Codex 中协调经理与员工会话，维护项目边界、验收证据和换窗交接"
+  default_prompt: "使用 $codex-project-manager 担任项目经理，读取现有项目状态并制定下一批任务。"

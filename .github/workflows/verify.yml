@@ -28,6 +28,8 @@ jobs:
           --health-interval=5s --health-timeout=5s --health-retries=30
     steps:
       - uses: actions/checkout@v4
+      - name: Validate project documentation
+        run: python3 scripts/check_docs.py
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "17", cache: maven }
       - uses: actions/setup-node@v4
@@ -46,7 +48,9 @@ jobs:
       - name: Reconciled data import transaction acceptance
         env:
           LIBRARY_TRANSFER_ACCEPTANCE: "1"
-        run: python3 scripts/test_huiben_import.py
+        run: |
+          python3 scripts/test_huiben_import.py
+          python3 scripts/test_huiben_unlimited_uses.py --mysql
       - name: Locked frontend install, types, page flows, build and dependency audit
         working-directory: frontend
         run: |

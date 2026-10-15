@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import urllib.parse
 import urllib.request
+import unicodedata
 import xml.etree.ElementTree as ET
 import zipfile
 from decimal import Decimal
@@ -60,6 +61,48 @@ def unique(items, key, label):
     return found
 
 
+def normalized_uses(value):
+    """Normalize presentation differences, without inferring an entitlement."""
+    return re.sub(r"\s+", "", unicodedata.normalize("NFKC", text(value)))
+
+
+UNLIMITED_USES = frozenset(("不限", "不限制", "无限", "无限制", "无上限",
+    "不限次", "不限次数", "不限制次数", "无限次", "无限次数", "次数不限", "借阅次数不限"))
+
+
+def uses_value(value):
+    value = normalized_uses(value)
+    if value in UNLIMITED_USES: return None
+    # A missing/unknown value must never become NULL: NULL means unlimited.
+    if not re.fullmatch(r"[0-9]+(?:\.0+)?(?:次|次数)?", value):
+        raise ValueError("Unknown or ambiguous total-use value")
+    result = int(Decimal(re.sub(r"次数?$", "", value)))
+    if result > 2147483647: raise ValueError("Total-use value exceeds the database range")
+    return result
+
+
+def parse_total_uses(export_value, page_text=""):
+    """Use only an explicit total label, never a remaining/used/unrelated limit.
+
+    Huiben exports an unlimited total as numeric zero. The page's explicit
+    unlimited total disambiguates that zero; a positive conflicting total stops
+    preparation for review. Unknown exports are rejected instead of invented.
+    """
+    exported = uses_value(export_value)
+    page = normalized_uses(page_text)
+    match = re.match(r"(?:总借阅次数|总次数|总):(.+?)(?=(?:已借阅次数|已次数|已|剩余次数|剩余|余):|$)", page)
+    if not match: return exported
+    try: displayed = uses_value(match[1])
+    except ValueError:
+        # A malformed/unknown page total is not evidence of an unlimited plan.
+        return exported
+    if displayed is None:
+        if exported not in (0, None): raise ValueError("Page and export total-use values conflict")
+        return None
+    if displayed != exported: raise ValueError("Page and export total-use values conflict")
+    return exported
+
+
 def prepare(root):
     source = root / "source"
     books = read_xlsx(source / "books.xlsx")
@@ -85,7 +128,7 @@ def prepare(root):
         name = next(l["text"] for l in page_row["links"] if l["href"].startswith("/users/read?"))
         phone = next(l["text"] for l in page_row["links"] if l["href"].startswith("/users/exportuserbook"))
         row = member_by_pair[(name.strip(), phone.strip())]
-        total = None if "总: 不限" in page_row["cells"][7] else number(row["总次数"])
+        total = parse_total_uses(row["总次数"], page_row["cells"][7])
         prepared_members.append({"uid": uid, "username": "huiben_" + uid, "name": name.strip(), "phone": phone.strip(),
             "card_no": row["卡号"], "plan_name": row["借阅计划类型"], "service_start": row["服务开始时间"],
             "service_end": row["服务结束时间"], "used_uses": number(row["已借阅次数"]), "total_uses": total,

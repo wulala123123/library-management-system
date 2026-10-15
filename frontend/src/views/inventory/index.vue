@@ -1,22 +1,24 @@
 <template>
   <div class="inventory-management">
     <el-row :gutter="20" class="stat-row">
-      <el-col :xs="12" :sm="6"><div class="mini-stat total"><div class="value">{{ stats.totalBooks }}</div><div class="label">图书总量</div></div></el-col>
-      <el-col :xs="12" :sm="6"><div class="mini-stat available"><div class="value">{{ stats.availableBooks }}</div><div class="label">在馆可借</div></div></el-col>
-      <el-col :xs="12" :sm="6"><div class="mini-stat borrowed"><div class="value">{{ stats.borrowedBooks }}</div><div class="label">借出中</div></div></el-col>
-      <el-col :xs="12" :sm="6"><div class="mini-stat low-stock"><div class="value">{{ stats.lowStockBooks }}</div><div class="label">库存不足</div></div></el-col>
+      <el-col v-for="metric in statRows" :key="metric.key" :xs="12" :sm="8" :lg="4"><div class="mini-stat total"><div class="value">{{ metric.value }} <small>{{ metric.unit }}</small></div><div class="label">{{ metric.label }}</div></div></el-col>
     </el-row>
+    <StatisticsScope :stats="stats" inventory-only />
+    <InventoryReconciliation ref="reconciliationRef" />
 
     <div class="card-container">
       <div class="table-toolbar">
-        <div class="toolbar-left"><el-button @click="fetchInventory">刷新数据</el-button></div>
-        <div class="toolbar-right"><span>共 {{ total }} 条记录</span></div>
+        <div class="toolbar-left"><el-button @click="refreshAll">刷新数据</el-button></div>
+        <div class="toolbar-right"><span>共 {{ total }} 种图书</span></div>
       </div>
 
       <el-table v-loading="loading" :data="inventoryList" stripe border size="default">
         <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="title" label="图书名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="isbn" label="ISBN" width="140" show-overflow-tooltip />
+        <el-table-column label="库位" min-width="140" show-overflow-tooltip><template #default="{ row }">{{ displayValue(row.location) }}</template></el-table-column>
+        <el-table-column prop="stockTotal" label="实体册总数（册）" width="140" align="center" />
+        <el-table-column prop="stockAvailable" label="可借册数（册）" width="130" align="center" />
         <el-table-column label="库存情况" width="180" align="center">
           <template #default="{ row }">
             <el-progress :percentage="getStockPercent(row)" :stroke-width="8" :color="getStockColor(row)" />
@@ -44,11 +46,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { getInventoryStats } from '@/api/dashboard'
+import { ref, computed, onMounted } from 'vue'
+import { getInventoryStats, type InventoryStats } from '@/api/dashboard'
 import { getBookPage } from '@/api/book'
 import type { Book } from '@/types'
+import { displayValue } from '@/utils/display'
+import { getMetricRows, inventoryMetrics } from '@/utils/statistics'
+import StatisticsScope from '@/components/statistics/StatisticsScope.vue'
+import InventoryReconciliation from '@/components/statistics/InventoryReconciliation.vue'
 
 const loading = ref(false)
 const inventoryList = ref<Book[]>([])
@@ -56,7 +61,9 @@ const total = ref(0)
 const page = ref(1)
 const size = ref(10)
 
-const stats = reactive({ totalBooks: 0, availableBooks: 0, borrowedBooks: 0, lowStockBooks: 0 })
+const stats = ref<InventoryStats | null>(null)
+const statRows = computed(() => getMetricRows(stats.value, [...inventoryMetrics]))
+const reconciliationRef = ref<InstanceType<typeof InventoryReconciliation>>()
 
 onMounted(() => {
   fetchStats()
@@ -65,13 +72,11 @@ onMounted(() => {
 
 async function fetchStats() {
   try {
-    const data = await getInventoryStats()
-    stats.totalBooks = data.totalBooks ?? 0
-    stats.availableBooks = data.availableBooks ?? 0
-    stats.borrowedBooks = data.borrowedBooks ?? 0
-    stats.lowStockBooks = data.lowStockBooks ?? 0
-  } catch {}
+    stats.value = await getInventoryStats()
+  } catch { stats.value = null }
 }
+
+function refreshAll() { fetchStats(); fetchInventory(); reconciliationRef.value?.refresh() }
 
 async function fetchInventory() {
   loading.value = true

@@ -46,11 +46,13 @@
       </div>
     </div>
 
+    <StatisticsScope :stats="stats" />
+
     <div class="chart-row">
       <div class="panel-card main-panel animate-fade-in">
         <div class="panel-header">
           <h3>借阅趋势</h3>
-          <span>近7天</span>
+          <span>近7天借出册数</span>
         </div>
         <div class="bar-chart" v-if="chartData.length">
           <div v-for="(bar, i) in chartData" :key="i" class="bar-col">
@@ -67,7 +69,7 @@
       <div class="panel-card side-panel animate-fade-in">
         <div class="panel-header">
           <h3>分类分布</h3>
-          <span>图书占比</span>
+          <span>书目种数占比</span>
         </div>
         <div class="cat-list" v-if="categoryStats.length">
           <div v-for="(cat, i) in categoryStats" :key="i" class="cat-row">
@@ -85,7 +87,7 @@
       <div class="panel-card hot-panel animate-fade-in">
         <div class="panel-header">
           <h3>热门图书</h3>
-          <span>借阅排行</span>
+          <span>已接入借阅明细排行</span>
         </div>
         <div v-if="hotBooks.length" class="hot-list">
           <div v-for="(book, i) in hotBooks" :key="i" class="hot-item">
@@ -94,7 +96,7 @@
               <span class="hot-title" @click="goToBook(book.title)">{{ book.title }}</span>
               <div class="hot-bar"><div class="hot-fill" :style="{ width: (hotBooks[0]?.borrowCount ? book.borrowCount / hotBooks[0].borrowCount * 100 : 0) + '%' }"></div></div>
             </div>
-            <span class="hot-count">{{ book.borrowCount }}次</span>
+            <span class="hot-count">{{ book.borrowCount }}册</span>
           </div>
         </div>
         <el-empty v-else description="暂无数据" :image-size="56" />
@@ -122,6 +124,7 @@
         </el-table>
       </div>
     </div>
+    <InventoryReconciliation v-if="userStore.canManageBooks" compact />
   </div>
 </template>
 
@@ -133,6 +136,10 @@ import { getDashboardStats, getBorrowTrend, getCategoryDistribution, getHotBooks
 import { getBorrowPage, getMyBorrows } from '@/api/borrow'
 import { Reading } from '@element-plus/icons-vue'
 import type { BorrowRecord } from '@/types'
+import type { DashboardStats } from '@/api/dashboard'
+import { getSummaryRows } from '@/utils/statistics'
+import StatisticsScope from '@/components/statistics/StatisticsScope.vue'
+import InventoryReconciliation from '@/components/statistics/InventoryReconciliation.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -154,16 +161,12 @@ const todayStr = computed(() => {
   return `${d.getMonth() + 1}月${d.getDate()}日 星期${weekDays[d.getDay()]}`
 })
 
-interface StatCardDef {
-  icon: string; label: string; value: string; trend: number | null; hovered: boolean; type: string;
-}
-
-const statCards = ref<StatCardDef[]>([
-  { icon: 'Reading', label: '图书总量', value: '-', trend: null, hovered: false, type: 'primary' },
-  { icon: 'User', label: '注册读者', value: '-', trend: 3.2, hovered: false, type: 'success' },
-  { icon: 'Tickets', label: '今日借阅', value: '-', trend: -1.5, hovered: false, type: 'warning' },
-  { icon: 'Box', label: '逾期未还', value: '-', trend: null, hovered: false, type: 'danger' },
-])
+const stats = ref<DashboardStats | null>(null)
+const statCards = computed(() => getSummaryRows(stats.value).map(metric => ({
+  icon: metric.unit === '人' || metric.unit === '个' ? 'User' : 'Reading',
+  label: metric.label, value: `${metric.value} ${metric.unit}`, trend: null as number | null,
+  hovered: false, type: 'primary',
+})))
 
 const chartData = ref<Array<{ label: string; pct: number; display: number }>>([])
 
@@ -185,11 +188,7 @@ onMounted(async () => {
   if (aborted) return
 
   if (results[0].status === 'fulfilled') {
-    const data = results[0].value
-    statCards.value[0].value = String(data.totalBooks ?? '-')
-    statCards.value[1].value = String(data.totalUsers ?? '-')
-    statCards.value[2].value = String(data.todayBorrows ?? '-')
-    statCards.value[3].value = String(data.overdueCount ?? '-')
+    stats.value = results[0].value
   }
 
   if (results[1].status === 'fulfilled') {

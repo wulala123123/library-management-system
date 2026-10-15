@@ -1,9 +1,11 @@
 <template>
   <div class="statistics-page">
+    <div class="export-toolbar"><el-button type="primary" :loading="exporting" @click="handleExport">导出基础指标 CSV</el-button></div>
+    <StatisticsScope :stats="stats" />
     <el-row :gutter="20">
       <el-col :xs="24" :lg="16">
         <el-card shadow="hover" v-loading="loading">
-          <template #header>借阅趋势分析</template>
+          <template #header>近7天借出册数</template>
           <div class="chart-container" style="height: 350px;">
             <div class="mock-chart">
               <div class="chart-bars">
@@ -18,7 +20,7 @@
       </el-col>
 
       <el-col :xs="24" :lg="8">
-        <el-card shadow="hover"><template #header>分类占比</template>
+        <el-card shadow="hover"><template #header>书目种数分类占比</template>
           <div style="padding: 16px;">
             <div v-for="(cat, i) in categoryData" :key="i" class="cat-item">
               <span class="cat-name">{{ cat.name }}</span><el-progress :percentage="cat.percentage" :color="cat.color" />
@@ -30,12 +32,12 @@
 
     <el-row :gutter="20" style="margin-top: 20px;">
       <el-col :xs="24" :lg="12">
-        <el-card shadow="hover"><template #header>热门图书 TOP10</template>
+        <el-card shadow="hover"><template #header>热门图书 TOP10（已接入借阅明细）</template>
           <div v-if="hotBooks.length">
             <div v-for="(book, i) in hotBooks" :key="i" class="hot-item">
               <span class="rank" :class="{ top3: i < 3 }">{{ i + 1 }}</span>
               <span class="title">{{ book.title }}</span>
-              <span class="count">{{ book.borrowCount }}次</span>
+              <span class="count">{{ book.borrowCount }}册</span>
             </div>
           </div>
           <el-empty v-else description="暂无借阅数据" />
@@ -45,19 +47,25 @@
       <el-col :xs="24" :lg="12">
         <el-card shadow="hover"><template #header>统计数据汇总</template>
           <el-table :data="summaryData" border stripe size="default">
-            <el-table-column prop="metric" label="统计指标" width="160" />
+            <el-table-column prop="label" label="统计指标" width="170" />
             <el-table-column prop="value" label="数值" width="100" align="center" />
+            <el-table-column prop="unit" label="单位" width="65" />
             <el-table-column prop="description" label="说明" show-overflow-tooltip />
           </el-table>
         </el-card>
       </el-col>
     </el-row>
+    <InventoryReconciliation compact />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { getDashboardStats, getBorrowTrend, getCategoryDistribution, getHotBooks } from '@/api/dashboard'
+import { ref, computed, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { getStatistics, exportStatistics, getBorrowTrend, getCategoryDistribution, getHotBooks, type DashboardStats } from '@/api/dashboard'
+import { downloadCsv, getSummaryRows } from '@/utils/statistics'
+import StatisticsScope from '@/components/statistics/StatisticsScope.vue'
+import InventoryReconciliation from '@/components/statistics/InventoryReconciliation.vue'
 
 const loading = ref(false)
 
@@ -67,7 +75,9 @@ const categoryData = ref<Array<{ name: string; percentage: number; color: string
 
 const hotBooks = ref<{ title: string; borrowCount: number }[]>([])
 
-const summaryData = ref<{ metric: string; value: string; description: string }[]>([])
+const stats = ref<DashboardStats | null>(null)
+const summaryData = computed(() => getSummaryRows(stats.value))
+const exporting = ref(false)
 
 onMounted(async () => {
   await Promise.all([fetchDashboardStats(), fetchBorrowTrend(), fetchCategoryDistribution(), fetchHotBooks()])
@@ -76,15 +86,18 @@ onMounted(async () => {
 async function fetchDashboardStats() {
   loading.value = true
   try {
-    const d = await getDashboardStats()
-    summaryData.value = [
-      { metric: '图书总量', value: String(d.totalBooks ?? 0), description: '系统中所有在馆图书总数' },
-      { metric: '注册用户', value: String(d.totalUsers ?? 0), description: '已注册的读者和管理员数量' },
-      { metric: '今日借阅', value: String(d.todayBorrows ?? 0), description: '今日新产生的借阅记录数' },
-      { metric: '逾期未还', value: String(d.overdueCount ?? 0), description: '超过应还日期未归还的记录' },
-      { metric: '可借库存', value: String(d.availableBooks ?? 0), description: '当前可借阅的图书数量' },
-    ]
-  } catch {} finally { loading.value = false }
+    stats.value = await getStatistics()
+  } catch { stats.value = null } finally { loading.value = false }
+}
+
+async function handleExport() {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const csv = await exportStatistics()
+    downloadCsv(csv, '基础统计指标.csv')
+    ElMessage.success('导出成功，统计日期和范围见 CSV')
+  } catch {} finally { exporting.value = false }
 }
 
 async function fetchBorrowTrend() {
@@ -116,6 +129,7 @@ async function fetchHotBooks() {
 
 <style lang="scss" scoped>
 .statistics-page {
+  .export-toolbar { display: flex; justify-content: flex-end; margin-bottom: 14px; }
   .mock-chart {
     height: 100%;
     .chart-bars {

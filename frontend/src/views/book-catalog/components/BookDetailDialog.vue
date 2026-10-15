@@ -38,35 +38,35 @@
             </div>
             <div class="info-item">
               <span class="info-label">页数</span>
-              <span class="info-value">{{ book.pages || '-' }}</span>
+              <span class="info-value">{{ displayValue(book.pages) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">价格</span>
-              <span class="info-value price">{{ book.price ? `¥${book.price.toFixed(2)}` : '-' }}</span>
+              <span class="info-value price">{{ displayPrice(book.price) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">出版日期</span>
-              <span class="info-value">{{ book.publishDate?.split('T')[0] || '-' }}</span>
+              <span class="info-value">{{ displayValue(book.publishDate?.split('T')[0]) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">馆藏位置</span>
-              <span class="info-value">{{ book.location || '未分配' }}</span>
+              <span class="info-value">{{ displayValue(book.location) }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">可借数量</span>
+              <span class="info-label">可借册数</span>
               <span class="info-value" :class="{ 'stock-low': book.stockAvailable <= 3, 'stock-out': book.stockAvailable <= 0 }">
-                {{ book.stockAvailable }}
+                {{ displayValue(book.stockAvailable, '待核实') }} 册
               </span>
             </div>
             <div class="info-item">
-              <span class="info-label">总库存</span>
-              <span class="info-value">{{ book.stockTotal }}</span>
+              <span class="info-label">实体册总数</span>
+              <span class="info-value">{{ displayValue(book.stockTotal, '待核实') }} 册</span>
             </div>
           </div>
 
-          <div v-if="book.description" class="detail-desc">
+          <div class="detail-desc">
             <h4>内容简介</h4>
-            <p>{{ book.description }}</p>
+            <p>{{ displayValue(book.description, '待补充') }}</p>
           </div>
         </div>
       </div>
@@ -85,6 +85,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getBookById } from '@/api/book'
 import { generateBorrowCode } from '@/api/borrowCode'
 import type { Book } from '@/types'
+import { displayValue, displayPrice } from '@/utils/display'
 
 const props = defineProps<{ visible: boolean; bookId: number | null }>()
 const emit = defineEmits<{ (e: 'update:visible', val: boolean): void; (e: 'borrowed'): void }>()

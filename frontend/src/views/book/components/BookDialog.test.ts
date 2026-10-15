@@ -59,7 +59,7 @@ it('creates a book with its optional location left empty using real form validat
 
 it('clears an existing book location when editing', async () => {
   const wrapper = await dialog(10)
-  await wrapper.get('input[placeholder="选填，例如：A区-3层-01架"]').setValue('')
+  await wrapper.get('input[placeholder="未设置，选填，例如：A区-3层-01架"]').setValue('')
   await submit(wrapper)
   expect(api.update).toHaveBeenCalledWith(expect.objectContaining({ id: 10, location: '' }))
   expect(wrapper.emitted('success')).toHaveLength(1)
@@ -69,11 +69,11 @@ it('handles a rejected save without closing the dialog and permits a corrected r
   api.create.mockRejectedValueOnce(new Error('location: 馆藏位置包含非法字符'))
   const wrapper = await dialog()
   await fillRequired(wrapper)
-  await wrapper.get('input[placeholder="选填，例如：A区-3层-01架"]').setValue('<script>')
+  await wrapper.get('input[placeholder="未设置，选填，例如：A区-3层-01架"]').setValue('<script>')
   await submit(wrapper)
   expect(wrapper.emitted('success')).toBeUndefined()
   expect(wrapper.emitted('update:visible')).toBeUndefined()
-  await wrapper.get('input[placeholder="选填，例如：A区-3层-01架"]').setValue('')
+  await wrapper.get('input[placeholder="未设置，选填，例如：A区-3层-01架"]').setValue('')
   await submit(wrapper)
   expect(api.create).toHaveBeenNthCalledWith(2, expect.objectContaining({ location: '' }))
   expect(wrapper.emitted('success')).toHaveLength(1)
@@ -85,4 +85,20 @@ it('blocks missing required book fields without an unhandled validation rejectio
   expect(api.create).not.toHaveBeenCalled()
   expect(wrapper.find('.el-form-item.is-error').exists()).toBe(true)
   expect(wrapper.emitted('update:visible')).toBeUndefined()
+})
+
+it('preserves known zero stock, pages and price when opening an existing book', async () => {
+  api.detail.mockResolvedValue({ id: 10, isbn: '9781234567890', title: '零值图书', categoryId: 7, stockTotal: 0, pages: 0, price: 0, location: null, publishDate: null, description: null })
+  const wrapper = await dialog(10)
+  expect(wrapper.get('input[placeholder="未设置"]').attributes('placeholder')).toBe('未设置')
+  await submit(wrapper)
+  expect(api.update).toHaveBeenCalledWith(expect.objectContaining({ stockTotal: 0, pages: 0, price: 0, location: '', publishDate: '', description: '' }))
+})
+
+it('does not replace missing stock with the new-book default while editing', async () => {
+  api.detail.mockResolvedValue({ id: 10, isbn: '9781234567890', title: '待核实库存', categoryId: 7, stockTotal: null })
+  const wrapper = await dialog(10)
+  await submit(wrapper)
+  expect(api.update).not.toHaveBeenCalled()
+  expect(wrapper.find('.el-form-item.is-error').exists()).toBe(true)
 })
