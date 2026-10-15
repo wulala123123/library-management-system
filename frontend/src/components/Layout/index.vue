@@ -33,6 +33,11 @@
               <transition name="fade"><span v-if="!isCollapsed">图书管理</span></transition>
             </router-link>
 
+            <router-link v-if="isAdmin || isLibrarian" to="/book-copies" class="nav-item" :class="{ active: route.path === '/book-copies' }">
+              <el-icon><Notebook /></el-icon>
+              <transition name="fade"><span v-if="!isCollapsed">实体册查询</span></transition>
+            </router-link>
+
             <router-link v-if="isAdmin" to="/users" class="nav-item" :class="{ active: route.path === '/users' }">
               <el-icon><User /></el-icon>
               <transition name="fade"><span v-if="!isCollapsed">账号管理</span></transition>

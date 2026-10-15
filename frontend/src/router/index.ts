@@ -55,6 +55,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '图书管理', icon: 'Reading', roles: ['ADMIN', 'LIBRARIAN'] },
       },
       {
+        path: 'book-copies',
+        name: 'BookCopyQuery',
+        component: () => import('@/views/book-copy/index.vue'),
+        meta: { title: '实体册查询', icon: 'Notebook', roles: ['ADMIN', 'LIBRARIAN'] },
+      },
+      {
         path: 'categories',
         name: 'CategoryManagement',
         component: () => import('@/views/category/index.vue'),
