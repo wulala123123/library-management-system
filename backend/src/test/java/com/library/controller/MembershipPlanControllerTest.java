@@ -101,6 +101,27 @@ class MembershipPlanControllerTest {
     }
 
     @Test
+    void oldBusinessSnapshotComparesEveryBinaryByteByValueAndStillDetectsChangedBytes() {
+        String isbn = "snapshot-" + suffix();
+        jdbc.update("INSERT INTO book(isbn,title,stock_total,stock_available) VALUES (?,'合成快照二进制验证',1,1)", isbn);
+        long bookId = jdbc.queryForObject("SELECT id FROM book WHERE isbn=?", Long.class, isbn);
+        String barcode = "000零Aa-" + suffix() + " ";
+        jdbc.update("INSERT INTO book_copy(book_id,barcode,status) VALUES (?,?,'AVAILABLE')", bookId, barcode);
+        Map<String, List<Map<String, Object>>> before = oldBusiness();
+        String copyTable = before.keySet().stream().filter(table -> table.equalsIgnoreCase("book_copy")).findFirst().orElseThrow();
+        Map<String, Object> copy = before.get(copyTable).stream().filter(row -> ((Number) row.entrySet().stream()
+                .filter(cell -> cell.getKey().equalsIgnoreCase("book_id")).findFirst().orElseThrow().getValue()).longValue() == bookId).findFirst().orElseThrow();
+        Object captured = copy.entrySet().stream().filter(cell -> cell.getKey().equalsIgnoreCase("barcode_key")).findFirst().orElseThrow().getValue();
+        // The generated binary column stays in the full snapshot, including zeros, Unicode and trailing space.
+        assertEquals(HexFormat.of().formatHex(barcode.getBytes(StandardCharsets.UTF_8)), captured);
+        assertEquals(before, oldBusiness(), "Repeated reads of unchanged binary cells must compare by value");
+        jdbc.update("UPDATE book_copy SET barcode=? WHERE book_id=?", barcode.replace("Aa", "aa"), bookId);
+        assertNotEquals(before, oldBusiness(), "A real case-sensitive byte change must remain visible");
+        jdbc.update("UPDATE book_copy SET barcode=? WHERE book_id=?", barcode, bookId);
+        assertEquals(before, oldBusiness(), "Restoring the exact bytes must restore the complete snapshot");
+    }
+
+    @Test
     void idempotencyReplaysBeforeRevisionAndCurrentDraftChecksAndRejectsDifferentRequestsForTheSameKey() {
         Detail created = plans.create(complete(), 1L);
         Publish request = publish(created.revision());
@@ -274,7 +295,11 @@ class MembershipPlanControllerTest {
         List<String> tables = jdbc.query("SELECT table_name AS name FROM information_schema.tables WHERE table_schema=SCHEMA() AND table_type='BASE TABLE'", (rs, i) -> rs.getString("name"));
         for (String table : tables) {
             if (table.toLowerCase(Locale.ROOT).startsWith("membership_plan")) continue;
-            assertTrue(table.matches("[a-zA-Z0-9_]+")); result.put(table, jdbc.queryForList("SELECT * FROM `" + table + "`"));
+            assertTrue(table.matches("[a-zA-Z0-9_]+"));
+            List<Map<String, Object>> rows = jdbc.queryForList("SELECT * FROM `" + table + "`");
+            // JDBC creates fresh byte[] objects on each read. Keep every column, comparing binary content by value.
+            for (Map<String, Object> row : rows) row.replaceAll((column, value) -> value instanceof byte[] bytes ? HexFormat.of().formatHex(bytes) : value);
+            result.put(table, rows);
         }
         return result;
     }
