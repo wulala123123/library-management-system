@@ -61,7 +61,7 @@
         </el-col>
       </el-row>
 
-      <el-form-item label="馆藏位置"><el-input v-model="form.location" placeholder="例如：A区-3层-01架" /></el-form-item>
+      <el-form-item label="馆藏位置"><el-input v-model="form.location" placeholder="选填，例如：A区-3层-01架" :maxlength="100" /></el-form-item>
       <el-form-item label="简介"><el-input v-model="form.description" type="textarea" :rows="3" placeholder="可选填图书简介" /></el-form-item>
     </el-form>
 
@@ -171,34 +171,35 @@ function removeCover() {
 function handleClose() { emit('update:visible', false) }
 
 async function handleSubmit() {
-  if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
-    if (!valid) return
-    loading.value = true
-    try {
-      let bookId = props.bookId
-      if (isEdit.value) {
-        await updateBook({ id: props.bookId!, ...form, categoryId: form.categoryId! })
-      } else {
-        const res = await createBook({ ...form, categoryId: form.categoryId! })
-        bookId = res?.id
-      }
+  if (!formRef.value || loading.value) return
+  try { await formRef.value.validate() } catch { return }
+  if (loading.value) return
+  loading.value = true
+  try {
+    let bookId = props.bookId
+    if (isEdit.value) {
+      await updateBook({ id: props.bookId!, ...form, categoryId: form.categoryId! })
+    } else {
+      const res = await createBook({ ...form, categoryId: form.categoryId! })
+      bookId = res?.id
+    }
 
-      if (pendingFile.value && bookId) {
-        uploadingCover.value = true
-        try {
-          const coverPath = await uploadBookCover(bookId, pendingFile.value)
-          form.coverImage = typeof coverPath === 'string' ? coverPath : (coverPath as any)?.data || ''
-        } catch (e: any) {
-          ElMessage.warning('图书保存成功，但封面上传失败')
-        } finally { uploadingCover.value = false }
-      }
+    if (pendingFile.value && bookId) {
+      uploadingCover.value = true
+      try {
+        const coverPath = await uploadBookCover(bookId, pendingFile.value)
+        form.coverImage = typeof coverPath === 'string' ? coverPath : (coverPath as any)?.data || ''
+      } catch (e: any) {
+        ElMessage.warning('图书保存成功，但封面上传失败')
+      } finally { uploadingCover.value = false }
+    }
 
-      ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
-      handleClose()
-      emit('success')
-    } finally { loading.value = false }
-  })
+    ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
+    handleClose()
+    emit('success')
+  } catch {
+    // The request interceptor displays API errors; retain the form for correction.
+  } finally { loading.value = false }
 }
 </script>
 

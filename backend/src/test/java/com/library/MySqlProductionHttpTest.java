@@ -138,6 +138,29 @@ class MySqlProductionHttpTest {
         return success("/books","POST",Map.of("isbn",UUID.randomUUID().toString().substring(0,20),
                 "title","生产验收图书","categoryId",category,"stockTotal",2),token);
     }
+    @Test void bookCrudAllowsOptionalLocationAndClearingAnExistingLocation() throws Exception {
+        String token=login();
+        long category=success("/categories","POST",Map.of("name","位置验收"+UUID.randomUUID().toString().substring(0,8),
+                "parentId",0,"sortOrder",0,"status",1),token).path("id").asLong();
+        for(String location:new String[]{null,"","A区-3层-01架"}) {
+            var body=new LinkedHashMap<String,Object>();
+            body.put("isbn",UUID.randomUUID().toString().substring(0,20));
+            body.put("title","位置选填验收图书"); body.put("categoryId",category); body.put("stockTotal",2);
+            if(location!=null) body.put("location",location);
+            long id=success("/books","POST",body,token).path("id").asLong();
+            assertEquals(location,jdbc.queryForObject("SELECT location FROM book WHERE id=?",String.class,id));
+            body.put("id",id); body.put("location","B区-2层-03架");
+            success("/books","PUT",body,token);
+            body.put("location","");
+            assertEquals("",success("/books","PUT",body,token).path("location").asText());
+            assertEquals("",jdbc.queryForObject("SELECT location FROM book WHERE id=?",String.class,id));
+            for(String invalid:List.of("<script>","A".repeat(101))) {
+                body.put("location",invalid);
+                assertEquals(400,send("/books","PUT",json.writeValueAsString(body),token).statusCode());
+                assertEquals("",jdbc.queryForObject("SELECT location FROM book WHERE id=?",String.class,id));
+            }
+        }
+    }
     @Test void userCrudAllowsOptionalPhoneAndEditingWithoutChangingPassword() throws Exception {
         String token=login();
         for(String phone:new String[]{null,"","13800138000"}) {

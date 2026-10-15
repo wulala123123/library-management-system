@@ -49,7 +49,7 @@ public class BookRequest {
     private String description;
 
     @Size(max = 100, message = "馆藏位置不超过100个字符")
-    @Pattern(regexp = "^[\\p{L}\\d\\-A-Z区层架]+$", message = "馆藏位置包含非法字符")
+    @Pattern(regexp = "^[\\p{L}\\d\\-A-Z区层架]*$", message = "馆藏位置包含非法字符")
     private String location;
 
     @NotNull(message = "总库存不能为空")
