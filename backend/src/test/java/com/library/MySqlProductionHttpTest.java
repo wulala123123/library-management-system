@@ -128,6 +128,27 @@ class MySqlProductionHttpTest {
         assertEquals(200,response.statusCode());
         assertEquals("READER",jdbc.queryForObject("SELECT role FROM sys_user WHERE username=?",String.class,username));
     }
+    @Test void copyActionsPreserveRawUtf8AndEnforceTheLifecycleThroughProductionHttp() throws Exception {
+        String token=login();var book=createBook(token);long bookId=book.path("id").asLong();
+        var page=success("/book-copies?bookId="+bookId,"GET",null,token);long copyId=page.path("records").get(0).path("id").asLong();assertTrue(copyId>0);
+        assertEquals(401,send("/book-copies/"+copyId+"/action-context","GET",null,null).statusCode());
+        String raw="  javascript:中文 onload= <script>纯文本</script> 😀  ";long restoreEvent=0;
+        for(String action:List.of("MOVE","DISABLE","WRITE_OFF","RESTORE","ENABLE")){
+            var context=success("/book-copies/"+copyId+"/action-context","GET",null,token);long version=context.path("copy").path("actionVersion").asLong();String key=UUID.randomUUID().toString();
+            var input=new LinkedHashMap<String,Object>();input.put("copyId",copyId);input.put("expectedVersion",version);
+            if(action.equals("MOVE"))input.put("targetLocation",Map.of("kind","TEXT","text",raw));
+            if(action.equals("RESTORE")){input.put("restoreOfActionId",restoreEvent);input.put("restoreTo","DISABLED");input.put("targetLocation",Map.of("kind","UNASSIGNED"));}
+            var preview=success("/book-copy-actions/previews","POST",Map.of("idempotencyKey",key,"action",action,"reason",raw,"copies",List.of(input)),token);long requestId=preview.path("requestId").asLong();var confirm=Map.of("idempotencyKey",key,"previewDigest",preview.path("previewDigest").asText());
+            var receipt=success("/book-copy-actions/"+requestId+"/confirm","POST",confirm,token);assertEquals(receipt,success("/book-copy-actions/"+requestId+"/confirm","POST",confirm,token));assertEquals(receipt,success("/book-copy-actions/by-key?key="+key,"GET",null,token).path("receipt"));
+            var after=success("/book-copies/"+copyId+"/action-context","GET",null,token).path("copy");assertEquals(version+1,after.path("actionVersion").asLong());
+            if(action.equals("MOVE"))assertEquals(raw,after.path("location").asText());
+            if(action.equals("WRITE_OFF"))restoreEvent=receipt.path("copies").get(0).path("eventId").asLong();
+            if(action.equals("RESTORE")){assertEquals("DISABLED",after.path("stateClassification").asText());assertTrue(after.path("location").isNull());}
+            var history=success("/book-copies/"+copyId+"/actions","GET",null,token);assertEquals(raw,history.path("records").get(0).path("reason").asText());
+        }
+        assertEquals(2,jdbc.queryForObject("SELECT stock_total FROM book WHERE id=?",Integer.class,bookId));assertEquals(2,jdbc.queryForObject("SELECT stock_available FROM book WHERE id=?",Integer.class,bookId));
+        System.out.println("COPY_ACTION_PRODUCTION_HTTP utf8Raw=true lifecycle=MOVE,DISABLE,WRITE_OFF,RESTORE,ENABLE replay=true unauthenticated=401");
+    }
     private com.fasterxml.jackson.databind.JsonNode success(String path,String method,Object body,String token) throws Exception {
         var response=send(path,method,body==null?null:json.writeValueAsString(body),token);
         assertEquals(200,response.statusCode(),path+": "+response.body());

@@ -92,7 +92,9 @@ public final class InventoryIntakeContracts {
     public record Progress(Long purchaseItemId, int quantity, int instockQuantity, int pendingQuantity, int receivingQuantity) {}
     @JsonInclude(JsonInclude.Include.ALWAYS)
     public record View(Long intakeId, String state, String previewDigest, String expiresAt, Source source, List<PreviewLine> lines,
-                       List<BookSnapshot> books, List<Progress> purchaseProgress, List<String> warnings, Receipt receipt) {}
+                       List<BookSnapshot> books, List<Progress> purchaseProgress, List<String> warnings, Receipt receipt,List<LifecycleBook> reconciliationV2ByBook) {}
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    public record LifecycleBook(Long bookId,String isbn,com.library.service.CopyInventoryProjection.V2 reconciliationV2) {}
     @JsonInclude(JsonInclude.Include.ALWAYS)
     public record BookReceipt(Long bookId, int stockTotalBefore, int stockAvailableBefore, int stockTotalAfter,
                               int stockAvailableAfter, int addedQuantity) {}

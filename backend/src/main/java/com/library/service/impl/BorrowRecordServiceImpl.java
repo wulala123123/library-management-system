@@ -26,6 +26,7 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
     private final BookMapper bookMapper;
     private final UserMapper userMapper;
     private final com.library.mapper.BookCopyMapper copyMapper;
+    private final com.library.service.CopyInventoryProjection copyProjection;
 
     @Override
     public PageResult<BorrowRecord> getPage(int page, int size, String keyword, String status, Long userId) {
@@ -88,13 +89,15 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
         if (borrowDays < 1 || borrowDays > 90) throw new RuntimeException("借阅天数必须为1-90天");
 
         // The book row is locked first for both borrowing and returns.
+        com.library.service.CopyInventoryProjection.V2 registration=copyProjection.forBook(book.getId());
+        if(request.getCopyId()==null&&(registration.hasUnknownStatus()||registration.hasLoanLinkAnomaly()))
+            throw new RuntimeException("存在待核实状态或借阅关联，请明确选择已核实的可借实体册");
         com.library.entity.BookCopy copy = request.getCopyId() == null
                 ? copyMapper.lockAvailable(book.getId()) : copyMapper.lockById(request.getCopyId());
-        if (request.getCopyId() != null && (copy == null || !book.getId().equals(copy.getBookId()) || !"AVAILABLE".equals(copy.getStatus()))) {
+        if (request.getCopyId() != null && (copy == null || !book.getId().equals(copy.getBookId()) || !"AVAILABLE".equals(copy.getStatus()) || copyMapper.activeLoans(copy.getId())!=0)) {
             throw new RuntimeException("所选馆内条码已借出或不属于该图书");
         }
-        if (copy == null && copyMapper.selectCount(new LambdaQueryWrapper<com.library.entity.BookCopy>()
-                .eq(com.library.entity.BookCopy::getBookId, book.getId())) >= book.getStockTotal()) {
+        if (copy == null && (registration.inStockDifference()<=0 || registration.availableDifference()<=0)) {
             throw new RuntimeException("馆内条码状态与库存不一致，请先核对库存");
         }
 
@@ -111,8 +114,7 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
         borrowRecordMapper.insert(record);
 
         if (copy != null) {
-            copy.setStatus("BORROWED");
-            if (copyMapper.updateById(copy) != 1) throw new RuntimeException("馆内条码状态更新失败");
+            if (copyMapper.changeCirculationState(copy.getId(),copy.getActionVersion(),"AVAILABLE","BORROWED") != 1) throw new RuntimeException("馆内条码状态或版本更新失败");
         }
 
         book.setStockAvailable(book.getStockAvailable() - 1);
@@ -144,8 +146,9 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
             if (copy == null || !book.getId().equals(copy.getBookId()) || !"BORROWED".equals(copy.getStatus())) {
                 throw new RuntimeException("馆内条码状态不一致，请联系管理员");
             }
-            copy.setStatus("AVAILABLE");
-            if (copyMapper.updateById(copy) != 1) throw new RuntimeException("馆内条码状态更新失败");
+            if(copyMapper.activeLoans(copy.getId())!=0) throw new RuntimeException("同一实体册仍有其他在借关联，请核对");
+            // This record is already RETURNED in the same transaction; all other active links must be absent.
+            if (copyMapper.changeCirculationState(copy.getId(),copy.getActionVersion(),"BORROWED","AVAILABLE") != 1) throw new RuntimeException("馆内条码状态或版本更新失败");
         }
         book.setStockAvailable(book.getStockAvailable() + 1);
         if (bookMapper.updateById(book) != 1) throw new RuntimeException("库存更新失败，请重试");

@@ -65,9 +65,9 @@ public interface StatisticsMapper {
             FROM book b
             LEFT JOIN (
                 SELECT book_id, COUNT(*) AS registered_copies,
-                       SUM(CASE WHEN status = 'AVAILABLE' THEN 1 ELSE 0 END) AS registered_available_copies,
-                       SUM(CASE WHEN status = 'BORROWED' THEN 1 ELSE 0 END) AS registered_borrowed_copies,
-                       SUM(CASE WHEN status NOT IN ('AVAILABLE', 'BORROWED') THEN 1 ELSE 0 END) AS registered_other_copies
+                       SUM(CASE WHEN CAST(status AS BINARY(256))=CAST('AVAILABLE' AS BINARY(256)) THEN 1 ELSE 0 END) AS registered_available_copies,
+                       SUM(CASE WHEN CAST(status AS BINARY(256))=CAST('BORROWED' AS BINARY(256)) THEN 1 ELSE 0 END) AS registered_borrowed_copies,
+                       SUM(CASE WHEN CAST(status AS BINARY(256))<>CAST('AVAILABLE' AS BINARY(256)) AND CAST(status AS BINARY(256))<>CAST('BORROWED' AS BINARY(256)) THEN 1 ELSE 0 END) AS registered_other_copies
                 FROM book_copy GROUP BY book_id
             ) c ON c.book_id = b.id
             LEFT JOIN (

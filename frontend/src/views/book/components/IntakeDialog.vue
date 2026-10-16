@@ -30,6 +30,10 @@
             <el-table-column label="登记总 / 可借"><template #default="{ row }">{{ row.registeredCopies }} / {{ row.registeredAvailableCopies }}</template></el-table-column>
             <el-table-column label="总数 / 可借差额"><template #default="{ row }">{{ row.totalDifference }} / {{ row.availableDifference }}</template></el-table-column>
           </el-table>
+          <section v-if="currentReconciliation.length">
+            <h4>当前在库核对（查询时刻，不改原预览或回执）</h4>
+            <article v-for="item in currentReconciliation" :key="item.isbn"><p>ISBN {{ item.isbn }} · 书目 {{ item.bookId ?? '新书目待确认' }}</p><CopyReconciliationV2 :value="item.reconciliationV2" /></article>
+          </section>
           <p v-for="progress in view.purchaseProgress" :key="progress.purchaseItemId">采购项 {{ progress.purchaseItemId }}：已收 {{ progress.instockQuantity }} / {{ progress.quantity }} 册，本次 {{ progress.receivingQuantity }} 册</p>
           <section v-for="line in view.lines" :key="line.lineKey" class="preview-line">
             <h4>{{ titles[line.lineKey] }}</h4>
@@ -62,6 +66,8 @@ import CopyInputs from './CopyInputs.vue'
 import IntakeReceiptPanel from './IntakeReceipt.vue'
 import { barcodeBytes, copiesInput, MAX_INTAKE_COPIES, newCopy, validateDraft, visibleBarcode, type IntakeDraftLine } from './intakeDraft'
 import { useIntakeSession } from './intakeSession'
+import type { CopyReconciliationV2 as ReconciliationV2 } from '@/api/bookCopyAction'
+import CopyReconciliationV2 from '@/views/book-copy/components/CopyReconciliationV2.vue'
 
 const props = defineProps<{ visible: boolean; bookId?: number | null; bookTitle?: string; newBook?: BookMetadata | null; purchaseOrderId?: number | null }>()
 const emit = defineEmits<{ 'update:visible': [value: boolean]; success: [receipt: IntakeReceipt] }>()
@@ -73,6 +79,7 @@ const timer = setInterval(() => { now.value = Date.now() }, 1000)
 onUnmounted(() => { clearInterval(timer); ++generation })
 const totalCopies = computed(() => lines.value.reduce((count, line) => count + line.copies.length, 0))
 const expired = computed(() => !!view.value && Date.parse(view.value.expiresAt) <= now.value)
+const currentReconciliation = computed(() => (view.value as (typeof view.value & { reconciliationV2ByBook?: { bookId: number | null; isbn: string; reconciliationV2: ReconciliationV2 }[] }))?.reconciliationV2ByBook || [])
 const needsReview = computed(() => ['PREVIEW_STALE', 'PREVIEW_EXPIRED', 'BARCODE_CONFLICT', 'CATALOG_CONFLICT', 'QUANTITY_EXCEEDS_PENDING', 'PURCHASE_NOT_APPROVED'].includes(reasonCode.value))
 const titles = computed(() => Object.fromEntries((view.value?.lines || lines.value).map(line => [line.lineKey,
   lines.value.find(draft => draft.lineKey === line.lineKey)?.label || ('newBook' in line && line.newBook?.title) || view.value?.books.find(book => book.bookId === ('bookId' in line ? line.bookId : line.target.bookId))?.title || '本次入库书目'])))

@@ -8,10 +8,10 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | 阶段 3 B31/B32/B36 逐册状态与文本位置动作；结构化库位与盘点后续独立实施 |
-| 工作项状态 | `24463a4`已完成完整Verify、v2两次最新全备隔离升级、正式发布、独立复核和浏览器验收；下一批设计已交，经理收窄范围并纳入用户三项确认，待定向验收后实施 |
+| 工作项状态 | V9前后端本地交付已审，86个后端不同用例及55项前端定向测试通过，源清单匹配；干净DDL和GET契约已独立审定。待完整Verify及发布，线上仍为24463a4 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
-| 应用代码基线 | 已验收生产 `24463a4fd48e6c28e8b90d5d28fd01da9ecf86cb`，V1–V8；工作区为经理上线记录与已确认规范更新 |
+| 应用代码基线 | 已验收生产 `24463a4fd48e6c28e8b90d5d28fd01da9ecf86cb`，V1–V8；工作分支文档checkpoint `4fc8b1f`，后续V9实现尚未提交 |
 | 完整 Verify | [38775997648](https://github.com/wulala123123/library-management-system/actions/runs/38775997648) 全部成功，产物 `11994176451`；首次 `38774595681` 的二进制快照引用比较误报及修复证据保留 |
 | 最近维护结果 | [统一实体入库](docs/archive/2026-10/catalog-intake-2026-10-16.md)；[逐册查询](docs/archive/2026-10/catalog-query-2026-10-15.md)；此前会员/来源登记及第一批保留 |
 | 恢复依据 | `git status --short`、当前阶段勾选、下述有效执行者与私有证据 |
@@ -20,7 +20,7 @@
 
 1. B22 七户登记已完成，保留首次预览、V7 新备及隔离复验证据，禁止重跑整批导入或会员完整保存。
 2. 入库已上线验收，不重复发布或执行旧修正；私有 `logs/catalog-stage3/intake-manager-v2/manager-final-acceptance.json` 保存最终结果。
-3. 接收 `copy-actions-design/` 收窄设计，固定无触发器的事务审计边界，按已确认恢复/角色规则实施V9文本位置和状态动作，借还版本与统计口径同批；结构化关联和盘点后批。逐套餐数值未核实不启用收费或限制。
+3. V9前后端交付已审；统计固定查询、旧口径标识及恢复来源展示已补齐。接收发布工具语义兼容返工后绑定最终候选/完整CI及两份已审契约，执行两次最新全备隔离升级与发布。无触发器/全业务写开关/preview_epoch；失败停止应用、保留DB并前向修复，不回旧写代码。结构化关联和盘点后批。
 
 ## 有效执行者
 
@@ -28,7 +28,9 @@
 
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
-| 阶段 3 逐册动作设计 / v2 | `/root/statistics_backend` | 仅读应用/规范，唯一写 `logs/catalog-stage3/copy-actions-design/`；不实施、不操作DB或服务器 | 按用户三项确认收窄V9：文本位置/未分配、状态及配套借还/统计；不使用影响现有备份的触发器，结构化关联与盘点后批；收到后经理直接验收 |
+| 阶段 3 逐册动作后端 / v1 | `/root/mapping_correction`（交付已审，进程退出） | 后端30文件；target与33079已释放 | 86个不同用例通过；干净V8/V9元数据已审，契约未变；证据 `logs/catalog-stage3/copy-actions-backend/` |
+| 阶段 3 逐册动作前端 / v1 | `/root/statistics_backend`（交付已审，进程退出） | 前端22文件；自建服务/页已关闭 | 55项定向、构建、审计及合成浏览器通过；恢复来源及原口径文案已补齐；证据 `logs/catalog-stage3/copy-actions-frontend/` |
+| 阶段 3 逐册动作发布准备 / v1，定向返工 | `/root/intake_release_prepare` | 仅 `logs/catalog-stage3/copy-actions-release/`；无网络、服务器或DB操作 | 66项离线检查已复跑；修正继承验证器的needsVerification新语义及原状态精确分组，交付后验收；最终候选、DDL和GET契约待绑定 |
 
 B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
 

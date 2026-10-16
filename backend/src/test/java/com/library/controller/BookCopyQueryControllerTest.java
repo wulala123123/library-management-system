@@ -214,7 +214,7 @@ class BookCopyQueryControllerTest {
             statement.execute("CREATE DATABASE `" + schema + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         }
         try {
-            Flyway.configure().dataSource(url, user, password).locations("classpath:db/migration").target("7").load().migrate();
+            Flyway.configure().dataSource(url, user, password).locations("classpath:db/migration").target("9").load().migrate();
             JdbcTemplate mysql = new JdbcTemplate(new DriverManagerDataSource(url, user, password));
             BookCopyQueryService query = new BookCopyQueryService(mysql);
             // Isolated fixture only: exercise both case folding and PAD SPACE behavior of a legacy collation.

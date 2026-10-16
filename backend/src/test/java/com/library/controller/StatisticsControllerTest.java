@@ -154,8 +154,13 @@ class StatisticsControllerTest {
         assertEquals(3, result.path("registeredBorrowedCopies").asLong());
         assertEquals(0, result.path("registeredOtherCopies").asLong());
         assertEquals(1, result.path("mismatchedTitles").asLong());
-        assertEquals(1, result.path("items").size());
-        JsonNode item = result.path("items").get(0);
+        assertEquals(3, result.path("items").size()); // Also exposes the two pre-existing copy/loan link anomalies through V2.
+        JsonNode item = null;
+        for(JsonNode row:result.path("items")){
+            if(row.path("bookId").asLong()==historical.getId())item=row;
+            else {assertTrue(row.path("consistent").asBoolean());assertTrue(row.path("reconciliationV2").path("hasLoanLinkAnomaly").asBoolean());}
+        }
+        assertNotNull(item);
         assertEquals(historical.getId().longValue(), item.path("bookId").asLong());
         assertEquals(4, item.path("totalDifference").asLong());
         assertEquals(4, item.path("availableDifference").asLong());
@@ -187,14 +192,19 @@ class StatisticsControllerTest {
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         String[] lines = csv.substring(1).split("\r\n");
         assertEquals("metric,label,value,unit,asOfDate,scope", lines[0]);
-        assertEquals(11, lines.length);
-        for (int i = 1; i < lines.length; i++) {
+        assertEquals(27, lines.length);
+        for (int i = 1; i <= 10; i++) {
             String[] cells = lines[i].split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
             assertEquals(6, cells.length);
             String metric = unquote(cells[0]);
             assertEquals(summary.path(metric).asLong(), Long.parseLong(cells[2]), metric);
             assertEquals(summary.path("asOfDate").asText(), cells[4]);
             assertEquals(summary.path("statisticalScope").path(metric).asText(), unquote(cells[5]));
+        }
+        for(int i=11;i<lines.length;i++){
+            String[] cells=lines[i].split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)",-1);assertEquals(6,cells.length);
+            String field=unquote(cells[0]).substring("reconciliationV2.".length());assertEquals(summary.path("reconciliationV2").path(field).asText(),unquote(cells[2]));
+            assertEquals(summary.path("asOfDate").asText(),cells[4]);
         }
     }
 

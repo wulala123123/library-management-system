@@ -83,7 +83,8 @@ public class XssSqlFilter extends OncePerRequestFilter {
     static boolean literalJsonRoute(HttpServletRequest request) {
         String path = servletPath(request);
         return ("POST".equals(request.getMethod()) &&
-                (path.equals("/inventory-intakes/previews") || path.matches("/inventory-intakes/[0-9]+/confirm")))
+                (path.equals("/inventory-intakes/previews") || path.matches("/inventory-intakes/[0-9]+/confirm")
+                || path.equals("/book-copy-actions/previews") || path.matches("/book-copy-actions/[0-9]+/confirm")))
                 || ("PUT".equals(request.getMethod()) && path.matches("/books/[0-9]+/metadata"));
     }
 

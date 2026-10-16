@@ -1,4 +1,5 @@
 import request, { get } from './request'
+import type { CopyReconciliationV2 } from './bookCopyAction'
 
 export interface BasicStats {
   catalogTitles: number
@@ -13,6 +14,7 @@ export interface BasicStats {
   unknownValidityMemberCount: number
   asOfDate: string
   statisticalScope: Record<string, string>
+  reconciliationV2?: CopyReconciliationV2
 }
 
 export interface DashboardStats extends BasicStats {
@@ -38,6 +40,7 @@ export interface InventoryReconciliationItem {
   borrowedDifference: number
   stockBalanceDifference: number
   consistent: boolean
+  reconciliationV2?: CopyReconciliationV2
 }
 
 export interface InventoryReconciliation {
@@ -52,6 +55,7 @@ export interface InventoryReconciliation {
   registeredOtherCopies?: number
   mismatchedTitles: number
   items: InventoryReconciliationItem[]
+  reconciliationV2?: CopyReconciliationV2
 }
 
 export function getDashboardStats() {

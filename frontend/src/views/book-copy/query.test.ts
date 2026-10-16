@@ -15,7 +15,7 @@ const tabs = defineComponent({ emits: ['update:modelValue', 'tab-change'], setup
 const rowProvider = defineComponent({ props: ['row'], setup(props, { slots }) { provide('row', computed(() => props.row)); return () => h('div', slots.default?.()) } })
 const table = defineComponent({ props: ['data'], setup(props, { slots }) { return () => h('div', (props.data || []).map((row: object) => h(rowProvider, { row }, slots.default))) } })
 const column = defineComponent({ props: ['prop', 'label'], setup(props, { slots }) { const row = inject<ComputedRef<Record<string, unknown>>>('row')!; return () => h('span', [props.label, ': ', slots.default?.({ row: row.value }) || String(row.value?.[props.prop] ?? '')]) } })
-const stubs = { ElForm: slot, ElFormItem: slot, ElInput: input, ElButton: button, ElSelect: true, ElOption: true, ElCheckbox: true, ElTag: slot, ElTabs: tabs, ElTabPane: true, ElTable: table, ElTableColumn: column, ElPagination: true, ElDialog: slot, ElDescriptions: slot, ElDescriptionsItem: slot, ElAlert: true, ElEmpty: true }
+const stubs = { ElForm: slot, ElFormItem: slot, ElInput: input, ElButton: button, ElSelect: true, ElOption: true, ElCheckbox: true, ElTag: slot, ElTabs: tabs, ElTabPane: true, ElTable: table, ElTableColumn: column, ElPagination: true, ElDialog: slot, ElDescriptions: slot, ElDescriptionsItem: slot, ElAlert: true, ElEmpty: true, CopyActionDialog: true, CopyActionHistory: true }
 const wrappers: ReturnType<typeof mount>[] = []
 function page() { const wrapper = mount(Query, { global: { stubs, directives: { loading: () => {} } } }); wrappers.push(wrapper); return wrapper }
 beforeEach(() => { vi.clearAllMocks(); Object.assign(api.user, { isAdmin: true, isLibrarian: false }); api.route.query = {}; api.summary.mockResolvedValue({ records: [], total: 0 }); api.list.mockResolvedValue({ records: [], total: 0 }) })
@@ -62,5 +62,20 @@ it('renders original copy state, unassigned location and unlimited due date with
   const wrapper = page(); await flushPromises(); await wrapper.get('[data-test="copies"]').trigger('click'); await flushPromises()
   await wrapper.findAll('button').find(button => button.text() === '查看单册')!.trigger('click'); await flushPromises()
   expect(api.detail).toHaveBeenCalledWith(3)
-  for (const value of ['00017', '原状态：LEGACY_STATE', '未分配', '待补充 / 0', '不限制', '00008', '待核实']) expect(wrapper.text()).toContain(value)
+  for (const value of ['00017', '原状态待核实："LEGACY_STATE"', '未分配', '待补充 / 0', '不限制', '00008', '待核实']) expect(wrapper.text()).toContain(value)
+})
+it('starts only explicitly selected IDs and clears page selection when filters change', async () => {
+  const wrapper = page(); await flushPromises(); await wrapper.get('[data-test="copies"]').trigger('click'); await flushPromises()
+  wrapper.findComponent(table).vm.$emit('selection-change', [{ id: 7 }, { id: 8 }]); await flushPromises()
+  expect(wrapper.text()).toContain('明确选择 2 册')
+  await wrapper.findAll('button').find(button => button.text() === '办理所选实体册')!.trigger('click')
+  expect(wrapper.findComponent({ name: 'CopyActionDialog' }).props('copyIds')).toEqual([7, 8])
+  await wrapper.findAll('button').find(button => button.text() === '查询')!.trigger('click'); await flushPromises()
+  expect(wrapper.text()).toContain('明确选择 0 册')
+})
+it('uses provenance classification to distinguish identical legacy and controlled disabled labels', async () => {
+  const book = { id: 1, title: '合成' }
+  api.list.mockResolvedValue({ records: [{ id: 1, status: 'DISABLED', stateClassification: 'UNKNOWN', barcode: '0001', location: null, book }, { id: 2, status: 'DISABLED', stateClassification: 'DISABLED', barcode: '0002', location: null, book }], total: 2 })
+  const wrapper = page(); await flushPromises(); await wrapper.get('[data-test="copies"]').trigger('click'); await flushPromises()
+  expect(wrapper.text()).toContain('原状态待核实："DISABLED"'); expect(wrapper.text()).toContain('临时停用')
 })

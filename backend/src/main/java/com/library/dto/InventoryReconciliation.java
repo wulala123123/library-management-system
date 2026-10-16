@@ -19,6 +19,7 @@ public class InventoryReconciliation {
     private long registeredOtherCopies;
     private long mismatchedTitles;
     private List<Item> items;
+    private com.library.service.CopyInventoryProjection.V2 reconciliationV2;
 
     @Data
     public static class Item {
@@ -31,6 +32,7 @@ public class InventoryReconciliation {
         private long registeredAvailableCopies;
         private long registeredBorrowedCopies;
         private long registeredOtherCopies;
+        private com.library.service.CopyInventoryProjection.V2 reconciliationV2;
 
         public long getTotalDifference() { return totalCopies - registeredCopies; }
         public long getAvailableDifference() { return availableCopies - registeredAvailableCopies; }

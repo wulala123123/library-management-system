@@ -27,6 +27,28 @@ def upload(path, filename, content, mime):
     boundary='repair-smoke-boundary'
     body=(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{filename}"\r\nContent-Type: {mime}\r\n\r\n').encode()+content+f'\r\n--{boundary}--\r\n'.encode()
     return request(path,'POST',body,content_type='multipart/form-data; boundary='+boundary)
+
+def copy_action(copy_id, action, **changes):
+    context=request('/api/book-copies/'+str(copy_id)+'/action-context')
+    item={'copyId':copy_id,'expectedVersion':context['copy']['actionVersion'],**changes}
+    key=str(uuid.uuid4())
+    view=request('/api/book-copy-actions/previews','POST',{'idempotencyKey':key,'action':action,
+        'reason':'隔离容器逐册动作验收','copies':[item]})
+    confirmation={'idempotencyKey':key,'previewDigest':view['previewDigest']}
+    path='/api/book-copy-actions/'+str(view['requestId'])+'/confirm'
+    receipt=request(path,'POST',confirmation)
+    assert request(path,'POST',confirmation)==receipt
+    after=request('/api/book-copies/'+str(copy_id)+'/action-context')
+    changed=receipt['copies'][0]
+    assert after['copy']['actionVersion']==context['copy']['actionVersion']+1==changed['afterVersion']
+    assert after['copy']['status']==changed['afterStatus']
+    assert after['copy']['location']==changed['afterLocation']
+    projection=after['reconciliationV2']
+    assert projection['schema']=='copy-lifecycle-v1'
+    assert not projection['hasHistoricalDifference'] and not projection['hasUnknownStatus']
+    assert not projection['hasLoanLinkAnomaly']
+    assert request('/api/book-copies/'+str(copy_id)+'/actions')['records'][0]['eventId']==changed['eventId']
+    return receipt
 png=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jX1kAAAAASUVORK5CYII=')
 html=request('/',raw=True,authenticated=False).decode()
 assets=re.findall(r'(?:src|href)="(/assets/[^\"]+)"',html)
@@ -40,12 +62,22 @@ if args.check_state:
     assert request(state['cover'],raw=True)==png
     assert request(state['avatar'],raw=True)==png
     assert request('/api/book-resources/download/'+str(state['resource']),raw=True)==b'persisted resource'
-    assert request('/api/books/'+str(state['book']))['stockAvailable']==2
+    current_book=request('/api/books/'+str(state['book']))
+    assert current_book['stockTotal']==1 and current_book['stockAvailable']==0
     intake=request('/api/inventory-intakes/'+str(state['intake']))
     assert intake['state']=='COMMITTED' and intake['receipt']==state['receipt']
     assert request('/api/inventory-intakes/'+str(state['intake'])+'/confirm','POST',
         {'idempotencyKey':state['intakeKey'],'previewDigest':state['previewDigest']})==state['receipt']
     assert sorted(copy['barcode'] for copy in request('/api/books/'+str(state['book'])+'/copies'))==state['barcodes']
+    for receipt in state['copyActions']:
+        assert request('/api/book-copy-actions/'+str(receipt['requestId']))['receipt']==receipt
+        assert request('/api/book-copy-actions/'+str(receipt['requestId'])+'/confirm','POST',
+            {'idempotencyKey':receipt['idempotencyKey'],
+             'previewDigest':state['copyActionDigests'][str(receipt['requestId'])]})==receipt
+    for copy_id, context in state['copyContexts'].items():
+        assert request('/api/book-copies/'+copy_id+'/action-context')==context
+        assert request('/api/book-copies/'+copy_id+'/actions')['total']==sum(
+            1 for action in state['copyActions'] for copy in action['copies'] if str(copy['copyId'])==copy_id)
 else:
     assert request('/api/captcha/image',authenticated=False)['image']
     category=request('/api/categories','POST',{'name':'验收分类','parentId':0,'sortOrder':0,'status':1})
@@ -60,17 +92,36 @@ else:
     assert len(receipt['copies'])==2 and len(receipt['books'])==1
     assert request('/api/inventory-intakes/'+str(preview['intakeId'])+'/confirm','POST',confirmation)==receipt
     book=request('/api/books/'+str(receipt['books'][0]['bookId']))
+    copy_id=receipt['copies'][0]['copyId']
+    actions=[copy_action(copy_id,'MOVE',targetLocation={'kind':'TEXT','text':'隔离位置 A-01'})]
+    actions.append(copy_action(copy_id,'DISABLE'))
+    assert request('/api/books/'+str(book['id']))['stockAvailable']==1
+    actions.append(copy_action(copy_id,'ENABLE'))
+    actions.append(copy_action(copy_id,'WRITE_OFF'))
+    assert request('/api/books/'+str(book['id']))['stockTotal']==1
+    actions.append(copy_action(copy_id,'RESTORE',restoreOfActionId=actions[-1]['copies'][0]['eventId'],
+        restoreTo='DISABLED',targetLocation={'kind':'UNASSIGNED'}))
+    assert request('/api/books/'+str(book['id']))['stockAvailable']==1
+    actions.append(copy_action(copy_id,'ENABLE'))
+    assert request('/api/books/'+str(book['id']))['stockTotal']==2
     code=request('/api/borrow-codes/generate?bookId='+str(book['id']),'POST',{})
     assert request('/api/books/'+str(book['id']))['stockAvailable']==2
     record=request('/api/borrow-codes/verify?code='+code['code'],'POST',{})['borrowRecord']
     assert request('/api/books/'+str(book['id']))['stockAvailable']==1
     request('/api/borrows/'+str(record['id'])+'/return','PUT',{})
+    # Preserve both controlled unavailable states through recreate/update/restore.
+    actions.append(copy_action(copy_id,'DISABLE'))
+    other_copy=receipt['copies'][1]['copyId']
+    actions.append(copy_action(other_copy,'WRITE_OFF'))
     cover=upload('/api/upload/book-cover/'+str(book['id']),'cover.png',png,'image/png')
     avatar=upload('/api/profile/avatar','avatar.png',png,'image/png')
     resource=upload('/api/book-resources/upload?bookId='+str(book['id'])+'&resourceType=DOCUMENT','resource.txt',b'persisted resource','text/plain')
     state={'book':book['id'],'cover':cover,'avatar':avatar,'resource':resource['id'],
         'intake':preview['intakeId'],'intakeKey':intake_key,'previewDigest':preview['previewDigest'],
-        'receipt':receipt,'barcodes':sorted(copy['barcode'] for copy in receipt['copies'])}
+        'receipt':receipt,'barcodes':sorted(copy['barcode'] for copy in receipt['copies']),
+        'copyActions':actions,
+        'copyContexts':{str(value):request('/api/book-copies/'+str(value)+'/action-context') for value in [copy_id,other_copy]},
+        'copyActionDigests':{str(action['requestId']):request('/api/book-copy-actions/'+str(action['requestId']))['previewDigest'] for action in actions}}
     Path(args.state).write_text(json.dumps(state))
     assert request(cover,raw=True)==png
     assert request(avatar,raw=True)==png

@@ -12,4 +12,6 @@ public class BookCopy {
     private String barcode;
     private String status;
     private String location;
+    private Long actionVersion;
+    private Long lastStateActionId;
 }

@@ -1,5 +1,6 @@
 <template>
   <div class="bookshelf-management">
+    <el-alert title="这里维护旧书目级库位绑定，不表示具体实体册的位置。逐册实际位置请在实体册查询中登记，两者不会自动同步。" type="info" :closable="false" />
     <div class="card-container">
       <div class="table-toolbar">
         <div class="toolbar-left">
@@ -125,8 +126,8 @@
         <el-table-column prop="bookTitle" label="图书" min-width="160" show-overflow-tooltip />
         <el-table-column label="操作" width="140" align="center">
           <template #default="{ row }">
-            <el-button v-if="row.status === 'EMPTY'" type="primary" link size="small" @click="handleAssignBook(row)">分配图书</el-button>
-            <el-button v-if="row.status === 'OCCUPIED'" type="warning" link size="small" @click="handleClearLocation(row)">清空</el-button>
+            <el-button v-if="row.status === 'EMPTY'" type="primary" link size="small" @click="handleAssignBook(row)">绑定书目</el-button>
+            <el-button v-if="row.status === 'OCCUPIED'" type="warning" link size="small" @click="handleClearLocation(row)">解除书目绑定</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -144,7 +145,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="assignDialogVisible" title="分配图书到库位" width="400px" destroy-on-close>
+    <el-dialog v-model="assignDialogVisible" title="旧书目级库位绑定" width="400px" destroy-on-close>
       <el-form label-width="80px">
         <el-form-item label="图书ID">
           <el-input-number v-model="assignBookId" :min="1" />

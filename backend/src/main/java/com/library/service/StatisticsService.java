@@ -19,6 +19,7 @@ import java.util.Map;
 @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 public class StatisticsService {
     private final StatisticsMapper statisticsMapper;
+    private final CopyInventoryProjection copyProjection;
     private static final ZoneId STATISTICS_ZONE = ZoneId.of("Asia/Shanghai");
     private static final String CATALOG_SCOPE = "仅未删除且启用的书目（book.deleted=0 AND book.status=1）";
 
@@ -33,11 +34,12 @@ public class StatisticsService {
         summary.setEnabledReaderAccounts(members.getEnabledReaderAccounts());
         summary.setAsOfDate(date);
         summary.setStatisticalScope(scope());
+        summary.setReconciliationV2(CopyInventoryProjection.sum(List.copyOf(copyProjection.forActiveBooks().values())));
         return summary;
     }
 
     public InventoryReconciliation getReconciliation() {
-        List<InventoryReconciliation.Item> rows = statisticsMapper.selectReconciliation();
+        List<InventoryReconciliation.Item> rows = lifecycleRows();
         InventoryReconciliation result = new InventoryReconciliation();
         result.setAsOfDate(LocalDate.now(STATISTICS_ZONE));
         result.setStatisticalScope(scope());
@@ -48,9 +50,10 @@ public class StatisticsService {
         result.setRegisteredAvailableCopies(rows.stream().mapToLong(InventoryReconciliation.Item::getRegisteredAvailableCopies).sum());
         result.setRegisteredBorrowedCopies(rows.stream().mapToLong(InventoryReconciliation.Item::getRegisteredBorrowedCopies).sum());
         result.setRegisteredOtherCopies(rows.stream().mapToLong(InventoryReconciliation.Item::getRegisteredOtherCopies).sum());
-        List<InventoryReconciliation.Item> differences = rows.stream().filter(row -> !row.isConsistent()).toList();
-        result.setMismatchedTitles(differences.size());
+        List<InventoryReconciliation.Item> differences = rows.stream().filter(row -> !row.isConsistent()||row.getReconciliationV2().hasKnownUnavailable()||row.getReconciliationV2().hasLoanLinkAnomaly()).toList();
+        result.setMismatchedTitles(rows.stream().filter(row -> !row.isConsistent()).count());
         result.setItems(differences);
+        result.setReconciliationV2(CopyInventoryProjection.sum(rows.stream().map(InventoryReconciliation.Item::getReconciliationV2).toList()));
         return result;
     }
 
@@ -77,8 +80,17 @@ public class StatisticsService {
                     .append(summary.getAsOfDate()).append(',')
                     .append(csvCell(summary.getStatisticalScope().get(key))).append("\r\n");
         });
+        var v2=summary.getReconciliationV2();
+        Map<String,Object> lifecycle=new LinkedHashMap<>();
+        lifecycle.put("schema",v2.schema());lifecycle.put("registeredCopies",v2.registeredCopies());lifecycle.put("registeredAvailableCopies",v2.registeredAvailableCopies());lifecycle.put("registeredBorrowedCopies",v2.registeredBorrowedCopies());
+        lifecycle.put("registeredInStockCopies",v2.registeredInStockCopies());lifecycle.put("registeredDisabledCopies",v2.registeredDisabledCopies());lifecycle.put("registeredWrittenOffCopies",v2.registeredWrittenOffCopies());lifecycle.put("registeredUnknownCopies",v2.registeredUnknownCopies());
+        lifecycle.put("inStockDifference",v2.inStockDifference());lifecycle.put("availableDifference",v2.availableDifference());lifecycle.put("borrowedDifference",v2.borrowedDifference());lifecycle.put("unexplainedStockBalanceDifference",v2.unexplainedStockBalanceDifference());
+        lifecycle.put("hasHistoricalDifference",v2.hasHistoricalDifference());lifecycle.put("hasUnknownStatus",v2.hasUnknownStatus());lifecycle.put("hasLoanLinkAnomaly",v2.hasLoanLinkAnomaly());lifecycle.put("hasKnownUnavailable",v2.hasKnownUnavailable());
+        lifecycle.forEach((key,value)->csv.append(csvCell("reconciliationV2."+key)).append(',').append(csvCell(key)).append(',').append(csvCell(String.valueOf(value))).append(',').append(csvCell(value instanceof Number?"册":"标识")).append(',').append(summary.getAsOfDate()).append(',').append(csvCell(CATALOG_SCOPE+"；copy-lifecycle-v1解释口径，旧全部历史登记差额保留")).append("\r\n"));
         return csv.toString();
     }
+
+    private List<InventoryReconciliation.Item> lifecycleRows(){List<InventoryReconciliation.Item> rows=statisticsMapper.selectReconciliation();var projected=copyProjection.forActiveBooks();for(var row:rows)row.setReconciliationV2(projected.get(row.getBookId()));return rows;}
 
     private static String csvCell(String value) {
         return "\"" + value.replace("\"", "\"\"") + "\"";

@@ -16,6 +16,7 @@ vi.mock('element-plus', () => ({ ElMessage: { success: vi.fn(), error: vi.fn() }
 import Dashboard from '@/views/dashboard/index.vue'
 import Inventory from '@/views/inventory/index.vue'
 import Statistics from './index.vue'
+import { projection } from '@/views/book-copy/components/copyActionFixtures'
 
 const slot = defineComponent({ setup(_, { slots }) { return () => h('div', [slots.header?.(), slots.default?.(), slots.footer?.()]) } })
 const provider = defineComponent({ props: ['row'], setup(props, { slots }) { provide('row', computed(() => props.row)); return () => h('div', slots.default?.()) } })
@@ -69,11 +70,11 @@ it('shows copy registration differences, zero counts and an unset location in in
   await flushPromises()
   expect(wrapper.text()).toContain('图书种数')
   expect(wrapper.text()).toContain('可借种数')
-  expect(wrapper.text()).toContain('差异书目 1 种')
+  expect(wrapper.text()).toContain('原始登记口径：差异书目 1 种')
   expect(wrapper.text()).toContain('已登记其他状态实体册：0 册')
   expect(wrapper.text()).toContain('差额为汇总库存减登记册数')
-  expect(wrapper.text()).toContain('总数差额（册）: 1')
-  expect(wrapper.text()).toContain('可借差额（册）: 0')
+  expect(wrapper.text()).toContain('总数差额（原始登记口径，册）: 1')
+  expect(wrapper.text()).toContain('可借差额（原始登记口径，册）: 0')
   expect(wrapper.text()).toContain('库位: 未设置')
   const action = wrapper.findAll('button').find(button => button.text() === '刷新数据')!
   await action.trigger('click'); await flushPromises()
@@ -112,4 +113,14 @@ it('keeps unavailable metrics unknown instead of showing made-up zero counts', a
   const wrapper = page(Inventory)
   await flushPromises()
   expect(wrapper.findAll('.mini-stat .value').every(value => value.text().includes('待核实'))).toBe(true)
+})
+it('shows known disabled/written-off copies separately while preserving raw registration and explained differences', async () => {
+  const old = await api.reconciliation()
+  api.reconciliation.mockResolvedValue({ ...old, reconciliationV2: projection(), items: [{ ...old.items[0], reconciliationV2: projection() }] })
+  const wrapper = page(Inventory); await flushPromises()
+  for (const text of ['在库登记 2 册', '临时停用 1 册', '已报损保留 1 册', '原状态待核实 0 册', '在库 / 可借 / 在借差额：0 / 0 / 0', '全部历史登记数含已报损保留行']) expect(wrapper.text()).toContain(text)
+  expect(wrapper.text()).toContain('原始登记口径：差异书目 1 种')
+  expect(wrapper.text()).toContain('总数差额（原始登记口径，册）: 1')
+  expect(wrapper.text()).toContain('已知停用或报损也可能计入')
+  expect(wrapper.text()).not.toContain('已登记其他状态实体册：')
 })

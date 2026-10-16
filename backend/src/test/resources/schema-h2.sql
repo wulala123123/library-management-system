@@ -299,9 +299,9 @@ MERGE INTO inventory_mutex (id) KEY(id) VALUES (1);
 
 CREATE TABLE IF NOT EXISTS book_copy (
     id BIGINT AUTO_INCREMENT PRIMARY KEY, book_id BIGINT NOT NULL,
-    barcode VARCHAR(64) NOT NULL, barcode_key VARBINARY(256) GENERATED ALWAYS AS (STRINGTOUTF8(barcode)) UNIQUE,
+    barcode VARCHAR(128) NOT NULL, barcode_key VARBINARY(256) GENERATED ALWAYS AS (STRINGTOUTF8(barcode)) UNIQUE,
     status VARCHAR(20) DEFAULT 'AVAILABLE' NOT NULL,
-    location VARCHAR(200)
+    location VARCHAR(400)
 );
 ALTER TABLE borrow_record ALTER COLUMN due_date DROP NOT NULL;
 ALTER TABLE borrow_record ADD COLUMN IF NOT EXISTS copy_id BIGINT;
@@ -411,3 +411,70 @@ CREATE TABLE IF NOT EXISTS inventory_intake_copy (
     FOREIGN KEY(intake_id) REFERENCES inventory_intake_request(id),
     FOREIGN KEY(copy_id) REFERENCES book_copy(id), FOREIGN KEY(stock_flow_id) REFERENCES stock_flow(id)
 );
+
+-- Technical version zero does not verify or reclassify any legacy business value.
+ALTER TABLE book_copy ADD COLUMN IF NOT EXISTS action_version BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE book_copy ADD COLUMN IF NOT EXISTS last_state_action_id BIGINT NULL;
+ALTER TABLE book_copy ADD CONSTRAINT IF NOT EXISTS ck_copy_action_version CHECK (action_version >= 0);
+
+CREATE TABLE IF NOT EXISTS book_copy_action_request (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    idempotency_key VARBINARY(128) NOT NULL,
+    operator_id BIGINT NOT NULL,
+    request_hash CHAR(64)  NOT NULL,
+    preview_digest CHAR(64)  NOT NULL,
+    schema_version INT NOT NULL DEFAULT 1,
+    action_type VARCHAR(20) NOT NULL,
+    request_json CLOB NOT NULL,
+    preview_json CLOB NOT NULL,
+    state VARCHAR(20) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    committed_at DATETIME NULL,
+    receipt_json CLOB NULL,
+    CONSTRAINT uk_copy_action_key UNIQUE (idempotency_key),
+    CONSTRAINT ck_copy_action_schema CHECK(schema_version=1),
+    CONSTRAINT ck_copy_request_type CHECK(action_type IN ('MOVE','DISABLE','ENABLE','WRITE_OFF','RESTORE')),
+    CONSTRAINT ck_copy_request_state CHECK ((state='PREVIEWED' AND committed_at IS NULL AND receipt_json IS NULL) OR (state='COMMITTED' AND committed_at IS NOT NULL AND receipt_json IS NOT NULL))
+);
+
+CREATE TABLE IF NOT EXISTS book_copy_action (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    request_id BIGINT NOT NULL,
+    ordinal INT NOT NULL,
+    copy_id BIGINT NOT NULL,
+    book_id BIGINT NOT NULL,
+    barcode_snapshot VARCHAR(128) NOT NULL,
+    action_type VARCHAR(20) NOT NULL,
+    before_status VARCHAR(20) NOT NULL,
+    after_status VARCHAR(20) NOT NULL,
+    before_location VARCHAR(400) NULL,
+    after_location VARCHAR(400) NULL,
+    before_version BIGINT NOT NULL,
+    after_version BIGINT NOT NULL,
+    before_state_action_id BIGINT NULL,
+    delta_total INT NOT NULL,
+    delta_available INT NOT NULL,
+    reason VARCHAR(500) NOT NULL,
+    operator_id BIGINT NOT NULL,
+    occurred_at DATETIME NOT NULL,
+    stock_flow_id BIGINT NULL,
+    restores_action_id BIGINT NULL,
+    CONSTRAINT uk_copy_action_request_copy UNIQUE (request_id,copy_id),
+    CONSTRAINT uk_copy_action_flow UNIQUE (stock_flow_id),
+    CONSTRAINT uk_copy_action_restore UNIQUE (restores_action_id),
+    CONSTRAINT ck_copy_action_ordinal CHECK(ordinal>0 AND ordinal<=100),
+    CONSTRAINT ck_copy_event_version CHECK(before_version>=0 AND after_version>before_version),
+    CONSTRAINT ck_copy_event_delta CHECK(delta_total BETWEEN -1 AND 1 AND delta_available BETWEEN -1 AND 1),
+    CONSTRAINT ck_copy_event_flow CHECK((action_type='MOVE' AND stock_flow_id IS NULL AND delta_total=0 AND delta_available=0) OR (action_type IN ('DISABLE','ENABLE','WRITE_OFF','RESTORE') AND stock_flow_id IS NOT NULL)),
+    CONSTRAINT ck_copy_event_restore CHECK((action_type='RESTORE' AND restores_action_id IS NOT NULL) OR (action_type<>'RESTORE' AND restores_action_id IS NULL)),
+    CONSTRAINT fk_copy_event_request FOREIGN KEY(request_id) REFERENCES book_copy_action_request(id),
+    CONSTRAINT fk_copy_event_copy FOREIGN KEY(copy_id) REFERENCES book_copy(id),
+    CONSTRAINT fk_copy_event_book FOREIGN KEY(book_id) REFERENCES book(id),
+    CONSTRAINT fk_copy_event_flow FOREIGN KEY(stock_flow_id) REFERENCES stock_flow(id),
+    CONSTRAINT fk_copy_event_restore FOREIGN KEY(restores_action_id) REFERENCES book_copy_action(id)
+);
+
+ALTER TABLE book_copy ADD CONSTRAINT IF NOT EXISTS fk_copy_last_state_action
+    FOREIGN KEY(last_state_action_id) REFERENCES book_copy_action(id);
+-- Events are append-only through application APIs; no trigger or DB immutability claim.

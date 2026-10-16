@@ -27,6 +27,7 @@ public class StatisticsSummary {
     private Long enabledReaderAccounts;
     private LocalDate asOfDate;
     private Map<String, String> statisticalScope;
+    private com.library.service.CopyInventoryProjection.V2 reconciliationV2;
 
     public Map<String, Object> toMap() {
         Map<String, Object> values = new LinkedHashMap<>();
@@ -45,6 +46,7 @@ public class StatisticsSummary {
         values.put("borrowRecordCount", borrowRecordCount);
         values.put("asOfDate", asOfDate);
         values.put("statisticalScope", statisticalScope);
+        values.put("reconciliationV2",reconciliationV2);
         return values;
     }
 }

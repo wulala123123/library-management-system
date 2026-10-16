@@ -30,6 +30,7 @@ public class InventoryIntakeService {
     private final BookMapper books;
     private final IntakeCatalog catalog;
     private final ObjectMapper json;
+    private final CopyInventoryProjection copyProjection;
 
     public record Item(Long id, String isbn, String title, String author, String publisher, Long categoryId,
                        java.math.BigDecimal price, int quantity, int instockQuantity) {}
@@ -57,7 +58,7 @@ public class InventoryIntakeService {
         Long id = insert("INSERT INTO inventory_intake_request(idempotency_key,request_hash,preview_digest,source_type,purchase_order_id,operator_id,request_json,preview_json,state,expires_at) VALUES (?,?,?,?,?,?,?,?,'PREVIEWED',?)",
                 bytes(request.getIdempotencyKey()), hash, digest, plan.source().type(), plan.source().purchaseOrderId(), actor,
                 write(request), write(plan), LocalDateTime.ofInstant(expiry, ZoneOffset.UTC));
-        return new View(id, "PREVIEWED", digest, expiry.toString(), plan.source(), plan.lines(), plan.books(), plan.purchaseProgress(), plan.warnings(), null);
+        return new View(id, "PREVIEWED", digest, expiry.toString(), plan.source(), plan.lines(), plan.books(), plan.purchaseProgress(), plan.warnings(), null,lifecycle(plan,null));
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -263,7 +264,16 @@ public class InventoryIntakeService {
     private Row rowByKey(String key, boolean lock) { List<Row> rows = jdbc.query("SELECT * FROM inventory_intake_request WHERE idempotency_key=?" + (lock ? " FOR UPDATE" : ""), this::row, bytes(key)); return rows.isEmpty() ? null : rows.get(0); }
     private Row row(ResultSet r, int n) throws SQLException { return new Row(r.getLong("id"), r.getString("request_hash"), r.getString("preview_digest"), r.getLong("operator_id"), r.getString("state"), r.getObject("expires_at", LocalDateTime.class).toInstant(ZoneOffset.UTC), r.getString("request_json"), r.getString("preview_json"), r.getString("receipt_json")); }
     private void owner(Row row, Long actor) { if (row == null) throw error(404, "INTAKE_NOT_FOUND", "入库办理记录不存在"); if (!row.owner().equals(actor)) throw error(403, "INTAKE_OWNER_REQUIRED", "仅原操作者可查看和确认本次办理"); }
-    private View view(Row row) { Plan p = read(row.planJson(), Plan.class); Receipt receipt = row.receiptJson() == null ? null : read(row.receiptJson(), Receipt.class); return new View(row.id(), row.state(), row.digest(), row.expiresAt().toString(), p.source(), p.lines(), p.books(), p.purchaseProgress(), p.warnings(), receipt); }
+    private View view(Row row) { Plan p = read(row.planJson(), Plan.class); Receipt receipt = row.receiptJson() == null ? null : read(row.receiptJson(), Receipt.class); return new View(row.id(), row.state(), row.digest(), row.expiresAt().toString(), p.source(), p.lines(), p.books(), p.purchaseProgress(), p.warnings(), receipt,lifecycle(p,receipt)); }
+    private List<LifecycleBook> lifecycle(Plan plan,Receipt receipt){
+        List<LifecycleBook> rows=new ArrayList<>();for(BookSnapshot b:plan.books()){
+            Long id=b.bookId();if(id==null&&receipt!=null){
+                Set<String> keys=new HashSet<>();for(PreviewLine line:plan.lines())if(line.newBook()!=null&&line.newBook().isbn().equals(b.isbn()))keys.add(line.lineKey());
+                id=receipt.copies().stream().filter(c->keys.contains(c.lineKey())).map(CopyReceipt::bookId).findFirst().orElse(null);
+            }
+            rows.add(new LifecycleBook(id,b.isbn(),id==null?CopyInventoryProjection.calculate(0,0,0,0,0,0,0,0,0,false):copyProjection.forBook(id)));
+        }return rows;
+    }
     private String write(Object o) { try { return json.writeValueAsString(o); } catch (Exception e) { throw error(500, "INTAKE_SAVE_FAILED", "入库记录处理失败，请查询办理结果"); } }
     private <T> T read(String source, Class<T> type) { try { return json.readValue(source, type); } catch (Exception e) { throw error(500, "INTAKE_SAVE_FAILED", "入库记录读取失败，请查询办理结果"); } }
     private Long insert(String sql, Object... args) { GeneratedKeyHolder key = new GeneratedKeyHolder(); jdbc.update(connection -> { var ps = connection.prepareStatement(sql, new String[]{"id"}); for (int i = 0; i < args.length; i++) ps.setObject(i + 1, args[i]); return ps; }, key); return Objects.requireNonNull(key.getKey()).longValue(); }
