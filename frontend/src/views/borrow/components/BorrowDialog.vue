@@ -20,7 +20,7 @@
 
       <el-form-item v-if="copyOptions.length" label="馆内条码">
         <el-select v-model="form.copyId" placeholder="自动分配可借册" clearable style="width: 100%">
-          <el-option v-for="copy in copyOptions" :key="copy.id" :value="copy.id" :label="`${copy.barcode}${copy.status === 'AVAILABLE' ? '（可借）' : '（已借出）'}`" :disabled="copy.status !== 'AVAILABLE'" />
+          <el-option v-for="copy in copyOptions" :key="copy.id" :value="copy.id" :label="`${copy.barcode} · ${copyStateText(copy.status, false)}`" :disabled="copy.status !== 'AVAILABLE'"><p>{{ JSON.stringify(copy.barcode) }} · {{ copyStateText(copy.status, false) }}</p><CopyPlacement :placement="copy.placement" :raw-text="copy.location" :anomaly="copy.locationReferenceAnomaly" :show-raw="false" /></el-option>
         </el-select>
       </el-form-item>
 
@@ -48,6 +48,8 @@ import { adminBorrowBook } from '@/api/borrow'
 import { getBookPage, getBookCopies, type BookCopy } from '@/api/book'
 import { searchUsers as searchUsersApi, type BorrowerSummary } from '@/api/user'
 import { displayValue } from '@/utils/display'
+import CopyPlacement from '@/components/locations/CopyPlacement.vue'
+import { copyStateText } from '@/views/book-copy/components/copyActionPresentation'
 
 interface Props { visible: boolean }
 const props = defineProps<Props>()

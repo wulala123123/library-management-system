@@ -12,6 +12,7 @@ public class BookLocation {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+    private Long layoutVersion;
 
     private Long storeyId;
 
@@ -36,4 +37,7 @@ public class BookLocation {
 
     @TableField(exist = false)
     private String coverImage;
+    @TableField(exist=false) private com.library.dto.LocationContracts.AddressSnapshot address;
+    @TableField(exist=false) private com.library.dto.LocationContracts.LegacyBinding legacyBinding;
+    @TableField(exist=false) private long linkedCopyCount;
 }

@@ -1,5 +1,6 @@
 import type { Book, PageResult } from '@/types'
 import { get, post, put, del } from './request'
+import type { Placement } from './locationAddress'
 
 export interface BookPageParams {
   page: number
@@ -32,7 +33,7 @@ export function getBookById(id: number) {
   return get<Book>(`/books/${id}`)
 }
 
-export interface BookCopy { id: number; bookId: number; barcode: string; status: string; location?: string }
+export interface BookCopy { id: number; bookId: number; barcode: string; status: string; location: string | null; placement: Placement; registeredLocationId: number | null; lastLocationActionId: number | null; locationReferenceAnomaly: boolean }
 export function getBookCopies(id: number) { return get<BookCopy[]>(`/books/${id}/copies`) }
 
 export interface BookMetadataView { book: Book; metadataDigest: string }

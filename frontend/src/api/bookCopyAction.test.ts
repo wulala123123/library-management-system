@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 const request = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }))
 vi.mock('./request', () => request)
-import { confirmCopyAction, getCopyAction, getCopyActionByKey, getCopyActionContext, getCopyActionHistory, previewCopyAction } from './bookCopyAction'
+import { confirmCopyAction, getCopyAction, getCopyActionByKey, getCopyActionContext, getCopyActionHistory, previewCopyAction, previewCopyActionV2 } from './bookCopyAction'
 beforeEach(() => vi.clearAllMocks())
 it('sends exact move/restore input with explicit versions and null location union, without stock or barcode writes', () => {
   const payload = { idempotencyKey: 'original-key', action: 'RESTORE' as const, reason: '找到原册 ', copies: [{ copyId: 7, expectedVersion: 3, targetLocation: { kind: 'UNASSIGNED' as const }, restoreOfActionId: 31, restoreTo: 'DISABLED' as const }] }
@@ -9,6 +9,10 @@ it('sends exact move/restore input with explicit versions and null location unio
   expect(request.post).toHaveBeenCalledWith('/book-copy-actions/previews', payload)
   previewCopyAction({ ...payload, action: 'MOVE', copies: [{ copyId: 8, expectedVersion: 0, targetLocation: { kind: 'TEXT', text: 'javascript:原文 😀 ' } }] })
   expect(request.post.mock.calls[1]![1].copies[0].targetLocation.text).toBe('javascript:原文 😀 ')
+})
+it('creates V2 through a separate endpoint with no V1 payload upgrade or extra nullable target keys',()=>{
+  const input={schemaVersion:2 as const,idempotencyKey:'new-key',action:'MOVE' as const,reason:'登记实物地址',copies:[{copyId:7,expectedVersion:4,targetLocation:{kind:'REGISTERED' as const,locationId:12,expectedAddressVersion:{location:3,storey:4,bookshelf:5}}}]}
+  previewCopyActionV2(input);expect(request.post).toHaveBeenCalledWith('/book-copy-actions/v2/previews',input)
 })
 it('uses the fixed confirm identity and precise owner lookup/context/history endpoints', () => {
   confirmCopyAction(21, 'key', 'digest'); getCopyAction(21); getCopyActionByKey('key'); getCopyActionContext(7); getCopyActionHistory(7, 2, 20)

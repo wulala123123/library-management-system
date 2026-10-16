@@ -11,7 +11,9 @@
         <p>请求 {{ event.requestId }} · 操作人 {{ event.operatorId }} · {{ event.occurredAt }} · 流水 {{ event.stockFlowId ?? '无（位置移动）' }}</p>
         <p>依据：{{ event.reason }}</p><p>条码 <code>{{ rawText(event.barcode) }}</code></p>
         <p>状态 <code>{{ rawText(event.beforeStatus) }}</code> → <code>{{ rawText(event.afterStatus) }}</code> · 版本 {{ event.beforeVersion }} → {{ event.afterVersion }}</p>
-        <p>位置 <code>{{ rawText(event.beforeLocation) }}</code> → <code>{{ rawText(event.afterLocation) }}</code></p>
+        <template v-if="event.schemaVersion === 2 && event.locationChange"><p>位置快照 V2 · {{ event.locationChange.locationSourceBehavior === 'KEEP' ? '位置来源保持' : '本次事件登记位置' }}</p><strong>原位置快照</strong><CopyPlacement :placement="event.locationChange.beforePlacement.placement" :raw-text="event.locationChange.beforePlacement.rawText" /><strong>新位置快照</strong><CopyPlacement :placement="event.locationChange.afterPlacement.placement" :raw-text="event.locationChange.afterPlacement.rawText" /><p>位置来源 {{ event.locationChange.beforeLocationActionId ?? 'NULL' }} → {{ event.locationChange.afterLocationActionId ?? 'NULL' }}</p></template>
+        <p v-else-if="event.schemaVersion === 1">位置（V1 原记录）<code>{{ rawText(event.beforeLocation) }}</code> → <code>{{ rawText(event.afterLocation) }}</code></p>
+        <p v-else>位置快照暂不可用，保留原事件等待核对。</p>
         <p>总库存增量 {{ event.deltaTotal }} · 可借增量 {{ event.deltaAvailable }}</p>
         <p v-if="event.restoreOfActionId">恢复来源事件 {{ event.restoreOfActionId }}</p><p v-if="event.restoredByActionId">已由事件 {{ event.restoredByActionId }} 恢复</p>
       </article>
@@ -25,6 +27,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { useUserStore } from '@/store/modules/user'
 import { getCopyActionHistory, type CopyActionHistory } from '@/api/bookCopyAction'
 import { actionNames, rawText } from './copyActionPresentation'
+import CopyPlacement from '@/components/locations/CopyPlacement.vue'
 const props = defineProps<{ copyId: number; visible: boolean; revision?: number }>()
 const user = useUserStore(), canRead = computed(() => user.isAdmin || user.isLibrarian)
 const history = ref<CopyActionHistory | null>(null), page = ref(1), loading = ref(false), error = ref('')

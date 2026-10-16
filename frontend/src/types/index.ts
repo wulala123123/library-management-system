@@ -143,17 +143,19 @@ export interface BorrowCode {
   userName: string
 }
 
+import type { AddressSnapshot, LegacyBinding } from '@/api/locationAddress'
 export interface Bookshelf {
   id: number
   name: string
   code: string
-  deptId: number
-  location: string
+  deptId: number | null
+  location: string | null
   capacity: number
   status: number
   createTime: string
   updateTime: string
   deptName: string
+  layoutVersion: number
 }
 
 export interface BookshelfStorey {
@@ -165,18 +167,24 @@ export interface BookshelfStorey {
   status: number
   createTime: string
   updateTime: string
+  layoutVersion: number
+  locations?: BookLocation[]
 }
 
 export interface BookLocation {
   id: number
   storeyId: number
   code: string
-  bookId: number
+  bookId: number | null
   status: string
   createTime: string
   updateTime: string
   bookTitle: string
   coverImage: string
+  layoutVersion: number
+  legacyBinding: LegacyBinding
+  linkedCopyCount: number
+  address: AddressSnapshot
 }
 
 export interface Notice {

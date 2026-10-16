@@ -12,6 +12,7 @@ public class Bookshelf {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+    private Long layoutVersion;
 
     private String name;
 

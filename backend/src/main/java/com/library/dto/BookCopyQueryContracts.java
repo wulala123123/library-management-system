@@ -16,7 +16,8 @@ public final class BookCopyQueryContracts {
 
     @JsonInclude(JsonInclude.Include.ALWAYS)
     public record CopyRow(Long id, Long bookId, String barcode, String status, String location,
-                          boolean unassignedLocation, BookInfo book, long actionVersion, Long lastStateActionId,String stateClassification) {}
+                          boolean unassignedLocation, BookInfo book, long actionVersion, Long lastStateActionId,String stateClassification,
+                          com.library.dto.LocationContracts.Placement placement,Long lastLocationActionId,boolean locationReferenceAnomaly) {}
 
     @JsonInclude(JsonInclude.Include.ALWAYS)
     public record CurrentLoan(Long borrowId, String status, LocalDate borrowDate, LocalDate dueDate,

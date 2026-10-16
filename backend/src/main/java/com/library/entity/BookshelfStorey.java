@@ -12,6 +12,7 @@ public class BookshelfStorey {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+    private Long layoutVersion;
 
     private Long bookshelfId;
 

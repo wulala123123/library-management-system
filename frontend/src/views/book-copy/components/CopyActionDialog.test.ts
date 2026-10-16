@@ -2,18 +2,20 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import ElementPlus from 'element-plus'
-import type { CopyActionPreviewInput, CopyActionReceipt } from '@/api/bookCopyAction'
+import type { CopyActionPreviewInputV2, CopyActionReceipt, AnyCopyActionView } from '@/api/bookCopyAction'
 const api = vi.hoisted(() => ({ preview: vi.fn(), confirm: vi.fn(), get: vi.fn(), byKey: vi.fn(), context: vi.fn(), history: vi.fn(), user: { isAdmin: true, isLibrarian: false } }))
-vi.mock('@/api/bookCopyAction', () => ({ previewCopyAction: api.preview, confirmCopyAction: api.confirm, getCopyAction: api.get, getCopyActionByKey: api.byKey, getCopyActionContext: api.context, getCopyActionHistory: api.history }))
+vi.mock('@/api/bookCopyAction', () => ({ previewCopyAction: api.preview, previewCopyActionV2: api.preview, confirmCopyAction: api.confirm, getCopyAction: api.get, getCopyActionByKey: api.byKey, getCopyActionContext: api.context, getCopyActionHistory: api.history }))
 vi.mock('@/store/modules/user', () => ({ useUserStore: () => api.user }))
 import CopyActionDialog from './CopyActionDialog.vue'
 import { useCopyActionSession } from './copyActionSession'
-import { actionContext, actionReceipt, actionRequest, actionView, writeOffEvent } from './copyActionFixtures'
+import { actionContext, actionReceipt, actionRequest, actionView, actionViewV2, actionReceiptV2, writeOffEvent } from './copyActionFixtures'
+import { addressRow } from '@/components/locations/locationFixtures'
 const wrappers: ReturnType<typeof mount>[] = []
 const select = defineComponent({ props: ['modelValue', 'disabled', 'placeholder'], emits: ['update:modelValue'], setup(props, { slots, emit }) { return () => h('select', { value: props.modelValue, disabled: props.disabled, 'aria-label': props.placeholder, onChange: (event: Event) => emit('update:modelValue', (event.target as HTMLSelectElement).value) }, [h('option', { value: '' }, props.placeholder || '请选择'), slots.default?.()]) } })
 const option = defineComponent({ props: ['value', 'label', 'disabled'], setup(props) { return () => h('option', { value: props.value, disabled: props.disabled }, props.label) } })
-let latest = actionView()
-async function dialog(ids = [7]) { const wrapper = mount(CopyActionDialog, { props: { visible: true, copyIds: ids }, attachTo: document.body, global: { plugins: [ElementPlus], stubs: { teleport: true, transition: false, ElSelect: select, ElOption: option } } }); wrappers.push(wrapper); await flushPromises(); return wrapper }
+const addressPicker = defineComponent({ props: ['modelValue', 'disabled'], emits: ['update:modelValue'], setup(props,{emit}) { return () => h('button',{disabled:props.disabled,onClick:()=>emit('update:modelValue',addressRow(12))},'合成选择登记地址') } })
+let latest: AnyCopyActionView = actionView()
+async function dialog(ids = [7]) { const wrapper = mount(CopyActionDialog, { props: { visible: true, copyIds: ids }, attachTo: document.body, global: { plugins: [ElementPlus], stubs: { teleport: true, transition: false, ElSelect: select, ElOption: option, LocationAddressPicker: addressPicker } } }); wrappers.push(wrapper); await flushPromises(); return wrapper }
 async function click(wrapper: ReturnType<typeof mount>, text: string) { await wrapper.findAll('button').find(button => button.text().trim() === text)!.trigger('click'); await flushPromises() }
 async function draft(wrapper: ReturnType<typeof mount>, action = 'MOVE', location = ' A区 😀 ') {
   await wrapper.get('select[aria-label="办理动作"]').setValue(action)
@@ -21,7 +23,7 @@ async function draft(wrapper: ReturnType<typeof mount>, action = 'MOVE', locatio
   if (action === 'MOVE' || action === 'RESTORE') { await wrapper.get('select[aria-label="位置登记方式"]').setValue('TEXT'); await wrapper.get('input[placeholder="本册实际位置，不继承书目位置"]').setValue(location) }
   await flushPromises()
 }
-beforeEach(() => { vi.resetAllMocks(); Object.assign(api.user, { isAdmin: true, isLibrarian: false }); latest = actionView(); api.context.mockImplementation(async id => actionContext(id)); api.history.mockImplementation(async id => ({ records: [writeOffEvent(id)], total: 1, page: 1, size: 20, intakeSource: null })); api.preview.mockImplementation(async (data: CopyActionPreviewInput) => { latest = actionView(data); return latest }); api.confirm.mockImplementation(async () => actionReceipt(latest)); api.get.mockImplementation(async () => latest); api.byKey.mockImplementation(async () => latest) })
+beforeEach(() => { vi.resetAllMocks(); Object.assign(api.user, { isAdmin: true, isLibrarian: false }); latest = actionView(); api.context.mockImplementation(async id => actionContext(id)); api.history.mockImplementation(async id => ({ records: [writeOffEvent(id)], total: 1, page: 1, size: 20, intakeSource: null })); api.preview.mockImplementation(async data => { latest = 'schemaVersion' in data ? actionViewV2(data) : actionView(data); return latest }); api.confirm.mockImplementation(async () => latest.schemaVersion === 2 ? actionReceiptV2(latest, api.preview.mock.calls[api.preview.mock.calls.length - 1]![0].idempotencyKey) : actionReceipt(latest)); api.get.mockImplementation(async () => latest); api.byKey.mockImplementation(async () => latest) })
 afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()); document.body.innerHTML = '' })
 it('loads only explicitly selected contexts and makes no preview until action/reason/location are explicit', async () => {
   const wrapper = await dialog(); expect(api.context).toHaveBeenCalledWith(7); expect(api.preview).not.toHaveBeenCalled()
@@ -41,6 +43,18 @@ it('preserves raw text/version, previews without success and confirms only the f
 it('clears a position only through explicit UNASSIGNED and never sends text or inherited book location', async () => {
   const wrapper = await dialog(); await draft(wrapper); await wrapper.get('select[aria-label="位置登记方式"]').setValue('UNASSIGNED'); await click(wrapper, '预览本次办理')
   expect(api.preview.mock.calls[0]![0].copies[0].targetLocation).toEqual({ kind: 'UNASSIGNED' })
+})
+it('creates V2 registered MOVE with ID and all three versions, freezes target and requires a new preview after editing', async () => {
+  const wrapper = await dialog();await draft(wrapper);await wrapper.get('select[aria-label="位置登记方式"]').setValue('REGISTERED');await click(wrapper,'合成选择登记地址');await click(wrapper,'预览本次办理')
+  const request=api.preview.mock.calls[0]![0];expect(request.schemaVersion).toBe(2);expect(request.copies[0]).toEqual({copyId:7,expectedVersion:3,targetLocation:{kind:'REGISTERED',locationId:12,expectedAddressVersion:{location:3,storey:4,bookshelf:5}}})
+  expect(wrapper.text()).toContain('登记地址 #12');expect(wrapper.findAll('button').find(button=>button.text()==='合成选择登记地址')!.attributes('disabled')).toBeDefined()
+  await click(wrapper,'返回修改，重新核对');await wrapper.get('select[aria-label="位置登记方式"]').setValue('UNASSIGNED');await click(wrapper,'预览本次办理')
+  expect(api.preview.mock.calls[1]![0].idempotencyKey).not.toBe(request.idempotencyKey);expect(api.preview.mock.calls[1]![0].copies[0].targetLocation).toEqual({kind:'UNASSIGNED'})
+})
+it('does not offer registered RESTORE and keeps V2 unknown confirmation on original schema/key/digest', async () => {
+  api.context.mockResolvedValue(actionContext(7,'WRITTEN_OFF'));const wrapper=await dialog();await draft(wrapper,'RESTORE');expect(wrapper.findAll('option').some(option=>option.attributes('value')==='REGISTERED')).toBe(false)
+  api.confirm.mockRejectedValueOnce(new Error('timeout'));await click(wrapper,'预览本次办理');const key=api.preview.mock.calls[0]![0].idempotencyKey;await click(wrapper,'确认本次办理');expect(wrapper.findAll('button').find(button=>button.text()==='关闭')!.attributes('disabled')).toBeDefined()
+  await click(wrapper,'使用原请求重试确认');expect(api.confirm.mock.calls).toEqual([[21,key,'a'.repeat(64)],[21,key,'a'.repeat(64)]]);expect(api.preview).toHaveBeenCalledTimes(1)
 })
 it('builds a batch in selected order with each copy version and independently explicit location', async () => {
   api.context.mockImplementation(async id => { const context = actionContext(id, id === 8 ? 'DISABLED' : 'AVAILABLE'); context.copy.actionVersion = id === 8 ? 5 : 3; return context })
@@ -117,7 +131,7 @@ it('refreshes versions after a definite stale rejection, preserves input and cre
   expect(api.preview.mock.calls[1]![0].copies[0].targetLocation.text).toBe(' A区 😀 ')
 })
 it('prevents local expiry confirmation and creates no business mutation when a preview is closed', async () => {
-  api.preview.mockImplementation(async data => ({ ...actionView(data), expiresAt: new Date(Date.now() - 1000).toISOString() }))
+  api.preview.mockImplementation(async data => ({ ...actionViewV2(data), expiresAt: new Date(Date.now() - 1000).toISOString() }))
   const wrapper = await dialog(); await draft(wrapper); await click(wrapper, '预览本次办理')
   expect(wrapper.findAll('button').find(button => button.text().trim() === '确认本次办理')!.attributes('disabled')).toBeDefined()
   await click(wrapper, '关闭'); expect(api.confirm).not.toHaveBeenCalled()
@@ -142,4 +156,8 @@ it('failed lookup after unknown confirmation prevents reset and a pending double
   const session = useCopyActionSession(); await session.preview(actionRequest()); await session.confirm(); expect(session.reset()).toBe(false)
   let finish!: (value: CopyActionReceipt) => void; api.confirm.mockReturnValueOnce(new Promise(resolve => { finish = resolve }))
   const first = session.confirm(); await session.confirm(); expect(api.confirm).toHaveBeenCalledTimes(2); finish(actionReceipt()); await first
+})
+it('does not replace the frozen V1 identity with a V2 lookup result while confirmation is unknown',async()=>{
+  api.confirm.mockRejectedValueOnce(new Error('timeout'));api.get.mockResolvedValue(actionViewV2({...actionRequest(),schemaVersion:2}));const session=useCopyActionSession();await session.preview(actionRequest());await session.confirm()
+  expect(session.view.value?.schemaVersion).toBe(1);expect(session.receipt.value).toBeNull();expect(session.reset()).toBe(false);expect(api.preview.mock.calls[0]![0]).toEqual(actionRequest())
 })

@@ -14,4 +14,12 @@ public class BookCopy {
     private String location;
     private Long actionVersion;
     private Long lastStateActionId;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)
+    private Long registeredLocationId;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)
+    private Long lastLocationActionId;
+    @TableField(exist=false) @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)
+    private com.library.dto.LocationContracts.Placement placement;
+    @TableField(exist=false) private boolean locationReferenceAnomaly;
+    @TableField(exist=false) private boolean unassignedLocation;
 }

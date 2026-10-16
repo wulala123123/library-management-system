@@ -5,11 +5,12 @@
         <el-form-item label="关键词"><el-input v-model="query.keyword" :placeholder="tab === 'catalog' ? '书名 / ISBN / 作者' : '书名 / ISBN / 作者 / 条码'" clearable @keyup.enter="search" /></el-form-item>
         <el-form-item v-if="tab === 'copies'" label="精确条码"><el-input v-model="query.barcode" placeholder="完整条码，保留前导零" clearable @keyup.enter="search" /></el-form-item>
         <el-form-item v-if="tab === 'copies'" label="册状态"><el-select v-model="query.status" clearable placeholder="全部状态" style="width: 160px"><el-option value="AVAILABLE" label="可借" /><el-option value="BORROWED" label="在借" /><el-option value="DISABLED" label="受控临时停用" /><el-option value="WRITTEN_OFF" label="受控已报损" /><el-option value="UNKNOWN" label="原状态待核实" /><el-option value="OTHER" label="全部非可借/在借状态" /></el-select></el-form-item>
-        <el-form-item v-if="tab === 'copies'" label="册位置"><el-input v-model="query.location" :disabled="query.unassignedLocation" placeholder="实体册实际位置" clearable /></el-form-item>
-        <el-form-item v-if="tab === 'copies'"><el-checkbox v-model="query.unassignedLocation" @change="query.location = ''">仅未分配位置</el-checkbox></el-form-item>
+        <el-form-item v-if="tab === 'copies'" label="位置类型"><el-select v-model="query.locationKind" clearable placeholder="全部有效位置" @change="locationKindChanged"><el-option value="TEXT" label="文本位置" /><el-option value="UNASSIGNED" label="未分配" /><el-option value="REGISTERED" label="登记地址" /></el-select></el-form-item>
+        <el-form-item v-if="tab === 'copies' && (!query.locationKind || query.locationKind === 'TEXT')" label="文本位置"><el-input v-model="query.location" placeholder="仅搜索有效文本位置" clearable /></el-form-item>
         <el-form-item><el-button type="primary" @click="search">查询</el-button><el-button @click="reset">重置</el-button></el-form-item>
       </el-form>
       <el-tag v-if="query.bookId" closable @close="query.bookId = undefined; search()">已限定书目 ID {{ query.bookId }}</el-tag>
+      <details v-if="tab === 'copies' && query.locationKind === 'REGISTERED'"><summary>限定登记地址{{ filterAddress ? ` #${filterAddress.address.locationId}` : '（未限定具体地址）' }}</summary><LocationAddressPicker v-model="filterAddress" :require-selectable="false" /></details>
     </div>
     <div class="card-container">
       <el-tabs v-model="tab" @tab-change="search"><el-tab-pane label="书目与登记差额" name="catalog" /><el-tab-pane label="实体册" name="copies" /></el-tabs>
@@ -33,7 +34,7 @@
         <el-table-column label="书目" min-width="200"><template #default="{ row }">{{ row.book.title }}</template></el-table-column>
         <el-table-column label="ISBN" min-width="150"><template #default="{ row }">{{ displayValue(row.book.isbn) }}</template></el-table-column>
         <el-table-column label="册状态" min-width="160"><template #default="{ row }">{{ stateText(row) }}</template></el-table-column>
-        <el-table-column label="册位置" min-width="150"><template #default="{ row }">{{ displayValue(row.location, '未分配') }}</template></el-table-column>
+        <el-table-column label="册有效位置" min-width="350"><template #default="{ row }"><CopyPlacement :placement="row.placement" :raw-text="row.location" :anomaly="row.locationReferenceAnomaly" /></template></el-table-column>
         <el-table-column label="操作" width="100"><template #default="{ row }"><el-button link type="primary" @click="showDetail(row.id)">查看单册</el-button></template></el-table-column>
       </el-table>
       <div class="pagination-wrapper"><el-pagination v-model:current-page="query.page" v-model:page-size="query.size" :total="total" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next" @change="fetchRows" /></div>
@@ -45,7 +46,7 @@
           <el-descriptions-item label="馆内条码">{{ detail.copy.barcode }}</el-descriptions-item>
           <el-descriptions-item label="书目">{{ detail.copy.book.title }}</el-descriptions-item>
           <el-descriptions-item label="册状态">{{ stateText(detail.copy) }}</el-descriptions-item>
-          <el-descriptions-item label="册实际位置">{{ displayValue(detail.copy.location, '未分配') }}</el-descriptions-item>
+          <el-descriptions-item label="册有效位置"><CopyPlacement :placement="detail.copy.placement" :raw-text="detail.copy.location" :anomaly="detail.copy.locationReferenceAnomaly" /><p>位置来源事件 {{ detail.copy.lastLocationActionId ?? 'NULL' }}</p></el-descriptions-item>
           <el-descriptions-item label="书目位置">{{ displayValue(detail.copy.book.location, '未设置') }}</el-descriptions-item>
           <el-descriptions-item label="出版日期 / 页数">{{ displayValue(detail.copy.book.publishDate, '待补充') }} / {{ displayValue(detail.copy.book.pages, '待补充') }}</el-descriptions-item>
         </el-descriptions>
@@ -79,10 +80,15 @@ import CopyActionDialog from './components/CopyActionDialog.vue'
 import CopyActionHistory from './components/CopyActionHistory.vue'
 import CopyReconciliationV2 from './components/CopyReconciliationV2.vue'
 import { copyStateText, rawText } from './components/copyActionPresentation'
+import CopyPlacement from '@/components/locations/CopyPlacement.vue'
+import LocationAddressPicker from '@/components/locations/LocationAddressPicker.vue'
+import type { AddressRow, Placement } from '@/api/locationAddress'
 const store = useUserStore(), route = useRoute()
 const canRead = computed(() => store.isAdmin || store.isLibrarian)
 const bookId = Number(route.query.bookId)
-const query = reactive({ page: 1, size: 20, keyword: '', barcode: '', status: '', location: '', unassignedLocation: false, bookId: Number.isSafeInteger(bookId) && bookId > 0 ? bookId : undefined as number | undefined })
+const query = reactive({ page: 1, size: 20, keyword: '', barcode: '', status: '', location: '', locationKind: '' as '' | Placement['kind'], bookId: Number.isSafeInteger(bookId) && bookId > 0 ? bookId : undefined as number | undefined })
+const filterAddress = ref<AddressRow | null>(null)
+function locationKindChanged() { query.location = ''; filterAddress.value = null }
 const tab = ref('catalog'), copies = ref<CopyRow[]>([]), catalog = ref<CatalogCopySummary[]>([]), total = ref(0), loading = ref(false), error = ref('')
 const detailVisible = ref(false), detail = ref<CopyDetail | null>(null), detailLoading = ref(false), detailError = ref('')
 let request = 0, detailRequest = 0
@@ -98,12 +104,12 @@ async function fetchRows() {
   try {
     const common = { page: query.page, size: query.size, keyword: query.keyword.trim() || undefined, bookId: query.bookId }
     if (targetTab === 'catalog') { const result = await getCatalogCopySummary(common); if (number === request) { catalog.value = result.records; total.value = result.total } }
-    else { const result = await getBookCopies({ ...common, barcode: query.barcode || undefined, status: query.status || undefined, location: query.unassignedLocation ? undefined : query.location || undefined, unassignedLocation: query.unassignedLocation || undefined }); if (number === request) { copies.value = result.records; total.value = result.total } }
+    else { const result = await getBookCopies({ ...common, barcode: query.barcode || undefined, status: query.status || undefined, location: !query.locationKind || query.locationKind === 'TEXT' ? query.location || undefined : undefined, locationKind: query.locationKind || undefined, registeredLocationId: query.locationKind === 'REGISTERED' ? filterAddress.value?.address.locationId : undefined }); if (number === request) { copies.value = result.records; total.value = result.total } }
   } catch { if (number === request) { catalog.value = []; copies.value = []; total.value = 0; error.value = '查询失败，请检查筛选条件后重试。' } }
   finally { if (number === request) loading.value = false }
 }
 function search() { query.page = 1; fetchRows() }
-function reset() { Object.assign(query, { page: 1, keyword: '', barcode: '', status: '', location: '', unassignedLocation: false, bookId: undefined }); fetchRows() }
+function reset() { Object.assign(query, { page: 1, keyword: '', barcode: '', status: '', location: '', locationKind: '', bookId: undefined }); filterAddress.value = null; fetchRows() }
 function showCopies(id: number) { query.bookId = id; tab.value = 'copies'; search() }
 async function showDetail(id: number) {
   if (!canRead.value) return

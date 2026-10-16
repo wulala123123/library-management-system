@@ -1,17 +1,21 @@
 import { ref, shallowRef } from 'vue'
-import { confirmCopyAction, getCopyAction, getCopyActionByKey, previewCopyAction, type CopyActionPreviewInput, type CopyActionReceipt, type CopyActionView } from '@/api/bookCopyAction'
+import { confirmCopyAction, getCopyAction, getCopyActionByKey, previewCopyAction, previewCopyActionV2, type AnyCopyActionInput, type AnyCopyActionReceipt, type AnyCopyActionView } from '@/api/bookCopyAction'
 
 function failure(cause: unknown) {
   const value = cause as { response?: { status?: number; data?: { message?: string; data?: { reasonCode?: string; copyId?: number; ordinal?: number } } }; message?: string }
   const data = value?.response?.data
-  return { status: value?.response?.status, code: data?.data?.reasonCode || '', message: `${data?.message || value?.message || '请求失败'}${data?.data?.copyId ? `（实体册 ${data.data.copyId}）` : ''}` }
+  const code = data?.data?.reasonCode || ''
+  return { status: value?.response?.status, code, message: `${code === 'LOCATION_CONTRACT_UPGRADE_REQUIRED' ? '位置契约已更新，请刷新页面并核对原请求结果。' : data?.message || value?.message || '请求失败'}${data?.data?.copyId ? `（实体册 ${data.data.copyId}）` : ''}` }
 }
 export function useCopyActionSession() {
-  const request = shallowRef<CopyActionPreviewInput | null>(null), view = shallowRef<CopyActionView | null>(null), receipt = shallowRef<CopyActionReceipt | null>(null)
+  const request = shallowRef<AnyCopyActionInput | null>(null), view = shallowRef<AnyCopyActionView | null>(null), receipt = shallowRef<AnyCopyActionReceipt | null>(null)
   const busy = ref(false), uncertain = ref(false), error = ref(''), rejected = ref(false)
   let confirming = false
-  function accept(result: CopyActionView) {
+  function accept(result: AnyCopyActionView) {
+    const schema = request.value && 'schemaVersion' in request.value ? request.value.schemaVersion : 1
+    if (result.schemaVersion !== schema || (view.value && (result.requestId !== view.value.requestId || result.previewDigest !== view.value.previewDigest))) throw new Error('原请求版本或摘要不一致，请继续核查原请求。')
     if (result.state === 'COMMITTED' && !result.receipt) throw new Error('成功回执不完整，请查询原请求。')
+    if (result.receipt && (result.receipt.schemaVersion !== result.schemaVersion || result.receipt.requestId !== result.requestId || result.receipt.idempotencyKey !== request.value?.idempotencyKey)) throw new Error('原请求回执身份不一致，请继续核查。')
     view.value = result
     if (result.state === 'COMMITTED') { receipt.value = result.receipt; confirming = false }
     uncertain.value = confirming
@@ -30,16 +34,16 @@ export function useCopyActionSession() {
     rejected.value = !uncertain.value
     if (uncertain.value) await lookup()
   }
-  async function preview(input: CopyActionPreviewInput) {
+  async function preview(input: AnyCopyActionInput) {
     if (busy.value || receipt.value) return
-    request.value ||= JSON.parse(JSON.stringify(input)) as CopyActionPreviewInput
+    request.value ||= JSON.parse(JSON.stringify(input)) as AnyCopyActionInput
     busy.value = true; error.value = ''; rejected.value = false
-    try { accept(await previewCopyAction(request.value)) } catch (cause) { await failed(cause) } finally { busy.value = false }
+    try { accept(await ('schemaVersion' in request.value ? previewCopyActionV2(request.value) : previewCopyAction(request.value))) } catch (cause) { await failed(cause) } finally { busy.value = false }
   }
   async function confirm() {
     if (busy.value || !request.value || !view.value || receipt.value) return
     busy.value = true; error.value = ''; confirming = true
-    try { receipt.value = await confirmCopyAction(view.value.requestId, request.value.idempotencyKey, view.value.previewDigest); confirming = false; uncertain.value = false }
+    try { const result = await confirmCopyAction(view.value.requestId, request.value.idempotencyKey, view.value.previewDigest); if (result.schemaVersion !== view.value.schemaVersion || result.requestId !== view.value.requestId || result.idempotencyKey !== request.value.idempotencyKey) throw new Error('确认回执与原请求不一致，请查询原请求。'); receipt.value = result; confirming = false; uncertain.value = false }
     catch (cause) { if ([400, 409].includes(failure(cause).status || 0)) confirming = false; await failed(cause) }
     finally { busy.value = false }
   }

@@ -11,7 +11,8 @@ import com.library.entity.BookshelfStorey;
 import com.library.service.BookshelfService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.security.core.Authentication;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -47,22 +48,22 @@ public class BookshelfController {
     @Operation(summary = "新增书架")
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-    public Result<Bookshelf> create(@Valid @RequestBody BookshelfRequest request) {
-        return Result.success(bookshelfService.create(request));
+    public Result<Bookshelf> create(@RequestBody JsonNode request,Authentication auth) {
+        return Result.success(bookshelfService.create(request,(Long)auth.getPrincipal()));
     }
 
     @Operation(summary = "更新书架")
     @PutMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-    public Result<Bookshelf> update(@Valid @RequestBody BookshelfRequest request) {
-        return Result.success(bookshelfService.update(request));
+    public Result<Bookshelf> update(@RequestBody JsonNode request,Authentication auth) {
+        return Result.success(bookshelfService.update(request,(Long)auth.getPrincipal()));
     }
 
     @Operation(summary = "删除书架")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public Result<Void> delete(@PathVariable Long id) {
-        bookshelfService.delete(id);
+    public Result<Void> delete(@PathVariable Long id,@RequestBody JsonNode body,Authentication auth) {
+        bookshelfService.delete(id,body,(Long)auth.getPrincipal());
         return Result.success();
     }
 
@@ -76,22 +77,22 @@ public class BookshelfController {
     @Operation(summary = "新增书架层")
     @PostMapping("/storeys")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-    public Result<BookshelfStorey> createStorey(@Valid @RequestBody BookshelfStoreyRequest request) {
-        return Result.success(bookshelfService.createStorey(request));
+    public Result<BookshelfStorey> createStorey(@RequestBody JsonNode request,Authentication auth) {
+        return Result.success(bookshelfService.createStorey(request,(Long)auth.getPrincipal()));
     }
 
     @Operation(summary = "更新书架层")
     @PutMapping("/storeys")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-    public Result<BookshelfStorey> updateStorey(@Valid @RequestBody BookshelfStoreyRequest request) {
-        return Result.success(bookshelfService.updateStorey(request));
+    public Result<BookshelfStorey> updateStorey(@RequestBody JsonNode request,Authentication auth) {
+        return Result.success(bookshelfService.updateStorey(request,(Long)auth.getPrincipal()));
     }
 
     @Operation(summary = "删除书架层")
     @DeleteMapping("/storeys/{id}")
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public Result<Void> deleteStorey(@PathVariable Long id) {
-        bookshelfService.deleteStorey(id);
+    public Result<Void> deleteStorey(@PathVariable Long id,@RequestBody JsonNode body,Authentication auth) {
+        bookshelfService.deleteStorey(id,body,(Long)auth.getPrincipal());
         return Result.success();
     }
 
@@ -109,38 +110,38 @@ public class BookshelfController {
     @Operation(summary = "新增库位")
     @PostMapping("/locations")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-    public Result<BookLocation> createLocation(@Valid @RequestBody BookLocationRequest request) {
-        return Result.success(bookshelfService.createLocation(request));
+    public Result<BookLocation> createLocation(@RequestBody JsonNode request,Authentication auth) {
+        return Result.success(bookshelfService.createLocation(request,(Long)auth.getPrincipal()));
     }
 
     @Operation(summary = "更新库位")
     @PutMapping("/locations")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-    public Result<BookLocation> updateLocation(@Valid @RequestBody BookLocationRequest request) {
-        return Result.success(bookshelfService.updateLocation(request));
+    public Result<BookLocation> updateLocation(@RequestBody JsonNode request,Authentication auth) {
+        return Result.success(bookshelfService.updateLocation(request,(Long)auth.getPrincipal()));
     }
 
     @Operation(summary = "删除库位")
     @DeleteMapping("/locations/{id}")
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public Result<Void> deleteLocation(@PathVariable Long id) {
-        bookshelfService.deleteLocation(id);
+    public Result<Void> deleteLocation(@PathVariable Long id,@RequestBody JsonNode body,Authentication auth) {
+        bookshelfService.deleteLocation(id,body,(Long)auth.getPrincipal());
         return Result.success();
     }
 
     @Operation(summary = "分配图书到库位")
     @PutMapping("/locations/{locationId}/assign/{bookId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-    public Result<Void> assignBook(@PathVariable Long locationId, @PathVariable Long bookId) {
-        bookshelfService.assignBookToLocation(locationId, bookId);
+    public Result<Void> assignBook(@PathVariable Long locationId, @PathVariable Long bookId,@RequestBody JsonNode body,Authentication auth) {
+        bookshelfService.assignBookToLocation(locationId, bookId,body,(Long)auth.getPrincipal());
         return Result.success();
     }
 
     @Operation(summary = "清空库位")
     @PutMapping("/locations/{locationId}/clear")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-    public Result<Void> clearLocation(@PathVariable Long locationId) {
-        bookshelfService.clearLocation(locationId);
+    public Result<Void> clearLocation(@PathVariable Long locationId,@RequestBody JsonNode body,Authentication auth) {
+        bookshelfService.clearLocation(locationId,body,(Long)auth.getPrincipal());
         return Result.success();
     }
 }

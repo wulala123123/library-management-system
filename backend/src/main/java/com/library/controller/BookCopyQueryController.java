@@ -21,8 +21,9 @@ public class BookCopyQueryController {
     public Result<PageResult<CopyRow>> copies(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String keyword, @RequestParam(required = false) Long bookId,
             @RequestParam(required = false) String status, @RequestParam(required = false) String location,
-            @RequestParam(required = false) Boolean unassignedLocation, @RequestParam(required = false) String barcode) {
-        return Result.success(service.copies(page, size, keyword, bookId, status, location, unassignedLocation, barcode));
+            @RequestParam(required = false) Boolean unassignedLocation, @RequestParam(required = false) String barcode,
+            @RequestParam(required=false)String locationKind,@RequestParam(required=false)Long registeredLocationId) {
+        return Result.success(service.copies(page, size, keyword, bookId, status, location, unassignedLocation, barcode,locationKind,registeredLocationId));
     }
 
     @GetMapping("/catalog-summary")

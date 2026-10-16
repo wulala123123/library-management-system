@@ -21,6 +21,11 @@ import java.util.*;
 @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 public class BookCopyQueryService {
     private final JdbcTemplate jdbc;
+    private final CopyPlacementService placements;
+    public List<com.library.entity.BookCopy> legacy(Long bookId){
+        List<com.library.entity.BookCopy> rows=jdbc.query("SELECT * FROM book_copy WHERE book_id=? ORDER BY barcode",(r,n)->{var c=new com.library.entity.BookCopy();c.setId(r.getLong("id"));c.setBookId(r.getLong("book_id"));c.setBarcode(r.getString("barcode"));c.setStatus(r.getString("status"));c.setLocation(r.getString("location"));c.setActionVersion(r.getLong("action_version"));c.setLastStateActionId(r.getObject("last_state_action_id",Long.class));c.setRegisteredLocationId(r.getObject("registered_location_id",Long.class));c.setLastLocationActionId(r.getObject("last_location_action_id",Long.class));return c;},bookId);
+        var map=placements.find(rows.stream().map(com.library.entity.BookCopy::getId).toList());for(var c:rows){var p=map.get(c.getId());c.setPlacement(p.placement());c.setUnassignedLocation(p.placement().kind().equals("UNASSIGNED"));c.setLocationReferenceAnomaly(p.locationReferenceAnomaly());}return rows;
+    }
     private static final Set<String> STATUSES = Set.of("AVAILABLE", "BORROWED", "OTHER","DISABLED","WRITTEN_OFF","UNKNOWN");
     private static final String BOOK_COLUMNS = "b.id AS book_id,b.title,b.isbn,b.author,b.publisher,b.publish_date,b.pages,b.cover_image,b.location AS book_location,b.status AS book_status";
     private static final String COPY_COLUMNS = "c.id AS copy_id,c.barcode,c.status AS copy_status,c.location AS copy_location,c.action_version,c.last_state_action_id," + BOOK_COLUMNS;
@@ -28,10 +33,18 @@ public class BookCopyQueryService {
 
     public PageResult<CopyRow> copies(int page, int size, String keyword, Long bookId, String status,
                                       String location, Boolean unassignedLocation, String barcode) {
+        return copies(page,size,keyword,bookId,status,location,unassignedLocation,barcode,null,null);
+    }
+    public PageResult<CopyRow> copies(int page,int size,String keyword,Long bookId,String status,String location,Boolean unassignedLocation,String barcode,String locationKind,Long registeredLocationId) {
         int p = page(page), s = size(size);
         checkText(keyword, 200); checkText(location, 200); checkBarcode(barcode); checkId(bookId);
         if (status != null && !STATUSES.contains(status)) throw new IllegalArgumentException("实体册状态筛选无效");
         if (Boolean.TRUE.equals(unassignedLocation) && hasText(location)) throw new IllegalArgumentException("未分配位置不能同时指定位置");
+        checkId(registeredLocationId);
+        if(locationKind!=null&&!Set.of("TEXT","UNASSIGNED","REGISTERED").contains(locationKind))throw new IllegalArgumentException("位置类型无效");
+        if(registeredLocationId!=null&&locationKind!=null&&!locationKind.equals("REGISTERED"))throw new IllegalArgumentException("位置条件冲突");
+        if(Boolean.TRUE.equals(unassignedLocation)&&(registeredLocationId!=null||locationKind!=null&&!locationKind.equals("UNASSIGNED")))throw new IllegalArgumentException("位置条件冲突");
+        if(hasText(location)&&(registeredLocationId!=null||locationKind!=null&&!locationKind.equals("TEXT")))throw new IllegalArgumentException("位置条件冲突");
         if (barcode != null && barcode.isEmpty()) throw new IllegalArgumentException("精确条码不能为空");
         StringBuilder where = new StringBuilder(COPY_FROM); List<Object> args = new ArrayList<>();
         addBookId(where, args, bookId);
@@ -44,8 +57,12 @@ public class BookCopyQueryService {
             if (status.equals("OTHER")) where.append(" AND NOT (").append(projection.exact("c.status","AVAILABLE")).append(" OR ").append(projection.exact("c.status","BORROWED")).append(")");
             else { where.append(" AND (").append(projection.classificationSql("c")).append(")=?"); args.add(status); }
         }
-        if (hasText(location)) { where.append(" AND c.location LIKE ? ESCAPE '!'"); args.add(literalLike(location)); }
-        if (Boolean.TRUE.equals(unassignedLocation)) where.append(" AND (c.location IS NULL OR LENGTH(TRIM(c.location))=0)");
+        String unassigned=unassignedSql();
+        if(hasText(location)){where.append(" AND c.registered_location_id IS NULL AND NOT (").append(unassigned).append(") AND c.location LIKE ? ESCAPE '!'");args.add(literalLike(location));}
+        if(Boolean.TRUE.equals(unassignedLocation)||"UNASSIGNED".equals(locationKind))where.append(" AND c.registered_location_id IS NULL AND (").append(unassigned).append(")");
+        if("TEXT".equals(locationKind))where.append(" AND c.registered_location_id IS NULL AND NOT (").append(unassigned).append(")");
+        if("REGISTERED".equals(locationKind))where.append(" AND c.registered_location_id IS NOT NULL");
+        if(registeredLocationId!=null){where.append(" AND c.registered_location_id=?");args.add(registeredLocationId);}
         if (barcode != null) {
             // MySQL CAST AS BINARY preserves case, leading zeroes and trailing spaces independently of column collation.
             where.append(" AND ").append(binaryBarcode()).append("=?"); args.add(barcode.getBytes(StandardCharsets.UTF_8));
@@ -53,14 +70,14 @@ public class BookCopyQueryService {
         Long total = jdbc.queryForObject("SELECT COUNT(*)" + where, Long.class, args.toArray());
         args.add(s); args.add(((long) p - 1) * s);
         List<CopyRow> rows = jdbc.query("SELECT " + copyColumns() + where + " ORDER BY b.id,c.id LIMIT ? OFFSET ?", (rs, i) -> copy(rs), args.toArray());
-        return new PageResult<>(rows, total, (long) p, (long) s);
+        return new PageResult<>(decorate(rows), total, (long) p, (long) s);
     }
 
     public CopyDetail detail(Long id) {
         checkId(id);
         List<CopyRow> rows = jdbc.query("SELECT " + copyColumns() + COPY_FROM + " AND c.id=?", (rs, i) -> copy(rs), id);
         if (rows.isEmpty()) return null;
-        CopyRow copy = rows.get(0);
+        CopyRow copy = decorate(rows).get(0);
         List<CurrentLoan> loans = jdbc.query("SELECT r.id,r.status,r.borrow_date,r.due_date,r.due_date_kind,r.book_id,u.real_name,p.card_no "
                         + "FROM borrow_record r LEFT JOIN sys_user u ON u.id=r.user_id AND u.deleted=0 AND u.role='READER' "
                         + "LEFT JOIN member_profile p ON p.user_id=u.id WHERE r.copy_id=? AND r.deleted=0 AND r.status IN ('BORROWING','OVERDUE') ORDER BY r.id",
@@ -72,7 +89,7 @@ public class BookCopyQueryService {
             case "DISABLED","WRITTEN_OFF" -> !loans.isEmpty();
             default -> true;
         };
-        needsVerification |= loans.stream().anyMatch(loan -> !loan.bookMatches() || loan.memberName() == null);
+        needsVerification |= copy.locationReferenceAnomaly()||loans.stream().anyMatch(loan -> !loan.bookMatches() || loan.memberName() == null);
         return new CopyDetail(copy, loans, needsVerification,new CopyInventoryProjection(jdbc).forBook(copy.bookId()));
     }
 
@@ -118,8 +135,10 @@ public class BookCopyQueryService {
     private CopyRow copy(ResultSet rs) throws SQLException {
         String location = rs.getString("copy_location");
         return new CopyRow(rs.getLong("copy_id"), rs.getLong("book_id"), rs.getString("barcode"), rs.getString("copy_status"), location,
-                location == null || location.trim().isEmpty(), book(rs),rs.getLong("action_version"),rs.getObject("last_state_action_id",Long.class),rs.getString("state_classification"));
+                false, book(rs),rs.getLong("action_version"),rs.getObject("last_state_action_id",Long.class),rs.getString("state_classification"),null,null,false);
     }
+    private List<CopyRow> decorate(List<CopyRow> rows){var map=placements.find(rows.stream().map(CopyRow::id).toList());return rows.stream().map(c->{var p=map.get(c.id());return new CopyRow(c.id(),c.bookId(),c.barcode(),c.status(),c.location(),p.placement().kind().equals("UNASSIGNED"),c.book(),c.actionVersion(),c.lastStateActionId(),c.stateClassification(),p.placement(),p.lastLocationActionId(),p.locationReferenceAnomaly());}).toList();}
+    private String unassignedSql(){return new CopyInventoryProjection(jdbc).h2()?"(c.location IS NULL OR REGEXP_LIKE(c.location,'^[\\x00-\\x20]*$'))":"(c.location IS NULL OR HEX(CONVERT(c.location USING binary)) REGEXP '^(0[0-9A-F]|1[0-9A-F]|20)*$')";}
     private String copyColumns(){return COPY_COLUMNS+","+new CopyInventoryProjection(jdbc).classificationSql("c")+" AS state_classification";}
     private BookInfo book(ResultSet rs) throws SQLException {
         return new BookInfo(rs.getLong("book_id"), rs.getString("title"), rs.getString("isbn"), rs.getString("author"), rs.getString("publisher"),

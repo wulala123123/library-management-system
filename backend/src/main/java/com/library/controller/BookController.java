@@ -21,13 +21,13 @@ import org.springframework.web.bind.annotation.*;
 public class BookController {
 
     private final BookService bookService;
+    private final com.library.service.BookCopyQueryService copyQueries;
     private final com.library.mapper.BookCopyMapper copyMapper;
 
     @GetMapping("/{id}/copies")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public Result<java.util.List<com.library.entity.BookCopy>> copies(@PathVariable Long id) {
-        return Result.success(copyMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.library.entity.BookCopy>()
-                .eq(com.library.entity.BookCopy::getBookId, id).orderByAsc(com.library.entity.BookCopy::getBarcode)));
+        return Result.success(copyQueries.legacy(id));
     }
 
     @Operation(summary = "分页查询图书列表")

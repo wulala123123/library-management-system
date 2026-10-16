@@ -22,6 +22,16 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test") @Import(BookCopyActionServiceTest.CountingConfiguration.class)
 class BookCopyActionServiceTest {
     @Autowired StatisticsService stats;@Autowired JdbcTemplate jdbc;
+    @Autowired com.library.service.BookCopyQueryService copyQueries;
+    @Autowired com.library.service.LocationAddressService addresses;
+    @Test void placementAndAddressPagesUseConstantQueryCountsAtOneAndOneHundredRows(){
+        String code="P"+UUID.randomUUID().toString().replace("-","");jdbc.update("INSERT INTO bookshelf(name,code) VALUES ('合成性能书架',?)",code);long shelf=jdbc.queryForObject("SELECT id FROM bookshelf WHERE code=?",Long.class,code);jdbc.update("INSERT INTO bookshelf_storey(bookshelf_id,name,level_num) VALUES (?,'合成性能层',1)",shelf);long storey=jdbc.queryForObject("SELECT id FROM bookshelf_storey WHERE bookshelf_id=?",Long.class,shelf);
+        String isbn="Q"+code.substring(0,15);jdbc.update("INSERT INTO book(isbn,title,stock_total,stock_available) VALUES (?,'合成性能册',100,100)",isbn);long book=jdbc.queryForObject("SELECT id FROM book WHERE isbn=?",Long.class,isbn);
+        for(int n=0;n<100;n++){jdbc.update("INSERT INTO book_location(storey_id,code) VALUES (?,?)",storey,code+n);long location=jdbc.queryForObject("SELECT id FROM book_location WHERE code=?",Long.class,code+n);jdbc.update("INSERT INTO book_copy(book_id,barcode,status,registered_location_id) VALUES (?,?,'AVAILABLE',?)",book,code+n,location);}
+        copyQueries.copies(1,1,null,book,null,null,null,null);SELECTS.set(0);copyQueries.copies(1,1,null,book,null,null,null,null);int small=SELECTS.get();SELECTS.set(0);var copies=copyQueries.copies(1,100,null,book,null,null,null,null);assertEquals(100,copies.getRecords().size());assertEquals(small,SELECTS.get());assertEquals(4,small);
+        SELECTS.set(0);addresses.page(1,1,null,shelf,null,false);int addressSmall=SELECTS.get();SELECTS.set(0);var page=addresses.page(1,100,null,shelf,null,false);assertEquals(100,page.getRecords().size());assertEquals(addressSmall,SELECTS.get());assertEquals(2,addressSmall);
+        SELECTS.set(0);copyQueries.legacy(book);assertEquals(3,SELECTS.get());System.out.printf("STRUCTURED_LOCATION_QUERY_COUNT copiesPage1=%d copiesPage100=%d addressesPage1=%d addressesPage100=%d legacyArray=3%n",small,small,addressSmall,addressSmall);
+    }
     static final AtomicInteger SELECTS=new AtomicInteger(),METADATA=new AtomicInteger();
     @Test void completeCatalogUsesConstantDataQueriesAndCachedDialectWithoutCancellingPerTitleDifferences(){
         addTitles(4);stats.getSummary();SELECTS.set(0);METADATA.set(0);long smallStart=System.nanoTime();var small=stats.getSummary();long smallMs=(System.nanoTime()-smallStart)/1_000_000;assertEquals(5,SELECTS.get());assertEquals(0,METADATA.get());

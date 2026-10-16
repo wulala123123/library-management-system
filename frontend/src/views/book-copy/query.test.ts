@@ -7,15 +7,19 @@ vi.mock('@/api/bookCopyQuery', () => ({ getBookCopies: api.list, getCatalogCopyS
 vi.mock('@/store/modules/user', () => ({ useUserStore: () => api.user }))
 vi.mock('vue-router', () => ({ useRoute: () => api.route }))
 import Query from './index.vue'
+import { addressRow } from '@/components/locations/locationFixtures'
 
 const slot = defineComponent({ setup(_, { slots }) { return () => h('div', slots.default?.()) } })
 const input = defineComponent({ props: ['modelValue', 'placeholder'], emits: ['update:modelValue'], setup(props, { emit }) { return () => h('input', { value: props.modelValue, placeholder: props.placeholder, onInput: (event: Event) => emit('update:modelValue', (event.target as HTMLInputElement).value) }) } })
+const select = defineComponent({props:['modelValue','placeholder'],emits:['update:modelValue','change'],setup(props,{emit,slots}){return()=>h('select',{value:props.modelValue,'aria-label':props.placeholder,onChange:(event:Event)=>{const value=(event.target as HTMLSelectElement).value;emit('update:modelValue',value);emit('change',value)}},[h('option',{value:''},'全部'),slots.default?.()])}})
+const option = defineComponent({props:['value','label'],setup(props){return()=>h('option',{value:props.value},props.label)}})
+const addressPicker=defineComponent({props:['requireSelectable'],emits:['update:modelValue'],setup(_,{emit}){return()=>h('button',{onClick:()=>{const row=addressRow();row.address.selectable=false;row.address.unavailableReason='LOCATION_DISABLED';emit('update:modelValue',row)}},'合成限定地址')}})
 const button = defineComponent({ setup(_, { slots, attrs }) { return () => h('button', attrs, slots.default?.()) } })
 const tabs = defineComponent({ emits: ['update:modelValue', 'tab-change'], setup(_, { emit }) { return () => h('button', { 'data-test': 'copies', onClick() { emit('update:modelValue', 'copies'); emit('tab-change', 'copies') } }, '实体册') } })
 const rowProvider = defineComponent({ props: ['row'], setup(props, { slots }) { provide('row', computed(() => props.row)); return () => h('div', slots.default?.()) } })
 const table = defineComponent({ props: ['data'], setup(props, { slots }) { return () => h('div', (props.data || []).map((row: object) => h(rowProvider, { row }, slots.default))) } })
 const column = defineComponent({ props: ['prop', 'label'], setup(props, { slots }) { const row = inject<ComputedRef<Record<string, unknown>>>('row')!; return () => h('span', [props.label, ': ', slots.default?.({ row: row.value }) || String(row.value?.[props.prop] ?? '')]) } })
-const stubs = { ElForm: slot, ElFormItem: slot, ElInput: input, ElButton: button, ElSelect: true, ElOption: true, ElCheckbox: true, ElTag: slot, ElTabs: tabs, ElTabPane: true, ElTable: table, ElTableColumn: column, ElPagination: true, ElDialog: slot, ElDescriptions: slot, ElDescriptionsItem: slot, ElAlert: true, ElEmpty: true, CopyActionDialog: true, CopyActionHistory: true }
+const stubs = { ElForm: slot, ElFormItem: slot, ElInput: input, ElButton: button, ElSelect: select, ElOption: option, ElCheckbox: true, ElTag: slot, ElTabs: tabs, ElTabPane: true, ElTable: table, ElTableColumn: column, ElPagination: true, ElDialog: slot, ElDescriptions: slot, ElDescriptionsItem: slot, ElAlert: true, ElEmpty: true, CopyActionDialog: true, CopyActionHistory: true, LocationAddressPicker:addressPicker }
 const wrappers: ReturnType<typeof mount>[] = []
 function page() { const wrapper = mount(Query, { global: { stubs, directives: { loading: () => {} } } }); wrappers.push(wrapper); return wrapper }
 beforeEach(() => { vi.clearAllMocks(); Object.assign(api.user, { isAdmin: true, isLibrarian: false }); api.route.query = {}; api.summary.mockResolvedValue({ records: [], total: 0 }); api.list.mockResolvedValue({ records: [], total: 0 }) })
@@ -78,4 +82,10 @@ it('uses provenance classification to distinguish identical legacy and controlle
   api.list.mockResolvedValue({ records: [{ id: 1, status: 'DISABLED', stateClassification: 'UNKNOWN', barcode: '0001', location: null, book }, { id: 2, status: 'DISABLED', stateClassification: 'DISABLED', barcode: '0002', location: null, book }], total: 2 })
   const wrapper = page(); await flushPromises(); await wrapper.get('[data-test="copies"]').trigger('click'); await flushPromises()
   expect(wrapper.text()).toContain('原状态待核实："DISABLED"'); expect(wrapper.text()).toContain('临时停用')
+})
+it('sends effective location kind and registered ID to server and clears mutually exclusive filters',async()=>{
+  const wrapper=page();await flushPromises();await wrapper.get('[data-test="copies"]').trigger('click');await flushPromises();await wrapper.get('select[aria-label="全部有效位置"]').setValue('REGISTERED');expect(wrapper.findComponent(addressPicker).props('requireSelectable')).toBe(false);await wrapper.findAll('button').find(button=>button.text()==='合成限定地址')!.trigger('click');await wrapper.findAll('button').find(button=>button.text()==='查询')!.trigger('click');await flushPromises()
+  expect(api.list).toHaveBeenLastCalledWith(expect.objectContaining({locationKind:'REGISTERED',registeredLocationId:12,location:undefined,page:1}))
+  await wrapper.get('select[aria-label="全部有效位置"]').setValue('UNASSIGNED');await wrapper.findAll('button').find(button=>button.text()==='查询')!.trigger('click');await flushPromises();expect(api.list).toHaveBeenLastCalledWith(expect.objectContaining({locationKind:'UNASSIGNED',registeredLocationId:undefined,location:undefined}))
+  await wrapper.get('select[aria-label="全部有效位置"]').setValue('TEXT');await wrapper.get('input[placeholder="仅搜索有效文本位置"]').setValue(' 原位置 ');await wrapper.findAll('button').find(button=>button.text()==='查询')!.trigger('click');await flushPromises();expect(api.list).toHaveBeenLastCalledWith(expect.objectContaining({locationKind:'TEXT',location:' 原位置 ',registeredLocationId:undefined}))
 })

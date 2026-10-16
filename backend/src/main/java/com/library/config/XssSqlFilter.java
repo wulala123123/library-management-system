@@ -84,8 +84,10 @@ public class XssSqlFilter extends OncePerRequestFilter {
         String path = servletPath(request);
         return ("POST".equals(request.getMethod()) &&
                 (path.equals("/inventory-intakes/previews") || path.matches("/inventory-intakes/[0-9]+/confirm")
-                || path.equals("/book-copy-actions/previews") || path.matches("/book-copy-actions/[0-9]+/confirm")))
-                || ("PUT".equals(request.getMethod()) && path.matches("/books/[0-9]+/metadata"));
+                || path.equals("/book-copy-actions/previews") || path.equals("/book-copy-actions/v2/previews") || path.matches("/book-copy-actions/[0-9]+/confirm")
+                || path.equals("/bookshelves") || path.equals("/bookshelves/storeys") || path.equals("/bookshelves/locations")))
+                || ("PUT".equals(request.getMethod()) && (path.matches("/books/[0-9]+/metadata") || path.equals("/bookshelves") || path.equals("/bookshelves/storeys") || path.equals("/bookshelves/locations") || path.matches("/bookshelves/locations/[0-9]+/(clear|assign/[0-9]+)")))
+                || ("DELETE".equals(request.getMethod()) && path.matches("/bookshelves/(?:storeys/|locations/)?[0-9]+"));
     }
 
     private static String servletPath(HttpServletRequest request) {

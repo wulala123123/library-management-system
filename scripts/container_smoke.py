@@ -28,12 +28,13 @@ def upload(path, filename, content, mime):
     body=(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{filename}"\r\nContent-Type: {mime}\r\n\r\n').encode()+content+f'\r\n--{boundary}--\r\n'.encode()
     return request(path,'POST',body,content_type='multipart/form-data; boundary='+boundary)
 
-def copy_action(copy_id, action, **changes):
+def copy_action(copy_id, action, schema_version=1, **changes):
     context=request('/api/book-copies/'+str(copy_id)+'/action-context')
     item={'copyId':copy_id,'expectedVersion':context['copy']['actionVersion'],**changes}
     key=str(uuid.uuid4())
-    view=request('/api/book-copy-actions/previews','POST',{'idempotencyKey':key,'action':action,
-        'reason':'隔离容器逐册动作验收','copies':[item]})
+    body={'idempotencyKey':key,'action':action,'reason':'隔离容器逐册动作验收','copies':[item]}
+    if schema_version==2:body['schemaVersion']=2
+    view=request('/api/book-copy-actions/'+('v2/' if schema_version==2 else '')+'previews','POST',body)
     confirmation={'idempotencyKey':key,'previewDigest':view['previewDigest']}
     path='/api/book-copy-actions/'+str(view['requestId'])+'/confirm'
     receipt=request(path,'POST',confirmation)
@@ -43,6 +44,11 @@ def copy_action(copy_id, action, **changes):
     assert after['copy']['actionVersion']==context['copy']['actionVersion']+1==changed['afterVersion']
     assert after['copy']['status']==changed['afterStatus']
     assert after['copy']['location']==changed['afterLocation']
+    assert receipt['schemaVersion']==schema_version
+    if schema_version==2:
+        assert after['copy']['placement']==changed['afterPlacement']['placement']
+        assert after['copy']['lastLocationActionId']==changed['afterLocationActionId']
+        assert not after['copy']['locationReferenceAnomaly']
     projection=after['reconciliationV2']
     assert projection['schema']=='copy-lifecycle-v1'
     assert not projection['hasHistoricalDifference'] and not projection['hasUnknownStatus']
@@ -78,6 +84,18 @@ if args.check_state:
         assert request('/api/book-copies/'+copy_id+'/action-context')==context
         assert request('/api/book-copies/'+copy_id+'/actions')['total']==sum(
             1 for action in state['copyActions'] for copy in action['copies'] if str(copy['copyId'])==copy_id)
+    address=state['structuredAddress']
+    assert request('/api/location-addresses/'+str(address['address']['locationId']))==address
+    assert address['linkedCopyCount']==2 and address['legacyBinding']['bookId'] is None
+    assert request('/api/location-structure-events?entityType=BOOKSHELF&entityId='+str(address['address']['bookshelfId']))==state['shelfEvents']
+    assert request('/api/location-structure-events?entityType=LOCATION&entityId='+str(address['address']['locationId']))==state['locationEvents']
+    for history in state['copyHistories'].values():
+        for event in history['records']:
+            if event['schemaVersion']==2:
+                assert event['locationChange'] is not None
+                assert event['locationChange']['snapshotVersion']==1
+    for copy_id, history in state['copyHistories'].items():
+        assert request('/api/book-copies/'+copy_id+'/actions')==history
 else:
     assert request('/api/captcha/image',authenticated=False)['image']
     category=request('/api/categories','POST',{'name':'验收分类','parentId':0,'sortOrder':0,'status':1})
@@ -109,10 +127,53 @@ else:
     record=request('/api/borrow-codes/verify?code='+code['code'],'POST',{})['borrowRecord']
     assert request('/api/books/'+str(book['id']))['stockAvailable']==1
     request('/api/borrows/'+str(record['id'])+'/return','PUT',{})
-    # Preserve both controlled unavailable states through recreate/update/restore.
-    actions.append(copy_action(copy_id,'DISABLE'))
+    # A one-capacity legacy layout is an address, not a limit on linked copies.
+    # Retain original V1 receipts and the original nullable raw location while
+    # V2 positions, path edits and explicit legacy unbinding survive recovery.
+    reason='隔离容器结构化库位验收'
+    shelf=request('/api/bookshelves','POST',{'name':'恢复前书架','code':'SMOKE-'+uuid.uuid4().hex[:12],
+        'deptId':None,'location':None,'capacity':1,'status':1,'reason':reason})
+    storey=request('/api/bookshelves/storeys','POST',{'bookshelfId':shelf['id'],'name':'第一层',
+        'levelNum':1,'capacity':1,'status':1,'reason':reason})
+    address=request('/api/bookshelves/locations','POST',{'storeyId':storey['id'],
+        'code':'SMOKE-'+uuid.uuid4().hex[:12],'status':'EMPTY','reason':reason})
+    address_id=address['id']
+    request('/api/bookshelves/locations/'+str(address_id)+'/assign/'+str(book['id']),'PUT',
+        {'expectedVersion':address['layoutVersion'],'reason':reason})
+    target=request('/api/location-addresses/'+str(address_id))['address']
+    assert target['selectable']
+    registered={'kind':'REGISTERED','locationId':address_id,'expectedAddressVersion':{
+        'location':target['locationVersion'],'storey':target['storeyVersion'],'bookshelf':target['bookshelfVersion']}}
     other_copy=receipt['copies'][1]['copyId']
-    actions.append(copy_action(other_copy,'WRITE_OFF'))
+    actions.append(copy_action(copy_id,'MOVE',schema_version=2,targetLocation=registered))
+    actions.append(copy_action(other_copy,'MOVE',schema_version=2,targetLocation=registered))
+    assert request('/api/location-addresses/'+str(address_id))['linkedCopyCount']==2
+    shelf=request('/api/bookshelves','PUT',{'id':shelf['id'],'expectedVersion':shelf['layoutVersion'],
+        'name':'恢复后书架','code':shelf['code'],'deptId':shelf.get('deptId'),'location':shelf.get('location'),
+        'capacity':shelf['capacity'],'status':shelf['status'],'reason':reason})
+    assert request('/api/book-copies/'+str(copy_id))['copy']['placement']['registeredLocation']['bookshelfName']=='恢复后书架'
+    assert actions[-2]['copies'][0]['afterPlacement']['placement']['registeredLocation']['bookshelfName']=='恢复前书架'
+    current_address=request('/api/location-addresses/'+str(address_id))
+    request('/api/bookshelves/locations/'+str(address_id)+'/clear','PUT',
+        {'expectedVersion':current_address['address']['locationVersion'],'reason':reason})
+    current_address=request('/api/location-addresses/'+str(address_id))
+    assert current_address['legacyBinding']=={'bookId':None,'rawStatus':'EMPTY','needsReview':False}
+    assert current_address['linkedCopyCount']==2
+    # Preserve both controlled unavailable states through recreate/update/restore.
+    actions.append(copy_action(copy_id,'DISABLE',schema_version=2))
+    actions.append(copy_action(other_copy,'WRITE_OFF',schema_version=2))
+    actions.append(copy_action(other_copy,'RESTORE',schema_version=2,
+        restoreOfActionId=actions[-1]['copies'][0]['eventId'],restoreTo='DISABLED',
+        targetLocation={'kind':'TEXT','text':'找回检查位置'}))
+    restored=request('/api/book-copies/'+str(other_copy))['copy']
+    assert restored['placement']=={'kind':'TEXT','text':'找回检查位置','registeredLocation':None}
+    assert request('/api/location-addresses/'+str(address_id))['linkedCopyCount']==1
+    target=request('/api/location-addresses/'+str(address_id))['address']
+    registered['expectedAddressVersion']={'location':target['locationVersion'],
+        'storey':target['storeyVersion'],'bookshelf':target['bookshelfVersion']}
+    actions.append(copy_action(other_copy,'MOVE',schema_version=2,targetLocation=registered))
+    assert request('/api/book-copies/'+str(other_copy))['copy']['location']=='找回检查位置'
+    actions.append(copy_action(other_copy,'WRITE_OFF',schema_version=2))
     cover=upload('/api/upload/book-cover/'+str(book['id']),'cover.png',png,'image/png')
     avatar=upload('/api/profile/avatar','avatar.png',png,'image/png')
     resource=upload('/api/book-resources/upload?bookId='+str(book['id'])+'&resourceType=DOCUMENT','resource.txt',b'persisted resource','text/plain')
@@ -120,6 +181,10 @@ else:
         'intake':preview['intakeId'],'intakeKey':intake_key,'previewDigest':preview['previewDigest'],
         'receipt':receipt,'barcodes':sorted(copy['barcode'] for copy in receipt['copies']),
         'copyActions':actions,
+        'structuredAddress':request('/api/location-addresses/'+str(address_id)),
+        'shelfEvents':request('/api/location-structure-events?entityType=BOOKSHELF&entityId='+str(shelf['id'])),
+        'locationEvents':request('/api/location-structure-events?entityType=LOCATION&entityId='+str(address_id)),
+        'copyHistories':{str(value):request('/api/book-copies/'+str(value)+'/actions') for value in [copy_id,other_copy]},
         'copyContexts':{str(value):request('/api/book-copies/'+str(value)+'/action-context') for value in [copy_id,other_copy]},
         'copyActionDigests':{str(action['requestId']):request('/api/book-copy-actions/'+str(action['requestId']))['previewDigest'] for action in actions}}
     Path(args.state).write_text(json.dumps(state))

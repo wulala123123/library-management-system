@@ -1,6 +1,6 @@
 <template>
   <el-dialog :model-value="visible" title="逐册状态与位置办理" width="min(1080px, 96vw)" append-to-body :close-on-click-modal="false" :close-on-press-escape="!busy && !uncertain && !loading" :before-close="beforeClose">
-    <template v-if="canManage">
+    <template v-if="canManage && visible">
       <el-alert v-if="loadError || error" :title="loadError || error" type="error" :closable="false" />
       <el-alert v-if="uncertain" title="结果尚未确认。输入与原请求保持不变，请查询原请求或使用原请求重试。" type="warning" :closable="false" />
       <CopyActionReceiptPanel v-if="receipt" :receipt="receipt" />
@@ -18,7 +18,8 @@
           <article v-for="draft in drafts" :key="draft.context.copy.id" class="copy-draft">
             <strong>{{ draft.context.copy.book.title }}</strong>
             <p>实体册 {{ draft.context.copy.id }} · 条码 <code>{{ rawText(draft.context.copy.barcode) }}</code>（{{ utf8Bytes(draft.context.copy.barcode) }} 字节）</p>
-            <p>{{ stateLabel(draft.context.copy) }} · 原版本 {{ draft.context.copy.actionVersion }} · 原位置 <code>{{ rawText(draft.context.copy.location) }}</code></p>
+            <p>{{ stateLabel(draft.context.copy) }} · 原版本 {{ draft.context.copy.actionVersion }}</p>
+            <CopyPlacement :placement="draft.context.copy.placement" :raw-text="draft.context.copy.location" :anomaly="draft.context.copy.locationReferenceAnomaly" />
             <p v-if="blockedReason(draft.context)">{{ blockedReason(draft.context) }}</p>
             <details><summary>可办动作与拒绝原因</summary><p v-for="permission in draft.context.actions" :key="permission.action">{{ actionNames[permission.action] }}：{{ permission.allowed ? '可办理' : denyText(permission.reasonCode) }}</p></details>
             <section v-if="action === 'RESTORE'" class="restore-source">
@@ -33,7 +34,7 @@
                 <el-button :disabled="!!request || busy || !restorePermission(draft)?.allowed" @click="loadRestoreSource(draft)">重试读取报损来源</el-button>
               </template>
             </section>
-            <CopyLocationInput v-if="action && needsLocation(action)" v-model="draft.location" :disabled="!!request || busy" />
+            <CopyLocationInput v-if="action && needsLocation(action)" v-model="draft.location" :allow-registered="action === 'MOVE'" :disabled="!!request || busy" />
             <CopyReconciliationV2 :value="draft.context.reconciliationV2" />
           </article>
         </fieldset>
@@ -41,7 +42,7 @@
           <h3>待确认预览 · {{ actionNames[view.action] }}</h3>
           <el-alert title="此预览尚未办理；确认将再次核对册版本、借阅关联和库存。" type="info" :closable="false" />
           <p>有效至 {{ new Date(view.expiresAt).toLocaleString() }}{{ expired ? ' · 已过期，请返回重新核对' : '' }}</p>
-          <CopyActionChanges :copies="view.copies" :books="view.books" />
+          <CopyActionChanges :copies="view.copies" :books="view.books" :schema-version="view.schemaVersion" />
         </template>
         <details v-if="request"><summary>原请求记录</summary><p>请求键 <code>{{ request.idempotencyKey }}</code>{{ view ? `，记录 ${view.requestId}` : '' }}。结果不明时不换请求键。</p></details>
       </template>
@@ -62,16 +63,17 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useUserStore } from '@/store/modules/user'
-import { getCopyActionContext, getCopyActionHistory, type CopyAction, type CopyActionContext, type CopyActionEvent, type CopyActionInput, type CopyActionReceipt } from '@/api/bookCopyAction'
+import { getCopyActionContext, getCopyActionHistory, type CopyAction, type CopyActionContext, type CopyActionEvent, type CopyActionInputV2, type AnyCopyActionReceipt } from '@/api/bookCopyAction'
 import type { CopyRow } from '@/api/bookCopyQuery'
 import CopyLocationInput, { type LocationDraft } from './CopyLocationInput.vue'
 import CopyActionChanges from './CopyActionChanges.vue'
 import CopyActionReceiptPanel from './CopyActionReceipt.vue'
 import CopyReconciliationV2 from './CopyReconciliationV2.vue'
+import CopyPlacement from '@/components/locations/CopyPlacement.vue'
 import { actionKinds, actionNames, adminAction, copyStateText, needsLocation, rawText, utf8Bytes, validateActionBasics, validateLocation } from './copyActionPresentation'
 import { useCopyActionSession } from './copyActionSession'
 const props = defineProps<{ visible: boolean; copyIds: number[] }>()
-const emit = defineEmits<{ 'update:visible': [value: boolean]; success: [value: CopyActionReceipt] }>()
+const emit = defineEmits<{ 'update:visible': [value: boolean]; success: [value: AnyCopyActionReceipt] }>()
 const user = useUserStore(), canManage = computed(() => user.isAdmin || user.isLibrarian)
 const availableKinds = computed(() => actionKinds.filter(kind => user.isAdmin || !adminAction(kind)))
 interface CopyDraft { context: CopyActionContext; location: LocationDraft; restoreSource: CopyActionEvent | null; sourceLoading: boolean; sourceError: string }
@@ -119,7 +121,7 @@ async function loadContexts() {
     const contexts = await Promise.all(props.copyIds.map(id => getCopyActionContext(id)))
     if (generation !== current || !props.visible) return
     const prior = drafts.value
-    drafts.value = contexts.map(context => ({ context, location: prior.find(draft => draft.context.copy.id === context.copy.id)?.location || { kind: '', text: '' }, restoreSource: null, sourceLoading: false, sourceError: '' }))
+    drafts.value = contexts.map(context => { const location = prior.find(draft => draft.context.copy.id === context.copy.id)?.location || { kind: '' as const, text: '' }; return { context, location: location.kind === 'REGISTERED' ? { ...location, address: null } : location, restoreSource: null, sourceLoading: false, sourceError: '' } })
     if (action.value === 'RESTORE') await loadRestoreSources()
   } catch { if (generation === current) { drafts.value = []; loadError.value = '读取所选实体册失败，请刷新原值后重试。' } }
   finally { if (generation === current) loading.value = false }
@@ -130,7 +132,7 @@ watch(() => props.visible, visible => {
   drafts.value = []; reason.value = ''; action.value = ''; reported = null; loadContexts()
 }, { immediate: true })
 watch(receipt, value => { if (value && value.requestId !== reported) { reported = value.requestId; emit('success', value) } })
-watch(action, value => { if (value === 'RESTORE') loadRestoreSources() })
+watch(action, value => { if (value === 'RESTORE') { for (const draft of drafts.value) if (draft.location.kind === 'REGISTERED') draft.location = { kind: '', text: draft.location.text, address: null }; loadRestoreSources() } })
 async function preview() {
   if (!canManage.value || busy.value || loading.value) return
   if (request.value) { await session.preview(request.value); return }
@@ -139,14 +141,20 @@ async function preview() {
   if (invalid) { error.value = invalid; return }
   if (!allAllow(action.value)) { error.value = '所选册不能全部办理该动作，请重新核对。'; return }
   if (action.value === 'RESTORE' && !restoreSourcesReady.value) { error.value = '请先成功读取每册当前引用的报损来源。'; return }
-  const copies: CopyActionInput[] = []
+  const copies: CopyActionInputV2[] = []
   for (const draft of drafts.value) {
-    const copy = draft.context.copy, value: CopyActionInput = { copyId: copy.id, expectedVersion: copy.actionVersion }
+    const copy = draft.context.copy, value: CopyActionInputV2 = { copyId: copy.id, expectedVersion: copy.actionVersion }
     if (!Number.isSafeInteger(copy.actionVersion) || copy.actionVersion < 0) { error.value = '册版本缺失，请刷新原值。'; return }
     if (needsLocation(action.value)) {
-      const invalidLocation = validateLocation(draft.location.kind, draft.location.text)
-      if (invalidLocation) { error.value = `实体册 ${copy.id}：${invalidLocation}`; return }
-      value.targetLocation = draft.location.kind === 'UNASSIGNED' ? { kind: 'UNASSIGNED' } : { kind: 'TEXT', text: draft.location.text }
+      if (draft.location.kind === 'REGISTERED') {
+        const address = draft.location.address?.address
+        if (action.value !== 'MOVE' || !address?.selectable || ![address.locationId, address.locationVersion, address.storeyVersion, address.bookshelfVersion].every(Number.isSafeInteger) || address.locationId <= 0 || [address.locationVersion, address.storeyVersion, address.bookshelfVersion].some(value => value === null || value < 0)) { error.value = `实体册 ${copy.id}：请重新选择有效登记地址。`; return }
+        value.targetLocation = { kind: 'REGISTERED', locationId: address.locationId, expectedAddressVersion: { location: address.locationVersion!, storey: address.storeyVersion!, bookshelf: address.bookshelfVersion! } }
+      } else {
+        const invalidLocation = validateLocation(draft.location.kind, draft.location.text)
+        if (invalidLocation) { error.value = `实体册 ${copy.id}：${invalidLocation}`; return }
+        value.targetLocation = draft.location.kind === 'UNASSIGNED' ? { kind: 'UNASSIGNED' } : { kind: 'TEXT', text: draft.location.text }
+      }
     }
     if (action.value === 'RESTORE') {
       const source = draft.context.actions.find(permission => permission.action === 'RESTORE')?.restoreOfActionId
@@ -155,7 +163,7 @@ async function preview() {
     }
     copies.push(value)
   }
-  await session.preview({ idempotencyKey: crypto.randomUUID(), action: action.value, reason: reason.value, copies })
+  await session.preview({ schemaVersion: 2, idempotencyKey: crypto.randomUUID(), action: action.value, reason: reason.value, copies })
 }
 async function confirm() { if (canManage.value && view.value && (!adminAction(view.value.action) || user.isAdmin) && (uncertain.value || (!expired.value && !rejected.value))) await session.confirm() }
 async function editAgain() { if (!session.reset()) return; await loadContexts() }

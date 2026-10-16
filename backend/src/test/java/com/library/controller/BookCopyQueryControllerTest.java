@@ -80,7 +80,7 @@ class BookCopyQueryControllerTest {
         assertSingleBook(request(get("/book-copies").param("location", "%_!"), "admin", 200), target);
         assertEquals(1, request(get("/book-copies/catalog-summary").param("keyword", "%_!"), "admin", 200).path("total").asLong());
         request(get("/book-copies").param("keyword", "' OR 1=1 --"), "admin", 400);
-        assertEquals(0, new BookCopyQueryService(jdbc).copies(1, 20, "' OR 1=1 --", null, null, null, null, null).getTotal());
+        assertEquals(0, new BookCopyQueryService(jdbc,new com.library.service.CopyPlacementService(jdbc,new com.library.service.LocationAddressService(jdbc),json)).copies(1, 20, "' OR 1=1 --", null, null, null, null, null).getTotal());
     }
 
     @Test
@@ -214,9 +214,9 @@ class BookCopyQueryControllerTest {
             statement.execute("CREATE DATABASE `" + schema + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         }
         try {
-            Flyway.configure().dataSource(url, user, password).locations("classpath:db/migration").target("9").load().migrate();
+            Flyway.configure().dataSource(url, user, password).locations("classpath:db/migration").target("10").load().migrate();
             JdbcTemplate mysql = new JdbcTemplate(new DriverManagerDataSource(url, user, password));
-            BookCopyQueryService query = new BookCopyQueryService(mysql);
+            BookCopyQueryService query = new BookCopyQueryService(mysql,new com.library.service.CopyPlacementService(mysql,new com.library.service.LocationAddressService(mysql),json));
             // Isolated fixture only: exercise both case folding and PAD SPACE behavior of a legacy collation.
             mysql.execute("ALTER TABLE book_copy MODIFY barcode VARCHAR(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL");
             mysql.update("INSERT INTO book(id,isbn,title,stock_total,stock_available) VALUES (101,'query-mysql-exact','合成真实MySQL查询',4,3)");

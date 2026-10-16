@@ -1,344 +1,56 @@
 <template>
-  <div class="bookshelf-management">
-    <el-alert title="这里维护旧书目级库位绑定，不表示具体实体册的位置。逐册实际位置请在实体册查询中登记，两者不会自动同步。" type="info" :closable="false" />
+  <div v-if="canManage" class="bookshelf-management">
+    <el-alert title="库位是可关联多册的登记地址，当前不按容量禁选。旧书目绑定保留待核实，关联实体册数独立统计（含在借、报损），解除旧绑定不会清除册的位置。" type="info" :closable="false" />
     <div class="card-container">
-      <div class="table-toolbar">
-        <div class="toolbar-left">
-          <el-button type="primary" @click="handleAdd">新增书架</el-button>
-        </div>
-        <div class="toolbar-right">
-          <el-input v-model="keyword" placeholder="搜索书架名称/编号" clearable style="width: 200px" @clear="fetchData" @keyup.enter="fetchData">
-            <template #append><el-button @click="fetchData"><el-icon><Search /></el-icon></el-button></template>
-          </el-input>
-        </div>
-      </div>
-
-      <el-table v-loading="loading" :data="tableData" border size="default">
-        <el-table-column prop="id" label="ID" width="70" align="center" />
-        <el-table-column prop="code" label="书架编号" width="120" />
-        <el-table-column prop="name" label="书架名称" min-width="160" />
-        <el-table-column prop="deptName" label="所属部门" width="120" />
-        <el-table-column prop="location" label="位置描述" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="capacity" label="容量" width="80" align="center" />
-        <el-table-column prop="status" label="状态" width="80" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="220" align="center">
-          <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleViewStoreys(row)">层管理</el-button>
-            <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="pagination-container">
-        <el-pagination v-model:current-page="page" v-model:page-size="size" :total="total" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next" @size-change="fetchData" @current-change="fetchData" />
-      </div>
+      <h3>书架地址维护</h3><div class="toolbar"><el-button type="primary" @click="maintain('BOOKSHELF', 'CREATE')">新增书架</el-button><el-input v-model="keyword" placeholder="搜索书架名称/编号" @keyup.enter="search" /><el-button @click="search">查询书架</el-button></div>
+      <p v-if="error">{{ error }}</p>
+      <el-table :data="shelves" v-loading="loading" border>
+        <el-table-column prop="id" label="书架 ID" width="90" /><el-table-column prop="code" label="编号" /><el-table-column prop="name" label="名称" /><el-table-column prop="deptName" label="部门" /><el-table-column label="原描述"><template #default="{ row }"><code>{{ JSON.stringify(row.location) }}</code></template></el-table-column><el-table-column prop="capacity" label="历史容量资料" width="125" /><el-table-column prop="status" label="原启停值" width="100" /><el-table-column prop="layoutVersion" label="版本" width="90" />
+        <el-table-column label="维护" min-width="290"><template #default="{ row }"><el-button link @click="showStoreys(row)">层管理</el-button><el-button link @click="maintain('BOOKSHELF', 'UPDATE', row)">编辑书架</el-button><el-button v-if="user.isAdmin" link type="danger" @click="maintain('BOOKSHELF', 'DELETE', row)">删除书架</el-button><el-button link @click="showHistory('BOOKSHELF', row.id)">维护历史</el-button></template></el-table-column>
+      </el-table><el-pagination v-model:current-page="page" :page-size="10" :total="total" layout="total, prev, pager, next" @current-change="loadShelves" />
     </div>
-
-    <el-dialog v-model="dialogVisible" :title="editId ? '编辑书架' : '新增书架'" width="520px" destroy-on-close>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="书架编号" prop="code">
-          <el-input v-model="form.code" placeholder="如: A-001" />
-        </el-form-item>
-        <el-form-item label="书架名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入书架名称" />
-        </el-form-item>
-        <el-form-item label="所属部门" prop="deptId">
-          <el-select v-model="form.deptId" placeholder="请选择部门" style="width: 100%">
-            <el-option v-for="d in deptList" :key="d.id" :label="d.name" :value="d.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="位置描述" prop="location">
-          <el-input v-model="form.location" placeholder="如: 一楼东侧" />
-        </el-form-item>
-        <el-form-item label="容量" prop="capacity">
-          <el-input-number v-model="form.capacity" :min="1" :max="9999" />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-switch v-model="form.status" :active-value="1" :inactive-value="0" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="storeyDialogVisible" :title="`书架层管理 - ${currentBookshelf?.name || ''}`" width="800px" destroy-on-close>
-      <div style="margin-bottom: 12px">
-        <el-button type="primary" size="small" @click="handleAddStorey">新增书架层</el-button>
-      </div>
-      <el-table :data="storeyList" border size="small">
-        <el-table-column prop="levelNum" label="层号" width="70" align="center" />
-        <el-table-column prop="name" label="层名称" min-width="120" />
-        <el-table-column prop="capacity" label="容量" width="80" align="center" />
-        <el-table-column prop="status" label="状态" width="80" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="库位数" width="80" align="center">
-          <template #default="{ row }">{{ row.locations?.length || 0 }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="180" align="center">
-          <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleViewLocations(row)">库位</el-button>
-            <el-button type="primary" link size="small" @click="handleEditStorey(row)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="handleDeleteStorey(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-dialog>
-
-    <el-dialog v-model="storeyFormVisible" :title="storeyEditId ? '编辑书架层' : '新增书架层'" width="460px" destroy-on-close>
-      <el-form ref="storeyFormRef" :model="storeyForm" :rules="storeyRules" label-width="80px">
-        <el-form-item label="层号" prop="levelNum">
-          <el-input-number v-model="storeyForm.levelNum" :min="1" :max="99" />
-        </el-form-item>
-        <el-form-item label="层名称" prop="name">
-          <el-input v-model="storeyForm.name" placeholder="如: 第1层" />
-        </el-form-item>
-        <el-form-item label="容量" prop="capacity">
-          <el-input-number v-model="storeyForm.capacity" :min="1" :max="999" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="storeyFormVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmitStorey">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="locationDialogVisible" :title="`库位管理 - ${currentStorey?.name || ''}`" width="700px" destroy-on-close>
-      <div style="margin-bottom: 12px">
-        <el-button type="primary" size="small" @click="handleAddLocation">新增库位</el-button>
-      </div>
-      <el-table :data="currentStorey?.locations || []" border size="small">
-        <el-table-column prop="code" label="库位编号" width="120" />
-        <el-table-column prop="status" label="状态" width="80" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'EMPTY' ? 'info' : 'success'" size="small">{{ row.status === 'EMPTY' ? '空闲' : '占用' }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="bookTitle" label="图书" min-width="160" show-overflow-tooltip />
-        <el-table-column label="操作" width="140" align="center">
-          <template #default="{ row }">
-            <el-button v-if="row.status === 'EMPTY'" type="primary" link size="small" @click="handleAssignBook(row)">绑定书目</el-button>
-            <el-button v-if="row.status === 'OCCUPIED'" type="warning" link size="small" @click="handleClearLocation(row)">解除书目绑定</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-dialog>
-
-    <el-dialog v-model="locationFormVisible" title="新增库位" width="400px" destroy-on-close>
-      <el-form ref="locationFormRef" :model="locationForm" :rules="locationRules" label-width="80px">
-        <el-form-item label="库位编号" prop="code">
-          <el-input v-model="locationForm.code" placeholder="如: A-001-1-01" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="locationFormVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmitLocation">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="assignDialogVisible" title="旧书目级库位绑定" width="400px" destroy-on-close>
-      <el-form label-width="80px">
-        <el-form-item label="图书ID">
-          <el-input-number v-model="assignBookId" :min="1" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="assignDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleDoAssign">确定</el-button>
-      </template>
-    </el-dialog>
-  </div>
+    <div class="card-container">
+      <h3>登记地址 / 旧书目绑定 / 关联实体册</h3><div class="toolbar"><el-input v-model="addressKeyword" placeholder="搜索地址或书架 / 层名称" @keyup.enter="searchAddresses" /><el-input-number v-model="addressShelfId" :min="1" placeholder="书架 ID" /><el-input-number v-model="addressStoreyId" :min="1" placeholder="层 ID" /><el-button @click="searchAddresses">查询登记地址</el-button><el-button @click="maintain('LOCATION', 'CREATE', null, addressStoreyId)">新增地址</el-button></div>
+      <p v-if="addressError">{{ addressError }}</p><el-table :data="addresses" v-loading="addressLoading" border>
+        <el-table-column label="登记地址" min-width="360"><template #default="{ row }"><CopyPlacement :placement="{kind:'REGISTERED',text:null,registeredLocation:row.address}" :show-raw="false" /></template></el-table-column>
+        <el-table-column label="旧书目绑定（待核实）" min-width="230"><template #default="{ row }"><p>旧 book_id：{{ row.legacyBinding.bookId ?? 'NULL' }}</p><p>原 status：<code>{{ JSON.stringify(row.legacyBinding.rawStatus) }}</code></p><p>{{ row.legacyBinding.needsReview ? '待核实旧资料' : '无旧绑定待核实项' }}</p></template></el-table-column>
+        <el-table-column label="关联实体册数" min-width="145"><template #default="{ row }">{{ row.linkedCopyCount }} 册（含在借及报损）</template></el-table-column>
+        <el-table-column label="地址维护与旧绑定" min-width="300"><template #default="{ row }"><el-button link @click="maintain('LOCATION', 'UPDATE', addressOriginal(row))">编辑地址</el-button><el-button v-if="user.isAdmin" link type="danger" @click="maintain('LOCATION', 'DELETE', addressOriginal(row))">删除地址</el-button><el-button v-if="row.address.selectable && row.legacyBinding.bookId === null && row.legacyBinding.rawStatus === 'EMPTY'" link @click="maintain('LOCATION', 'ASSIGN', addressOriginal(row))">绑定旧书目</el-button><el-button v-if="canClear(row)" link type="warning" @click="maintain('LOCATION', 'CLEAR', addressOriginal(row))">解除旧书目绑定</el-button><el-button link @click="showHistory('LOCATION', row.address.locationId)">维护历史</el-button></template></el-table-column>
+      </el-table><el-pagination v-model:current-page="addressPage" :page-size="10" :total="addressTotal" layout="total, prev, pager, next" @current-change="loadAddresses" />
+    </div>
+    <el-dialog v-model="storeyVisible" :title="`层管理 · ${currentShelf?.name || ''} #${currentShelf?.id || ''}`" width="min(1100px,96vw)"><el-button type="primary" @click="maintain('STOREY', 'CREATE', null, currentShelf?.id)">新增书架层</el-button><p v-if="storeyError">{{ storeyError }}</p><el-table :data="storeys" border><el-table-column prop="id" label="层 ID" /><el-table-column prop="levelNum" label="层号" /><el-table-column prop="name" label="层名称" /><el-table-column prop="capacity" label="历史容量资料" /><el-table-column prop="status" label="原启停值" /><el-table-column prop="layoutVersion" label="版本" /><el-table-column label="维护" min-width="290"><template #default="{row}"><el-button link @click="viewStoreyAddresses(row)">查看地址</el-button><el-button link @click="maintain('STOREY','UPDATE',row)">编辑层</el-button><el-button v-if="user.isAdmin" link type="danger" @click="maintain('STOREY','DELETE',row)">删除层</el-button><el-button link @click="showHistory('STOREY',row.id)">维护历史</el-button></template></el-table-column></el-table></el-dialog>
+    <StructureMaintenanceDialog v-model:visible="maintenanceVisible" :entity-type="targetType" :operation="targetOperation" :original="targetOriginal" :parent-id="targetParent" @success="refreshed" @refresh="refreshed" />
+    <el-dialog v-model="historyVisible" title="地址维护历史" width="min(1000px,96vw)"><StructureEventList :entity-type="historyType" :entity-id="historyId" :visible="historyVisible" :revision="revision" /></el-dialog>
+  </div><el-empty v-else description="仅管理员和馆员可查看及维护登记地址。" />
 </template>
-
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
-import { getBookshelves, createBookshelf, updateBookshelf, deleteBookshelf, getStoreys, createStorey, updateStorey, deleteStorey, createLocation, assignBookToLocation, clearLocation } from '@/api/bookshelf'
-import { getDeptList } from '@/api/dept'
-
-const loading = ref(false)
-const tableData = ref<any[]>([])
-const page = ref(1)
-const size = ref(10)
-const total = ref(0)
-const keyword = ref('')
-
-const dialogVisible = ref(false)
-const editId = ref<number | null>(null)
-const formRef = ref()
-const form = reactive({ code: '', name: '', deptId: null as number | null, location: '', capacity: 50, status: 1 })
-const rules = { code: [{ required: true, message: '请输入书架编号', trigger: 'blur' }], name: [{ required: true, message: '请输入书架名称', trigger: 'blur' }] }
-
-const storeyDialogVisible = ref(false)
-const storeyFormVisible = ref(false)
-const currentBookshelf = ref<any>(null)
-const storeyList = ref<any[]>([])
-const storeyEditId = ref<number | null>(null)
-const storeyFormRef = ref()
-const storeyForm = reactive({ bookshelfId: 0, levelNum: 1, name: '', capacity: 20, status: 1 })
-const storeyRules = { levelNum: [{ required: true, message: '请输入层号', trigger: 'blur' }], name: [{ required: true, message: '请输入层名称', trigger: 'blur' }] }
-
-const locationDialogVisible = ref(false)
-const locationFormVisible = ref(false)
-const currentStorey = ref<any>(null)
-const locationFormRef = ref()
-const locationForm = reactive({ storeyId: 0, code: '', status: 'EMPTY' })
-const locationRules = { code: [{ required: true, message: '请输入库位编号', trigger: 'blur' }] }
-
-const assignDialogVisible = ref(false)
-const assignLocationId = ref<number>(0)
-const assignBookId = ref<number>(0)
-const deptList = ref<any[]>([])
-
-onMounted(() => { fetchData(); fetchDeptList() })
-
-async function fetchDeptList() {
-  try { deptList.value = await getDeptList() || [] } catch { deptList.value = [] }
-}
-
-async function fetchData() {
-  loading.value = true
-  try {
-    const res = await getBookshelves({ page: page.value, size: size.value, keyword: keyword.value })
-    tableData.value = res?.records || []
-    total.value = res?.total || 0
-  } catch { tableData.value = [] } finally { loading.value = false }
-}
-
-function handleAdd() {
-  editId.value = null
-  Object.assign(form, { code: '', name: '', deptId: null, location: '', capacity: 50, status: 1 })
-  dialogVisible.value = true
-}
-
-function handleEdit(row: any) {
-  editId.value = row.id
-  Object.assign(form, row)
-  dialogVisible.value = true
-}
-
-async function handleSubmit() {
-  await formRef.value?.validate()
-  try {
-    const data = { ...form, id: editId.value }
-    if (editId.value) { await updateBookshelf(data); ElMessage.success('更新成功') }
-    else { await createBookshelf(data); ElMessage.success('创建成功') }
-    dialogVisible.value = false
-    fetchData()
-  } catch (e: any) { ElMessage.error(e.message || '操作失败') }
-}
-
-async function handleDelete(row: any) {
-  try {
-    await ElMessageBox.confirm(`确定要删除书架"${row.name}"吗？`, '提示', { type: 'warning' })
-    await deleteBookshelf(row.id)
-    ElMessage.success('删除成功')
-    fetchData()
-  } catch {}
-}
-
-async function handleViewStoreys(row: any) {
-  currentBookshelf.value = row
-  storeyDialogVisible.value = true
-  await fetchStoreys(row.id)
-}
-
-async function fetchStoreys(bookshelfId: number) {
-  try {
-    storeyList.value = await getStoreys(bookshelfId) || []
-  } catch { storeyList.value = [] }
-}
-
-function handleAddStorey() {
-  storeyEditId.value = null
-  Object.assign(storeyForm, { bookshelfId: currentBookshelf.value.id, levelNum: storeyList.value.length + 1, name: `第${storeyList.value.length + 1}层`, capacity: 20, status: 1 })
-  storeyFormVisible.value = true
-}
-
-function handleEditStorey(row: any) {
-  storeyEditId.value = row.id
-  Object.assign(storeyForm, row)
-  storeyFormVisible.value = true
-}
-
-async function handleSubmitStorey() {
-  await storeyFormRef.value?.validate()
-  try {
-    const data = { ...storeyForm, id: storeyEditId.value }
-    if (storeyEditId.value) { await updateStorey(data); ElMessage.success('更新成功') }
-    else { await createStorey(data); ElMessage.success('创建成功') }
-    storeyFormVisible.value = false
-    fetchStoreys(currentBookshelf.value.id)
-  } catch (e: any) { ElMessage.error(e.message || '操作失败') }
-}
-
-async function handleDeleteStorey(row: any) {
-  try {
-    await ElMessageBox.confirm(`确定要删除"${row.name}"吗？`, '提示', { type: 'warning' })
-    await deleteStorey(row.id)
-    ElMessage.success('删除成功')
-    fetchStoreys(currentBookshelf.value.id)
-  } catch {}
-}
-
-function handleViewLocations(row: any) {
-  currentStorey.value = row
-  locationDialogVisible.value = true
-}
-
-function handleAddLocation() {
-  Object.assign(locationForm, { storeyId: currentStorey.value.id, code: '', status: 'EMPTY' })
-  locationFormVisible.value = true
-}
-
-async function handleSubmitLocation() {
-  await locationFormRef.value?.validate()
-  try {
-    await createLocation(locationForm)
-    ElMessage.success('创建成功')
-    locationFormVisible.value = false
-    fetchStoreys(currentBookshelf.value.id)
-  } catch (e: any) { ElMessage.error(e.message || '操作失败') }
-}
-
-function handleAssignBook(row: any) {
-  assignLocationId.value = row.id
-  assignBookId.value = 0
-  assignDialogVisible.value = true
-}
-
-async function handleDoAssign() {
-  try {
-    await assignBookToLocation(assignLocationId.value, assignBookId.value)
-    ElMessage.success('分配成功')
-    assignDialogVisible.value = false
-    fetchStoreys(currentBookshelf.value.id)
-  } catch (e: any) { ElMessage.error(e.message || '分配失败') }
-}
-
-async function handleClearLocation(row: any) {
-  try {
-    await ElMessageBox.confirm('确定要清空该库位吗？', '提示', { type: 'warning' })
-    await clearLocation(row.id)
-    ElMessage.success('清空成功')
-    fetchStoreys(currentBookshelf.value.id)
-  } catch {}
-}
+import { computed, onMounted, ref } from 'vue'
+import { useUserStore } from '@/store/modules/user'
+import { getBookshelves, getStoreys } from '@/api/bookshelf'
+import { getLocationAddresses, type AddressRow, type StructureEntityType } from '@/api/locationAddress'
+import type { Bookshelf, BookshelfStorey } from '@/types'
+import CopyPlacement from '@/components/locations/CopyPlacement.vue'
+import StructureEventList from '@/components/locations/StructureEventList.vue'
+import StructureMaintenanceDialog from './StructureMaintenanceDialog.vue'
+const user = useUserStore(), canManage = computed(() => user.isAdmin || user.isLibrarian)
+const shelves = ref<Bookshelf[]>([]), keyword = ref(''), page = ref(1), total = ref(0), loading = ref(false), error = ref('')
+const addresses = ref<AddressRow[]>([]), addressKeyword = ref(''), addressShelfId = ref<number>(), addressStoreyId = ref<number>(), addressPage = ref(1), addressTotal = ref(0), addressLoading = ref(false), addressError = ref('')
+const storeyVisible = ref(false), currentShelf = ref<Bookshelf | null>(null), storeys = ref<BookshelfStorey[]>([]), storeyError = ref('')
+const maintenanceVisible = ref(false), targetType = ref<StructureEntityType>('BOOKSHELF'), targetOperation = ref<'CREATE'|'UPDATE'|'DELETE'|'ASSIGN'|'CLEAR'>('CREATE'), targetOriginal = ref<Record<string, unknown> | null>(null), targetParent = ref<number>()
+const historyVisible = ref(false), historyType = ref<StructureEntityType>('BOOKSHELF'), historyId = ref(1), revision = ref(0)
+let shelfRequest = 0, addressRequest = 0, storeyRequest = 0
+async function loadShelves() { if (!canManage.value) return; const current = ++shelfRequest; loading.value = true; error.value = ''; try { const result = await getBookshelves({ page: page.value, size: 10, keyword: keyword.value || undefined }); if (current === shelfRequest) { shelves.value = result.records; total.value = result.total } } catch { if (current === shelfRequest) { shelves.value = []; error.value = '书架读取失败，请重试。' } } finally { if (current === shelfRequest) loading.value = false } }
+async function loadAddresses() { if (!canManage.value) return; const current = ++addressRequest; addressLoading.value = true; addressError.value = ''; try { const result = await getLocationAddresses({ page: addressPage.value, size: 10, keyword: addressKeyword.value || undefined, bookshelfId: addressShelfId.value, storeyId: addressStoreyId.value, selectableOnly: false }); if (current === addressRequest) { addresses.value = result.records; addressTotal.value = result.total } } catch { if (current === addressRequest) { addresses.value = []; addressError.value = '地址读取失败，请重试。' } } finally { if (current === addressRequest) addressLoading.value = false } }
+function search() { page.value = 1; loadShelves() }
+function searchAddresses() { addressPage.value = 1; loadAddresses() }
+async function loadStoreys() { if (!canManage.value || !currentShelf.value) return; const current = ++storeyRequest; try { const result = await getStoreys(currentShelf.value.id); if (current === storeyRequest) { storeys.value = result; storeyError.value = '' } } catch { if (current === storeyRequest) storeyError.value = '书架层读取失败，请重试。' } }
+function showStoreys(row: Bookshelf) { currentShelf.value = row; storeyVisible.value = true; loadStoreys() }
+function viewStoreyAddresses(row: BookshelfStorey) { addressShelfId.value = row.bookshelfId; addressStoreyId.value = row.id; storeyVisible.value = false; searchAddresses() }
+function maintain(type: StructureEntityType, operation: typeof targetOperation.value, row: object | null = null, parentId?: number) { if (!canManage.value || (operation === 'DELETE' && !user.isAdmin)) return; targetType.value = type; targetOperation.value = operation; targetOriginal.value = row ? { ...row } : null; targetParent.value = parentId; maintenanceVisible.value = true }
+function addressOriginal(row: AddressRow) { return { id: row.address.locationId, layoutVersion: row.address.locationVersion, code: row.address.code, storeyId: row.address.storeyId, status: row.legacyBinding.rawStatus, bookId: row.legacyBinding.bookId, linkedCopyCount: row.linkedCopyCount } }
+const canClear = (row: AddressRow) => (row.legacyBinding.bookId !== null || row.legacyBinding.rawStatus === 'OCCUPIED') && ['EMPTY', 'OCCUPIED', 'DISABLED'].includes(row.legacyBinding.rawStatus || '')
+function showHistory(type: StructureEntityType, id: number) { historyType.value = type; historyId.value = id; historyVisible.value = true }
+function refreshed() { ++revision.value; loadShelves(); loadAddresses(); if (storeyVisible.value) loadStoreys() }
+onMounted(() => { loadShelves(); loadAddresses() })
 </script>
-
-<style lang="scss" scoped>
-.bookshelf-management {
-  .table-toolbar { display: flex; justify-content: space-between; margin-bottom: 16px; }
-  .pagination-container { display: flex; justify-content: flex-end; margin-top: 16px; }
-}
-</style>
+<style scoped>.toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }.toolbar .el-input { width: 250px; }p { font-size: 13px; }code { white-space: pre-wrap; overflow-wrap: anywhere; }.card-container { margin-top: 16px; }</style>
