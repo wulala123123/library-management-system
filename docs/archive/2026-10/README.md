@@ -18,6 +18,7 @@
 - [书目与实体册查询](catalog-query-2026-10-15.md)
 - [统一实体入库](catalog-intake-2026-10-16.md)
 - [逐册状态与文本位置](catalog-copy-actions-2026-10-16.md)
+- [结构化库位与逐册关联](catalog-structured-locations-2026-10-16.md)
 
 ## 候选包来源
 
