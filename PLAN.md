@@ -8,7 +8,7 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | 阶段3 B36完整Verify、两次最新全备隔离恢复升级及发布验收，随后接B32盘点；B33–B35资料任务保留 |
-| 工作项状态 | B36后端/前端及返工已接纳，实际HTTP和精确DDL/GET通过；完整Verify、真实恢复和上线未执行；生产仍bedaf62 |
+| 工作项状态 | B36实现/定向验收通过；首候选31bb8b6的Verify38845930076仅因新测试固定本机端口失败，单文件修正已验收，重跑完整Verify；生产仍bedaf62 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
 | 应用代码基线 | 已验收生产 `bedaf62c1d294ad33e3522fa779081b56b2b5605`，V1–V9；已推main及工作分支，保留全部既有文档/技能和业务成果 |
@@ -31,6 +31,7 @@ V9原三位执行者均已交付并完成发布；专用数据库、服务和进
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
 | B36后端及HTTP补验 / v1 | 已交付，经理接纳 | `logs/catalog-stage3/structured-locations-backend/` | 33文件/108项及干净41→43表DDL通过；固定JAR实际HTTP初始化/回执核对及GET样例通过；本地服务已退出 |
+| B36 CI端口修正 / v1 | 已交付，经理接纳 | `logs/catalog-stage3/structured-locations-backend/ci-port-repair/` | 13项Java正则校验通过，兼容CI3306与本机33079、拒其他库名；仅测试一处正则变化，业务/迁移保持 |
 | B36发布准备 / v1 | 已交付，经理接纳工具准备 | `logs/catalog-stage3/structured-locations-release/` | 61项离线检查/148次预期拒绝通过；待后端实际元数据、最终GET及完整CI产物，未执行服务器操作 |
 | B36前端 / v1.1 | 已交付，经理接纳 | `logs/catalog-stage3/structured-locations-frontend/acceptance-v1.1.json` | 32文件，原72项/构建及修订20项/构建通过；NULL保留与不可用地址筛选已复验；原失败证据保留 |
 | B32盘点设计 / v2.1 | 已交付，经理接纳 | `logs/catalog-stage3/stocktake-design/design.md` | 定时逾期写者、borrow_record行锁/NOWAIT及确认权限已固定，仍依赖B36最终验收；未实施 |
