@@ -17,6 +17,7 @@
 - [套餐版本与会员权益](member-entitlements-2026-10-15.md)
 - [书目与实体册查询](catalog-query-2026-10-15.md)
 - [统一实体入库](catalog-intake-2026-10-16.md)
+- [逐册状态与文本位置](catalog-copy-actions-2026-10-16.md)
 
 ## 候选包来源
 

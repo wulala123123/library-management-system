@@ -7,30 +7,26 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | 阶段 3 B31/B32/B36 逐册状态与文本位置动作；结构化库位与盘点后续独立实施 |
-| 工作项状态 | V9前后端本地交付已审，86个后端不同用例及55项前端定向测试通过，源清单匹配；干净DDL和GET契约已独立审定。待完整Verify及发布，线上仍为24463a4 |
+| 下一工作项 | 阶段3 B36结构化库位与逐册关联设计，随后接B32盘点；B33–B35资料任务保留 |
+| 工作项状态 | bedaf62逐册动作已实现、完整验证并上线验收；B31完成，B32报损/B36文本位置子范围完成；下一批尚未实施 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
-| 应用代码基线 | 已验收生产 `24463a4fd48e6c28e8b90d5d28fd01da9ecf86cb`，V1–V8；V9候选 `065eeaa3a2ae3351b999ca6a8d64a5783fe09b56` 已推main及工作分支，文档checkpoint 4fc8b1f包含其中 |
-| 完整 Verify | V9首次 [38835810914](https://github.com/wulala123123/library-management-system/actions/runs/38835810914)：278后端用例中2个旧View比较失败；单一测试修正已审，受影响类17项通过，待新提交完整Verify。生产V8 [38775997648](https://github.com/wulala123123/library-management-system/actions/runs/38775997648) 已通过 |
-| 最近维护结果 | [统一实体入库](docs/archive/2026-10/catalog-intake-2026-10-16.md)；[逐册查询](docs/archive/2026-10/catalog-query-2026-10-15.md)；此前会员/来源登记及第一批保留 |
-| 恢复依据 | `git status --short`、当前阶段勾选、下述有效执行者与私有证据 |
+| 应用代码基线 | 已验收生产 `bedaf62c1d294ad33e3522fa779081b56b2b5605`，V1–V9；已推main及工作分支，保留全部既有文档/技能和业务成果 |
+| 完整 Verify | [38836726543](https://github.com/wulala123123/library-management-system/actions/runs/38836726543) 全部成功：后端278项、前端152项；产物12019931692及内外包已核验。首次38835810914失败与修正保留 |
+| 最近维护结果 | [逐册状态与文本位置](docs/archive/2026-10/catalog-copy-actions-2026-10-16.md)；[统一实体入库](docs/archive/2026-10/catalog-intake-2026-10-16.md)；此前会员/来源登记及第一批保留 |
+| 恢复依据 | `git status --short`、当前阶段勾选及私有最终验收；当前无在途实施或发布进程 |
 
 ## 下一步
 
 1. B22 七户登记已完成，保留首次预览、V7 新备及隔离复验证据，禁止重跑整批导入或会员完整保存。
-2. 入库已上线验收，不重复发布或执行旧修正；私有 `logs/catalog-stage3/intake-manager-v2/manager-final-acceptance.json` 保存最终结果。
-3. V9前后端交付已审；统计固定查询、旧口径标识及恢复来源展示已补齐。接收发布工具语义兼容返工后绑定最终候选/完整CI及两份已审契约，执行两次最新全备隔离升级与发布。无触发器/全业务写开关/preview_epoch；失败停止应用、保留DB并前向修复，不回旧写代码。结构化关联和盘点后批。
+2. 入库及逐册动作已上线验收，不重复发布或执行旧修正；私有 `logs/catalog-stage3/copy-actions-manager/manager-final-acceptance.json` 保存本批结果，所有执行进程已退出。
+3. 从阶段3 B36恢复，先核对旧书目绑定、现有库位地址与逐册文本位置，设计结构化关联及迁移预览；旧占用保留待核实，不自动迁册。盘点单独设计，继续复用已验收动作，不自动以观察数量覆盖库存。
 
 ## 有效执行者
 
 经理为当前任务。用户授权当前任务内委派和满足门槛后的生产更新，不创建独立长期会话或自动化。经理模型与强度工具不可核实；子代理显式配置按技能默认 `gpt-6.1-sol` / `xhigh`。
 
-| 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
-| --- | --- | --- | --- |
-| 阶段 3 逐册动作后端 / v1 | `/root/mapping_correction`（CI返工交付已审，进程退出） | 原30文件未变，仅新增受影响入库测试修正；target/33079释放 | 17项MySQL入库测试通过，原View/持久JSON严格核对且当前V2单独验证；证据仍为 `logs/catalog-stage3/copy-actions-backend/` |
-| 阶段 3 逐册动作前端 / v1 | `/root/statistics_backend`（交付已审，进程退出） | 前端22文件；自建服务/页已关闭 | 55项定向、构建、审计及合成浏览器通过；恢复来源及原口径文案已补齐；证据 `logs/catalog-stage3/copy-actions-frontend/` |
-| 阶段 3 逐册动作发布准备 / v1 | `/root/intake_release_prepare`（返工交付已审，进程退出） | 仅 `logs/catalog-stage3/copy-actions-release/`；无网络、服务器或DB操作 | 78项离线/246项预期拒绝已复跑；新旧flag语义及原状态精确分组已核对。工具和两份契约经理接纳，待最终成功CI/产物绑定 |
+本批原执行者`/root/mapping_correction`、`/root/statistics_backend`和`/root/intake_release_prepare`均已交付，经理完成返工、验收及发布；专用数据库、服务和执行进程已退出。当前没有员工持有新的可写任务，后续按新边界复用或委派，不重复派发已完成工作。私有交付由当次档案定位。
 
 B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
 
@@ -42,17 +38,17 @@ B22、查询和统一入库均已交付验收上线，证据见对应档案，�
 
 历史权益核对允许管理员填写历史依据后关联已停用的保留套餐版本；后续新办理只选当前启用版本。新服务期开始日计第 1 天，原实际日期不重算。
 
-逐册状态规则已确认：临时停用计总不可借；正式报损扣总，恢复独立登记审计且先恢复停用再启用；报损/恢复仅管理员，馆员可移位、停用/启用；已借先归还。结构化库位为多册地址，暂不强制容量上限，旧占用不自动迁册。状态和结构化关联未启用；统一入库及成功回执新码贴标已启用。
+逐册状态与文本位置已启用，生效规则见[图书和借还](docs/specs/catalog-circulation.md)。结构化库位已确认是多册地址，暂不强制容量上限，旧占用不自动迁册；关联功能尚未启用。统一入库及成功回执新码贴标已启用。收费、扣次及套餐数值限制仍按后续阶段启用。
 
 ## 证据与恢复边界
 
-新阶段私有证据：`logs/member-business-stage2/`。第一批原记录在 `logs/member-business-batch1/`、`logs/member-business-batch1-null-contract/` 及服务器同名 `migrations/` 私有目录。
+会员阶段私有证据：`logs/member-business-stage2/`；本批为`logs/catalog-stage3/copy-actions-manager/`及当次档案链接的交付目录。第一批原记录在 `logs/member-business-batch1/`、`logs/member-business-batch1-null-contract/` 及服务器同名 `migrations/` 私有目录。
 
 第一批真实修正已经完成，后续不得重跑整批导入或用旧备份覆盖新业务。首次结果保留；最终代码更新只升级应用。收尾直接 Compose 必须设置 `APP_VERSION`，最后启动后再次核对镜像和字节。
 
 浏览器验收接入用户已登录的 Codex 内置浏览器，已通过第一批不限、空值、统计与 CSV 下载检查；不要再要求用户到 Edge 重复登录。
 
-会员 `231201c`、查询 `88dc996`、入库 `24463a4` 均完成各自两次新备恢复升级、最后启动字节及独立只读复核。入库证据在 `logs/catalog-stage3/intake-manager-v2/`；当前Codex浏览器 `/books`，页面验收无业务写入。后续不得复用旧备份或旧产物作为新候选验收。
+会员`231201c`、查询`88dc996`、入库`24463a4`及逐册动作`bedaf62`均完成各自两次新备恢复升级、最后启动字节及独立只读复核。本批服务器WORK为`/opt/library-management-system/migrations/catalog-stage3-copy-actions`，两次新备、成功结果与started保留，不再执行旧入口。当前Codex浏览器`/book-copies`，页面验收无业务写入。后续不得复用旧备份或旧产物作为新候选验收，不能回旧V8写代码。
 
 ## 更新规则
 
