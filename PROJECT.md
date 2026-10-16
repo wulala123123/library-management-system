@@ -18,7 +18,7 @@
 
 已具备基础借还、逐册迁入、历史资料查询和公网 HTTPS 访问。会员经营规则及统计仍有待修正，现行行为由[领域规范](docs/specs/README.md)记录。
 
-当前已验收线上代码为 `18ecdb65a9d672dc1ce2d87264cbb6dd7c5d7ced`，已通过 [Verify 38854248359](https://github.com/wulala123123/library-management-system/actions/runs/38854248359)。上线及浏览器结果见[盘点验收](docs/archive/2026-10/catalog-stocktake-2026-10-16.md)；服务器操作前仍需现场核对实际版本。
+当前已验收线上代码为 `a3ba1fd4820d533d1685f825ecbe82fd2c86dd3b`，已通过 [Verify 38919866868](https://github.com/wulala123123/library-management-system/actions/runs/38919866868)。上线及浏览器结果见[书目属性验收](docs/archive/2026-10/catalog-attributes-2026-10-16.md)；服务器操作前仍需现场核对实际版本。
 
 ## 总体路线
 
