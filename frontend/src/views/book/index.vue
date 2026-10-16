@@ -71,6 +71,7 @@
         <el-table-column label="操作" width="430" align="center" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleEdit(row)">书目资料</el-button>
+            <el-button type="primary" link size="small" @click="openIdentity(row.id)">出版社/分类身份</el-button>
             <el-button type="primary" link size="small" @click="openAttributes(row.id)">属性</el-button>
             <el-button v-if="user.isAdmin" type="primary" link size="small" @click="openSource(row.id)">来源核对</el-button>
             <el-button type="primary" link size="small" @click="handleIntake(row)">登记实体册</el-button>
@@ -95,6 +96,7 @@
     <BookDialog v-model:visible="dialogVisible" :book-id="editBookId" @success="fetchBookList" />
     <IntakeDialog v-model:visible="intakeVisible" :book-id="intakeBook?.id" :book-title="intakeBook?.catalogTitle" @success="fetchBookList" />
     <BookAttributeDialog v-model:visible="attributeVisible" :book-id="attributeBookId" @success="fetchBookList" />
+    <CatalogIdentityDialog v-model:visible="identityVisible" :book-id="identityBookId" @success="fetchBookList" />
     <BookSourceAdoptionDialog v-if="user.isAdmin" v-model:visible="sourceVisible" :book-id="sourceBookId" @success="fetchBookList" />
   </div>
   <el-empty v-else description="仅管理员和馆员可管理书目与实体册。" />
@@ -107,6 +109,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import BookDialog from './components/BookDialog.vue'
 import IntakeDialog from './components/IntakeDialog.vue'
 import BookAttributeDialog from './components/BookAttributeDialog.vue'
+import CatalogIdentityDialog from './components/CatalogIdentityDialog.vue'
 import BookSourceAdoptionDialog from './components/BookSourceAdoptionDialog.vue'
 import CatalogAttributeFilters from '@/components/catalog/CatalogAttributeFilters.vue'
 import { useUserStore } from '@/store/modules/user'
@@ -129,7 +132,9 @@ const dialogVisible = ref(false)
 const editBookId = ref<number | null>(null)
 const intakeVisible = ref(false), intakeBook = ref<CatalogBook | null>(null)
 const attributeVisible = ref(false), attributeBookId = ref<number | null>(null), sourceVisible = ref(false), sourceBookId = ref<number | null>(null), attributeFilters = ref(emptyAttributeFilters())
+const identityVisible = ref(false), identityBookId = ref<number | null>(null)
 function openAttributes(id: number) { attributeBookId.value = id; attributeVisible.value = true }
+function openIdentity(id: number) { identityBookId.value = id; identityVisible.value = true }
 function openSource(id: number) { if (user.isAdmin) { sourceBookId.value = id; sourceVisible.value = true } }
 
 const queryParams = reactive({ page: 1, size: 10, keyword: '', categoryId: undefined as number | undefined, status: null as number | null })

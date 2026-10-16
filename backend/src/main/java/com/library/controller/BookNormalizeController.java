@@ -60,6 +60,7 @@ public class BookNormalizeController {
         bookMapper.lockCatalog();
         Book book = bookMapper.lockById(id);
         if (book == null) return Result.error(404, "图书不存在");
+        var identityBefore = com.library.catalogidentity.CatalogIdentityHistory.book(jdbc,id);
 
         BookNormalizeLog logEntry = new BookNormalizeLog();
         logEntry.setBookId(id);
@@ -82,6 +83,7 @@ public class BookNormalizeController {
 
         bookMapper.updateById(book);
         com.library.catalogattributes.CatalogAttributeHistory.recordLegacyTitleChange(jdbc, id, logEntry.getOldTitle(), book.getTitle(), "LEGACY_BOOK_NORMALIZE");
+        com.library.catalogidentity.CatalogIdentityHistory.recordBook(jdbc,id,identityBefore,"LEGACY_BOOK_NORMALIZE");
         normalizeLogMapper.insert(logEntry);
 
         return Result.success(book);
@@ -102,6 +104,7 @@ public class BookNormalizeController {
             if (req.getId() == null) continue;
             Book book = bookMapper.lockById(req.getId());
             if (book == null) continue;
+            var identityBefore = com.library.catalogidentity.CatalogIdentityHistory.book(jdbc,req.getId());
 
             BookNormalizeLog logEntry = new BookNormalizeLog();
             logEntry.setBookId(req.getId());
@@ -124,6 +127,7 @@ public class BookNormalizeController {
 
             bookMapper.updateById(book);
             com.library.catalogattributes.CatalogAttributeHistory.recordLegacyTitleChange(jdbc, book.getId(), logEntry.getOldTitle(), book.getTitle(), "LEGACY_BOOK_NORMALIZE");
+            com.library.catalogidentity.CatalogIdentityHistory.recordBook(jdbc,book.getId(),identityBefore,"LEGACY_BOOK_NORMALIZE_BATCH");
             normalizeLogMapper.insert(logEntry);
             count++;
         }

@@ -2,7 +2,7 @@
   <el-dialog :model-value="visible" :title="isEdit ? '编辑书目资料' : '新书目与首批实体册'" width="720px" :close-on-click-modal="false" :close-on-press-escape="!loading && !intakeVisible" :before-close="beforeClose">
     <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" />
     <el-alert v-if="isEdit" title="这里只保存书目资料。增加库存请使用“登记实体册”，现有总数和可借数由业务流程维护。" type="info" :closable="false" />
-    <section v-if="isEdit || createdBookId" class="attribute-entry"><p>{{ createdBookId ? '入库已完成，属性待补充；属性第二步失败不重复入库。' : '展示名称、装帧和年龄标签独立预览确认，保存反馈与登记资料分开。' }}</p><el-button :disabled="loading || intakeVisible" @click="attributeVisible = true">独立编辑书目属性</el-button><p v-if="attributeSaved">本书属性已独立保存；登记资料表单的未保存输入仍保留。</p></section>
+    <section v-if="isEdit || createdBookId" class="attribute-entry"><p>{{ createdBookId ? '入库已完成，属性待补充；属性第二步失败不重复入库。' : '展示名称、装帧和年龄标签独立预览确认，保存反馈与登记资料分开。' }}</p><el-button :disabled="loading || intakeVisible" @click="attributeVisible = true">独立编辑书目属性</el-button><el-button v-if="isEdit" :disabled="loading || intakeVisible" @click="identityVisible = true">维护出版社/分类身份</el-button><p v-if="attributeSaved">本书属性已独立保存；登记资料表单的未保存输入仍保留。</p></section>
     <el-form v-if="canManage" ref="formRef" :model="form" :rules="rules" :disabled="loading || !!loadError" label-width="100px" size="default">
       <div class="cover-upload-section">
         <label class="section-label">封面图片</label>
@@ -72,6 +72,7 @@
   </el-dialog>
   <IntakeDialog :visible="intakeVisible" :new-book="preparedBook" @update:visible="onIntakeVisible" @success="onIntakeSuccess" />
   <BookAttributeDialog v-model:visible="attributeVisible" :book-id="createdBookId || bookId" :intake-completed="!!createdBookId" @success="onAttributeSuccess" />
+  <CatalogIdentityDialog v-model:visible="identityVisible" :book-id="bookId" @success="emit('success')" />
 </template>
 
 <script setup lang="ts">
@@ -85,6 +86,7 @@ import { useUserStore } from '@/store/modules/user'
 import type { IntakeReceipt } from '@/api/inventoryIntake'
 import IntakeDialog from './IntakeDialog.vue'
 import BookAttributeDialog from './BookAttributeDialog.vue'
+import CatalogIdentityDialog from './CatalogIdentityDialog.vue'
 import { metadataChanges, metadataKeys } from './intakeDraft'
 
 interface Props { visible: boolean; bookId: number | null }
@@ -103,6 +105,7 @@ const categories = ref<any[]>([])
 const loadError = ref(''), metadataDigest = ref(''), original = ref<Partial<BookMetadata>>({})
 const intakeVisible = ref(false), preparedBook = ref<BookMetadata | null>(null), created = ref(false)
 const createdBookId = ref<number | null>(null), attributeVisible = ref(false), attributeSaved = ref(false)
+const identityVisible = ref(false)
 let detailRequest = 0
 function onAttributeSuccess() { attributeSaved.value = true; emit('success') }
 

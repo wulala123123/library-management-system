@@ -7,12 +7,12 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | 阶段3 B35出版社/分类身份核实；B34套装及B36出版信息补录独立接续 |
-| 工作项状态 | B32盘点18ecdb6已验收上线；真实BOOK两步只读核对完成（1008条/988书目、六字段同书无冲突）；B33-A a3ba1fd完整Verify通过（后端461/前端242），产物及实际DDL/API已核验；第一轮生产新备/隔离升级开始，未采用真实值 |
+| 下一工作项 | 完成阶段3 B35出版社/分类身份核实并验收后暂停；B34、B36及后续阶段不自动接续 |
+| 工作项状态 | B35后端v2.1、前端v2.2及发布准备v1.2已由经理验收；定向验证、实际V12/V13 DDL及五段容器门槛已核对，待目标完整Verify、两次最新新备隔离升级和发布；未采用真实来源值 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
-| 应用代码基线 | 已验收生产 `18ecdb65a9d672dc1ce2d87264cbb6dd7c5d7ced`，V1–V11；已推main及工作分支，保留全部既有文档/技能和业务成果 |
-| 完整 Verify | [38854248359](https://github.com/wulala123123/library-management-system/actions/runs/38854248359)全部成功：后端398/前端210无失败或跳过；产物12027001879及内外包已核验 |
+| 应用代码基线 | 已验收生产 `a3ba1fd4820d533d1685f825ecbe82fd2c86dd3b`，V1–V12；已推main及工作分支，保留全部既有文档/技能和业务成果 |
+| 完整 Verify | 生产应用a3ba1fd的[38866095740](https://github.com/wulala123123/library-management-system/actions/runs/38866095740)全部成功：后端461/前端242无失败或跳过；产物12030899943及内外包已核验 |
 | 最近维护结果 | [盘点](docs/archive/2026-10/catalog-stocktake-2026-10-16.md)；[结构化库位](docs/archive/2026-10/catalog-structured-locations-2026-10-16.md)；[逐册状态](docs/archive/2026-10/catalog-copy-actions-2026-10-16.md)；此前入库/会员/来源登记及第一批保留 |
 | 恢复依据 | `git status --short`、当前阶段、下述有效执行者及私有最终验收；无在途发布进程 |
 
@@ -24,7 +24,7 @@
 
 ## 有效执行者
 
-经理为当前任务。用户授权当前任务内委派和满足门槛后的生产更新，不创建独立长期会话或自动化。经理模型与强度工具不可核实；子代理显式配置按技能默认 `gpt-6.1-sol` / `xhigh`。
+经理为当前任务。用户授权当前任务内委派和满足门槛后的生产更新，不创建独立长期会话或自动化。经理模型与强度工具不可核实；B35后端/前端继承当前会话配置，工具未提供实际模型核实；发布准备显式按技能配置为 `gpt-6.1-sol` / `xhigh`。
 
 B32后端/前端及发布准备均已交付，经理完成返工、验收和发布；专用数据库、服务和发布执行进程已退出。原证据保持只读，后续按新边界复用。
 
@@ -34,11 +34,14 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | BOOK来源工具 / v1.1 | 已交付，经理接纳 | `logs/catalog-stage3/catalog-metadata-source/`冻结 | 71文件哈希、43离线及27真实MySQL合成检查通过；进程退出、33079释放 |
 | BOOK实际来源核对 | 已完成，经理验收 | `logs/catalog-stage3/catalog-metadata-manager/`来源证据冻结 | inventory及六字段compare只读成功，原文私有；未采用值、客户端已退出 |
 | B33-A契约 | 已交付，经理接纳 | `logs/catalog-stage3/catalog-metadata-design/contract-b33a.md`冻结 | SHAb8647cde；单书目V12四表、新DTO及旧title共同revision |
-| B33-A后端 / v1 | 已上线，经理验收 | 生产a3ba1fd；源码与V12冻结 | Verify后端461/0失败，V12与旧表保值、非空持久化通过 |
-| B33-A前端 / v1 | 已上线，经理验收 | 生产a3ba1fd；浏览器只读通过 | Verify前端242/0失败，AGE ANY/UNKNOWN、展示名和CSV通过 |
+| B33-A后端 / v1 | 已上线，经理验收 | 生产a3ba1fd；源码与V12冻结 | Verify后端461项、0失败，V12与旧表保值、非空持久化通过 |
+| B33-A前端 / v1 | 已上线，经理验收 | 生产a3ba1fd；浏览器只读通过 | Verify前端242项、0失败，AGE ANY/UNKNOWN、展示名和CSV通过 |
 | B33-A发布工具 / v1.2 | 已交付，经理接纳冻结 | `logs/catalog-stage3/catalog-attributes-release/`及public容器新增段冻结 | 1036文件hash、36离线+13受影响检查通过；实际DDL/API已审定 |
 | 实际DDL补证 | 已交付，经理验收 | 后端证据`metadata-export-v1/`冻结，33079释放 | 实际8结果集、50→54表，旧定义不变；自有进程退出 |
 | B33-A发布 | 已完成，经理验收 | `logs/catalog-stage3/catalog-attributes-manager/release-v2/`冻结 | 两轮最新V11新备隔离升级、部署、GET-only verify通过；生产业务采用仍0 |
+| B35后端 / v2.1 | 经理接纳，执行者停写 | `backend/src/`冻结；证据`logs/catalog-stage3/b35-backend/` | 21文件及7报告hash已核；H2/45兼容/MySQL21+迁移1及排序ABA补测通过；MANUAL实现，SOURCE拒绝，未上线 |
+| B35前端 / v2.2 | 经理接纳，执行者停写 | `frontend/src/`冻结；证据`logs/catalog-stage3/b35-frontend/` | 真实JSON合同、跨页主题、顺序规范化和原key恢复；经理41项复跑及14文件manifest核对通过 |
+| B35发布准备 / v1.2 | 经理接纳，执行者停写 | `logs/catalog-stage3/b35-release/`；公共容器脚本由经理合入 | gpt-6.1-sol/xhigh；经理32项离线复验通过，实际DDL已审；目标CI/最终六项绑定及备份发布待完成 |
 
 B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
 
@@ -53,6 +56,8 @@ B22、查询和统一入库均已交付验收上线，证据见对应档案，�
 逐册状态、文本/未分配/结构化库位及统一入库/成功新码贴标已启用，生效规则见[图书和借还](docs/specs/catalog-circulation.md)。旧占用不自动迁册。收费、扣次及套餐数值限制仍按后续阶段启用。
 
 B32有限范围盘点及角色边界已启用，生效规则见同一领域规范；更大范围/多人/离线协作另批。B33-A已上线展示名、年龄原标签、装帧、来源采用/手工维护/筛选；真实来源值仍未自动采用，须由管理员逐书预览确认。精确年龄数值范围仍另行确认。
+
+2026-10-17用户确认B35保留原登记分类，另设可多选主题分类，年龄标签继续独立；此为本批实施依据，未当作已上线。用户要求B35本批完成并验收后暂停，不自动接续其他任务。
 
 ## 证据与恢复边界
 

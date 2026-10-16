@@ -20,6 +20,7 @@ public class BookCategoryServiceImpl implements BookCategoryService {
 
     private final BookCategoryMapper categoryMapper;
     private final BookMapper bookMapper;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @Override
     public List<BookCategory> getList() {
@@ -40,6 +41,7 @@ public class BookCategoryServiceImpl implements BookCategoryService {
     @Override
     @Transactional
     public BookCategory create(CategoryRequest request) {
+        com.library.catalogidentity.CatalogIdentityHistory.lock(jdbc);
         BookCategory category = new BookCategory();
         BeanUtils.copyProperties(request, category);
 
@@ -56,6 +58,7 @@ public class BookCategoryServiceImpl implements BookCategoryService {
 
         category.setStatus(request.getStatus() != null ? request.getStatus() : 1);
         categoryMapper.insert(category);
+        com.library.catalogidentity.CatalogIdentityHistory.recordOwner(jdbc,"CATEGORY",category.getId(),null,"LEGACY_CATEGORY_CREATE");
         return category;
     }
 
@@ -66,6 +69,8 @@ public class BookCategoryServiceImpl implements BookCategoryService {
             throw new RuntimeException("分类ID不能为空");
         }
 
+        com.library.catalogidentity.CatalogIdentityHistory.lock(jdbc);
+        var identityBefore = com.library.catalogidentity.CatalogIdentityHistory.owner(jdbc,"CATEGORY",request.getId(),true);
         BookCategory category = categoryMapper.selectById(request.getId());
         if (category == null) {
             throw new RuntimeException("分类不存在");
@@ -76,12 +81,15 @@ public class BookCategoryServiceImpl implements BookCategoryService {
         if (request.getStatus() != null) category.setStatus(request.getStatus());
 
         categoryMapper.updateById(category);
+        com.library.catalogidentity.CatalogIdentityHistory.recordOwner(jdbc,"CATEGORY",category.getId(),identityBefore,"LEGACY_CATEGORY_UPDATE");
         return category;
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
+        com.library.catalogidentity.CatalogIdentityHistory.lock(jdbc);
+        var identityBefore = com.library.catalogidentity.CatalogIdentityHistory.owner(jdbc,"CATEGORY",id,true);
         BookCategory category = categoryMapper.selectById(id);
         if (category == null) {
             throw new RuntimeException("分类不存在");
@@ -98,6 +106,8 @@ public class BookCategoryServiceImpl implements BookCategoryService {
         if (bookCount > 0) {
             throw new RuntimeException("该分类下存在图书，无法删除");
         }
+        com.library.catalogidentity.CatalogIdentityHistory.ownerDeletionGuard(jdbc,"CATEGORY",id);
         categoryMapper.deleteById(id);
+        com.library.catalogidentity.CatalogIdentityHistory.recordOwner(jdbc,"CATEGORY",id,identityBefore,"LEGACY_CATEGORY_DELETE");
     }
 }

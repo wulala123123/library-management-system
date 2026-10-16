@@ -1,0 +1,1564 @@
+{
+  "publisherList" : {
+    "records" : [ {
+      "id" : 1,
+      "name" : "鏈烘宸ヤ笟鍑虹増绀�",
+      "normalizedName" : "鏈烘宸ヤ笟鍑虹増绀�",
+      "status" : 1,
+      "deleted" : 0,
+      "revision" : 0,
+      "aliases" : [ ]
+    }, {
+      "id" : 2,
+      "name" : "娓呭崕澶у鍑虹増绀�",
+      "normalizedName" : "娓呭崕澶у鍑虹増绀�",
+      "status" : 1,
+      "deleted" : 0,
+      "revision" : 0,
+      "aliases" : [ ]
+    }, {
+      "id" : 3,
+      "name" : "合成出版社7fe8a2ca-ab81-4c06-85f9-2cca07b46423",
+      "normalizedName" : "合成出版社7fe8a2ca-ab81-4c06-85f9-2cca07b46423",
+      "status" : 1,
+      "deleted" : 0,
+      "revision" : 0,
+      "aliases" : [ ]
+    }, {
+      "id" : 4,
+      "name" : "合成出版社a0a0334f-cd39-4f6c-b3aa-54a4575765cc",
+      "normalizedName" : "合成出版社a0a0334f-cd39-4f6c-b3aa-54a4575765cc",
+      "status" : 1,
+      "deleted" : 0,
+      "revision" : 0,
+      "aliases" : [ ]
+    }, {
+      "id" : 5,
+      "name" : "合成出版社99dc1c81-60b8-41c7-8525-afc6ebdfbc2b",
+      "normalizedName" : "合成出版社99dc1c81-60b8-41c7-8525-afc6ebdfbc2b",
+      "status" : 1,
+      "deleted" : 0,
+      "revision" : 0,
+      "aliases" : [ ]
+    }, {
+      "id" : 6,
+      "name" : "合成出版社a7091db6-e722-4c78-8afe-d577e4ef11ce",
+      "normalizedName" : "合成出版社a7091db6-e722-4c78-8afe-d577e4ef11ce",
+      "status" : 1,
+      "deleted" : 0,
+      "revision" : 1,
+      "aliases" : [ {
+        "id" : 2,
+        "name" : "Rollback alias",
+        "normalizedName" : "rollback alias",
+        "origin" : "MANUAL",
+        "status" : "ACTIVE",
+        "revision" : 1
+      } ]
+    }, {
+      "id" : 7,
+      "name" : "合成出版社74803d4a-b745-462c-b9c2-d51e3d0ec10f",
+      "normalizedName" : "合成出版社74803d4a-b745-462c-b9c2-d51e3d0ec10f",
+      "status" : 1,
+      "deleted" : 0,
+      "revision" : 0,
+      "aliases" : [ ]
+    }, {
+      "id" : 8,
+      "name" : "合成出版社2727e700-3d1c-466c-a12a-242d7cdd36ea",
+      "normalizedName" : "合成出版社2727e700-3d1c-466c-a12a-242d7cdd36ea",
+      "status" : 1,
+      "deleted" : 0,
+      "revision" : 2,
+      "aliases" : [ {
+        "id" : 3,
+        "name" : "Aa",
+        "normalizedName" : "aa",
+        "origin" : "MANUAL",
+        "status" : "RETIRED",
+        "revision" : 2
+      }, {
+        "id" : 4,
+        "name" : "aa",
+        "normalizedName" : "aa",
+        "origin" : "MANUAL",
+        "status" : "ACTIVE",
+        "revision" : 1
+      }, {
+        "id" : 5,
+        "name" : "é",
+        "normalizedName" : "é",
+        "origin" : "MANUAL",
+        "status" : "ACTIVE",
+        "revision" : 1
+      }, {
+        "id" : 6,
+        "name" : "e",
+        "normalizedName" : "e",
+        "origin" : "MANUAL",
+        "status" : "ACTIVE",
+        "revision" : 1
+      }, {
+        "id" : 7,
+        "name" : "Aa ",
+        "normalizedName" : "aa",
+        "origin" : "MANUAL",
+        "status" : "ACTIVE",
+        "revision" : 1
+      } ]
+    }, {
+      "id" : 9,
+      "name" : "合成出版社9170df4e-3fe4-4306-8727-89ac546cc8d7",
+      "normalizedName" : "合成出版社9170df4e-3fe4-4306-8727-89ac546cc8d7",
+      "status" : 1,
+      "deleted" : 0,
+      "revision" : 0,
+      "aliases" : [ ]
+    }, {
+      "id" : 10,
+      "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+      "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+      "status" : 1,
+      "deleted" : 0,
+      "revision" : 0,
+      "aliases" : [ ]
+    } ],
+    "total" : 10,
+    "page" : 1,
+    "size" : 100,
+    "pages" : 1
+  },
+  "categoryList" : {
+    "records" : [ {
+      "id" : 1,
+      "name" : "璁＄畻鏈虹瀛�",
+      "normalizedName" : "璁$畻鏈虹瀛�",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 1,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "璁＄畻鏈虹瀛�",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 1,
+        "name" : "璁＄畻鏈虹瀛�",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 2,
+      "name" : "鏂囧",
+      "normalizedName" : "鏂囧",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 2,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "鏂囧",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 2,
+        "name" : "鏂囧",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 3,
+      "name" : "鑷劧绉戝",
+      "normalizedName" : "鑷劧绉戝",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 3,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "鑷劧绉戝",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 3,
+        "name" : "鑷劧绉戝",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 4,
+      "name" : "绋嬪簭璁捐",
+      "normalizedName" : "绋嬪簭璁捐",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 1,
+      "level" : 2,
+      "sortOrder" : 1,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "璁＄畻鏈虹瀛� / 绋嬪簭璁捐",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 1,
+        "name" : "璁＄畻鏈虹瀛�",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      }, {
+        "id" : 4,
+        "name" : "绋嬪簭璁捐",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 1,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 5,
+      "name" : "鏁版嵁缁撴瀯",
+      "normalizedName" : "鏁版嵁缁撴瀯",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 1,
+      "level" : 2,
+      "sortOrder" : 2,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "璁＄畻鏈虹瀛� / 鏁版嵁缁撴瀯",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 1,
+        "name" : "璁＄畻鏈虹瀛�",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      }, {
+        "id" : 5,
+        "name" : "鏁版嵁缁撴瀯",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 1,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 6,
+      "name" : "绠楁硶",
+      "normalizedName" : "绠楁硶",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 1,
+      "level" : 2,
+      "sortOrder" : 3,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "璁＄畻鏈虹瀛� / 绠楁硶",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 1,
+        "name" : "璁＄畻鏈虹瀛�",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      }, {
+        "id" : 6,
+        "name" : "绠楁硶",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 1,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 7,
+      "name" : "合成主题1e3342d7-a99b-4b1a-9783-7ba65d07c86b",
+      "normalizedName" : "合成主题1e3342d7-a99b-4b1a-9783-7ba65d07c86b",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 0,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "合成主题1e3342d7-a99b-4b1a-9783-7ba65d07c86b",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 7,
+        "name" : "合成主题1e3342d7-a99b-4b1a-9783-7ba65d07c86b",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 8,
+      "name" : "合成主题1eb94623-358d-43c9-9804-d2ef6594f9aa",
+      "normalizedName" : "合成主题1eb94623-358d-43c9-9804-d2ef6594f9aa",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 0,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "合成主题1eb94623-358d-43c9-9804-d2ef6594f9aa",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 8,
+        "name" : "合成主题1eb94623-358d-43c9-9804-d2ef6594f9aa",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 9,
+      "name" : "合成主题d53d2378-b308-44ec-a40a-1d9301180271",
+      "normalizedName" : "合成主题d53d2378-b308-44ec-a40a-1d9301180271",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 0,
+      "dimension" : "TOPIC",
+      "revision" : 1,
+      "aliases" : [ ],
+      "path" : "合成主题d53d2378-b308-44ec-a40a-1d9301180271",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 9,
+        "name" : "合成主题d53d2378-b308-44ec-a40a-1d9301180271",
+        "status" : 1,
+        "dimension" : "TOPIC",
+        "parentId" : 0,
+        "revision" : 1
+      } ]
+    }, {
+      "id" : 10,
+      "name" : "合成主题89e549b5-ac47-441d-ad9d-e9f53ee26d07",
+      "normalizedName" : "合成主题89e549b5-ac47-441d-ad9d-e9f53ee26d07",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 0,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "合成主题89e549b5-ac47-441d-ad9d-e9f53ee26d07",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 10,
+        "name" : "合成主题89e549b5-ac47-441d-ad9d-e9f53ee26d07",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 11,
+      "name" : "合成主题fa2f5e87-5ce7-46d5-a5db-baf0fefcb87a",
+      "normalizedName" : "合成主题fa2f5e87-5ce7-46d5-a5db-baf0fefcb87a",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 0,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "合成主题fa2f5e87-5ce7-46d5-a5db-baf0fefcb87a",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 11,
+        "name" : "合成主题fa2f5e87-5ce7-46d5-a5db-baf0fefcb87a",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 12,
+      "name" : "合成主题18aa9814-7d6f-4931-b974-aa8a1c6dc0e7",
+      "normalizedName" : "合成主题18aa9814-7d6f-4931-b974-aa8a1c6dc0e7",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 0,
+      "dimension" : "TOPIC",
+      "revision" : 1,
+      "aliases" : [ ],
+      "path" : "合成主题18aa9814-7d6f-4931-b974-aa8a1c6dc0e7",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 12,
+        "name" : "合成主题18aa9814-7d6f-4931-b974-aa8a1c6dc0e7",
+        "status" : 1,
+        "dimension" : "TOPIC",
+        "parentId" : 0,
+        "revision" : 1
+      } ]
+    }, {
+      "id" : 13,
+      "name" : "合成主题609cf42d-a8fb-4a33-9d67-a67669dd83d3",
+      "normalizedName" : "合成主题609cf42d-a8fb-4a33-9d67-a67669dd83d3",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 0,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "合成主题609cf42d-a8fb-4a33-9d67-a67669dd83d3",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 13,
+        "name" : "合成主题609cf42d-a8fb-4a33-9d67-a67669dd83d3",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 14,
+      "name" : "合成主题925d201e-58cd-4329-9190-8895d0c38107",
+      "normalizedName" : "合成主题925d201e-58cd-4329-9190-8895d0c38107",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 0,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "合成主题925d201e-58cd-4329-9190-8895d0c38107",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 14,
+        "name" : "合成主题925d201e-58cd-4329-9190-8895d0c38107",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 15,
+      "name" : "合成主题29162e92-c23e-45a7-8688-6f03fd5c7720",
+      "normalizedName" : "合成主题29162e92-c23e-45a7-8688-6f03fd5c7720",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 0,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "合成主题29162e92-c23e-45a7-8688-6f03fd5c7720",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 15,
+        "name" : "合成主题29162e92-c23e-45a7-8688-6f03fd5c7720",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 16,
+      "name" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+      "normalizedName" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 0,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 16,
+        "name" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 17,
+      "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+      "normalizedName" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 0,
+      "level" : 1,
+      "sortOrder" : 0,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 17,
+        "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      } ]
+    }, {
+      "id" : 18,
+      "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+      "normalizedName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+      "status" : 1,
+      "deleted" : 0,
+      "parentId" : 17,
+      "level" : 2,
+      "sortOrder" : 0,
+      "dimension" : "UNVERIFIED",
+      "revision" : 0,
+      "aliases" : [ ],
+      "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61 / 合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+      "parentChainActive" : true,
+      "parentChain" : [ {
+        "id" : 17,
+        "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 0,
+        "revision" : 0
+      }, {
+        "id" : 18,
+        "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+        "status" : 1,
+        "dimension" : "UNVERIFIED",
+        "parentId" : 17,
+        "revision" : 0
+      } ]
+    } ],
+    "total" : 18,
+    "page" : 1,
+    "size" : 100,
+    "pages" : 1
+  },
+  "book" : {
+    "schemaVersion" : 1,
+    "bookId" : 11,
+    "publisherRaw" : "原登记出版社",
+    "publisherId" : null,
+    "categoryId" : 16,
+    "categoryFieldKind" : "LEGACY",
+    "identityRevision" : 0,
+    "publisher" : null,
+    "themes" : [ ],
+    "catalogDigest" : "2021d145c325f63e5e52c6abc3625f2f5b85c6d080c76594227baa8ea3ca5ba2",
+    "candidates" : [ {
+      "id" : null,
+      "kind" : "PUBLISHER",
+      "entityId" : null,
+      "name" : null,
+      "rawName" : "原登记出版社",
+      "normalizedValue" : "原登记出版社",
+      "matchKind" : "UNMATCHED",
+      "status" : "PENDING",
+      "evidence" : {
+        "basis" : "legacy_book_publisher"
+      }
+    }, {
+      "id" : null,
+      "kind" : "CATEGORY",
+      "entityId" : 16,
+      "name" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+      "rawName" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+      "normalizedValue" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+      "matchKind" : "EXACT",
+      "status" : "PENDING",
+      "evidence" : {
+        "basis" : "legacy_book_category_id",
+        "dimension" : "UNVERIFIED"
+      }
+    } ]
+  },
+  "publisherPreview" : {
+    "requestId" : 12,
+    "operationKey" : "6ce93c3c-de72-459e-81d6-2aca0cb80d29",
+    "mode" : "MANUAL",
+    "state" : "PREVIEWED",
+    "previewDigest" : "271e9510d242cd6586cb9148eb1aeea37bc204a665d919aaf2027e5de7b37761",
+    "expiresAt" : "2026-10-16T17:18:42Z",
+    "preview" : {
+      "schemaVersion" : 1,
+      "mode" : "MANUAL",
+      "reason" : "合成核实依据",
+      "createdAt" : "2026-10-16T17:03:42Z",
+      "expiresAt" : "2026-10-16T17:18:42Z",
+      "book" : {
+        "bookId" : 11,
+        "expectedRevision" : 0,
+        "catalogDigest" : "2021d145c325f63e5e52c6abc3625f2f5b85c6d080c76594227baa8ea3ca5ba2",
+        "before" : {
+          "schemaVersion" : 1,
+          "bookId" : 11,
+          "publisherRaw" : "原登记出版社",
+          "publisherId" : null,
+          "categoryId" : 16,
+          "categoryFieldKind" : "LEGACY",
+          "identityRevision" : 0,
+          "publisher" : null,
+          "themes" : [ ],
+          "catalogDigest" : "2021d145c325f63e5e52c6abc3625f2f5b85c6d080c76594227baa8ea3ca5ba2"
+        },
+        "after" : {
+          "schemaVersion" : 1,
+          "bookId" : 11,
+          "publisherRaw" : "原登记出版社",
+          "publisherId" : 10,
+          "categoryId" : 16,
+          "categoryFieldKind" : "LEGACY",
+          "identityRevision" : 1,
+          "publisher" : {
+            "id" : 10,
+            "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "status" : 1,
+            "deleted" : 0,
+            "revision" : 0,
+            "aliases" : [ ],
+            "sourceName" : "原登记出版社",
+            "relationKind" : "CONFIRMED",
+            "linkRevision" : 1
+          },
+          "themes" : [ ],
+          "catalogDigest" : "7eb05621671fbf6733e6d5e9508972925d8036e804ea9b4208ea4b85ba73d14d"
+        },
+        "changedFields" : [ "publisher" ],
+        "willChange" : true,
+        "changes" : {
+          "aliases" : [ ],
+          "categoryDimensions" : [ ],
+          "publisher" : {
+            "action" : "LINK",
+            "publisherId" : 10
+          },
+          "themes" : null
+        },
+        "targetSnapshot" : {
+          "publishers" : [ {
+            "id" : 10,
+            "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "status" : 1,
+            "deleted" : 0,
+            "revision" : 0,
+            "aliases" : [ ]
+          } ],
+          "categories" : [ ]
+        },
+        "afterTargetSnapshot" : {
+          "publishers" : [ {
+            "id" : 10,
+            "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "status" : 1,
+            "deleted" : 0,
+            "revision" : 0,
+            "aliases" : [ ]
+          } ],
+          "categories" : [ ]
+        },
+        "aliasChanges" : [ ],
+        "candidates" : [ {
+          "id" : null,
+          "kind" : "PUBLISHER",
+          "entityId" : null,
+          "name" : null,
+          "rawName" : "原登记出版社",
+          "normalizedValue" : "原登记出版社",
+          "matchKind" : "UNMATCHED",
+          "status" : "PENDING",
+          "evidence" : {
+            "basis" : "legacy_book_publisher"
+          }
+        }, {
+          "id" : null,
+          "kind" : "CATEGORY",
+          "entityId" : 16,
+          "name" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+          "rawName" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+          "normalizedValue" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+          "matchKind" : "EXACT",
+          "status" : "PENDING",
+          "evidence" : {
+            "basis" : "legacy_book_category_id",
+            "dimension" : "UNVERIFIED"
+          }
+        } ],
+        "sourceDigest" : null,
+        "sourceStatus" : "MANUAL_LEGACY_EVIDENCE"
+      }
+    },
+    "receipt" : null
+  },
+  "publisherReceipt" : {
+    "schemaVersion" : 1,
+    "requestId" : 12,
+    "operationKey" : "6ce93c3c-de72-459e-81d6-2aca0cb80d29",
+    "mode" : "MANUAL",
+    "actorId" : 811001,
+    "confirmedAt" : "2026-10-16T17:03:42Z",
+    "book" : {
+      "bookId" : 11,
+      "changed" : true,
+      "beforeRevision" : 0,
+      "afterRevision" : 1,
+      "eventId" : 13,
+      "identity" : {
+        "schemaVersion" : 1,
+        "bookId" : 11,
+        "publisherRaw" : "原登记出版社",
+        "publisherId" : 10,
+        "categoryId" : 16,
+        "categoryFieldKind" : "LEGACY",
+        "identityRevision" : 1,
+        "publisher" : {
+          "id" : 10,
+          "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+          "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+          "status" : 1,
+          "deleted" : 0,
+          "revision" : 0,
+          "aliases" : [ ],
+          "sourceName" : "原登记出版社",
+          "relationKind" : "CONFIRMED",
+          "linkRevision" : 1
+        },
+        "themes" : [ ],
+        "catalogDigest" : "7eb05621671fbf6733e6d5e9508972925d8036e804ea9b4208ea4b85ba73d14d"
+      },
+      "applied" : {
+        "aliases" : [ ],
+        "categoryDimensions" : [ ],
+        "publisher" : {
+          "action" : "LINK",
+          "publisherId" : 10
+        },
+        "themes" : null
+      },
+      "aliasChanges" : [ ]
+    }
+  },
+  "themePreview" : {
+    "requestId" : 13,
+    "operationKey" : "3c92f492-b736-46ff-8eca-0a39ad3b12dc",
+    "mode" : "MANUAL",
+    "state" : "PREVIEWED",
+    "previewDigest" : "e0bcaadc2823fc0ce703940f8495fafa447344917cdabf70bdecf85c2010bb92",
+    "expiresAt" : "2026-10-16T17:18:42Z",
+    "preview" : {
+      "schemaVersion" : 1,
+      "mode" : "MANUAL",
+      "reason" : "合成核实依据",
+      "createdAt" : "2026-10-16T17:03:42Z",
+      "expiresAt" : "2026-10-16T17:18:42Z",
+      "book" : {
+        "bookId" : 11,
+        "expectedRevision" : 1,
+        "catalogDigest" : "7eb05621671fbf6733e6d5e9508972925d8036e804ea9b4208ea4b85ba73d14d",
+        "before" : {
+          "schemaVersion" : 1,
+          "bookId" : 11,
+          "publisherRaw" : "原登记出版社",
+          "publisherId" : 10,
+          "categoryId" : 16,
+          "categoryFieldKind" : "LEGACY",
+          "identityRevision" : 1,
+          "publisher" : {
+            "id" : 10,
+            "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "status" : 1,
+            "deleted" : 0,
+            "revision" : 0,
+            "aliases" : [ ],
+            "sourceName" : "原登记出版社",
+            "relationKind" : "CONFIRMED",
+            "linkRevision" : 1
+          },
+          "themes" : [ ],
+          "catalogDigest" : "7eb05621671fbf6733e6d5e9508972925d8036e804ea9b4208ea4b85ba73d14d"
+        },
+        "after" : {
+          "schemaVersion" : 1,
+          "bookId" : 11,
+          "publisherRaw" : "原登记出版社",
+          "publisherId" : 10,
+          "categoryId" : 16,
+          "categoryFieldKind" : "LEGACY",
+          "identityRevision" : 2,
+          "publisher" : {
+            "id" : 10,
+            "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "status" : 1,
+            "deleted" : 0,
+            "revision" : 0,
+            "aliases" : [ ],
+            "sourceName" : "原登记出版社",
+            "relationKind" : "CONFIRMED",
+            "linkRevision" : 1
+          },
+          "themes" : [ {
+            "id" : 18,
+            "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "normalizedName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "status" : 1,
+            "deleted" : 0,
+            "parentId" : 17,
+            "level" : 2,
+            "sortOrder" : 0,
+            "dimension" : "TOPIC",
+            "revision" : 1,
+            "aliases" : [ ],
+            "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61 / 合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "parentChainActive" : true,
+            "parentChain" : [ {
+              "id" : 17,
+              "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 0,
+              "revision" : 1
+            }, {
+              "id" : 18,
+              "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 17,
+              "revision" : 1
+            } ],
+            "categoryId" : 18,
+            "sourceName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "relationKind" : "CONFIRMED",
+            "linkRevision" : 2
+          } ],
+          "catalogDigest" : "72dc86b940bed9db5b038b428ca387f02b5efb914201db6e0760dedc88a0dfaf"
+        },
+        "changedFields" : [ "categoryDimensions", "themes" ],
+        "willChange" : true,
+        "changes" : {
+          "aliases" : [ ],
+          "categoryDimensions" : [ {
+            "categoryId" : 17,
+            "dimension" : "TOPIC"
+          }, {
+            "categoryId" : 18,
+            "dimension" : "TOPIC"
+          } ],
+          "publisher" : null,
+          "themes" : {
+            "action" : "REPLACE",
+            "categoryIds" : [ 18 ]
+          }
+        },
+        "targetSnapshot" : {
+          "publishers" : [ {
+            "id" : 10,
+            "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "status" : 1,
+            "deleted" : 0,
+            "revision" : 0,
+            "aliases" : [ ]
+          } ],
+          "categories" : [ {
+            "id" : 17,
+            "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "normalizedName" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "status" : 1,
+            "deleted" : 0,
+            "parentId" : 0,
+            "level" : 1,
+            "sortOrder" : 0,
+            "dimension" : "UNVERIFIED",
+            "revision" : 0,
+            "aliases" : [ ],
+            "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "parentChainActive" : true,
+            "parentChain" : [ {
+              "id" : 17,
+              "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+              "status" : 1,
+              "dimension" : "UNVERIFIED",
+              "parentId" : 0,
+              "revision" : 0
+            } ]
+          }, {
+            "id" : 18,
+            "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "normalizedName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "status" : 1,
+            "deleted" : 0,
+            "parentId" : 17,
+            "level" : 2,
+            "sortOrder" : 0,
+            "dimension" : "UNVERIFIED",
+            "revision" : 0,
+            "aliases" : [ ],
+            "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61 / 合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "parentChainActive" : true,
+            "parentChain" : [ {
+              "id" : 17,
+              "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+              "status" : 1,
+              "dimension" : "UNVERIFIED",
+              "parentId" : 0,
+              "revision" : 0
+            }, {
+              "id" : 18,
+              "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+              "status" : 1,
+              "dimension" : "UNVERIFIED",
+              "parentId" : 17,
+              "revision" : 0
+            } ]
+          } ]
+        },
+        "afterTargetSnapshot" : {
+          "publishers" : [ {
+            "id" : 10,
+            "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "status" : 1,
+            "deleted" : 0,
+            "revision" : 0,
+            "aliases" : [ ]
+          } ],
+          "categories" : [ {
+            "id" : 17,
+            "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "normalizedName" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "status" : 1,
+            "deleted" : 0,
+            "parentId" : 0,
+            "level" : 1,
+            "sortOrder" : 0,
+            "dimension" : "TOPIC",
+            "revision" : 1,
+            "aliases" : [ ],
+            "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "parentChainActive" : true,
+            "parentChain" : [ {
+              "id" : 17,
+              "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 0,
+              "revision" : 1
+            } ]
+          }, {
+            "id" : 18,
+            "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "normalizedName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "status" : 1,
+            "deleted" : 0,
+            "parentId" : 17,
+            "level" : 2,
+            "sortOrder" : 0,
+            "dimension" : "TOPIC",
+            "revision" : 1,
+            "aliases" : [ ],
+            "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61 / 合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "parentChainActive" : true,
+            "parentChain" : [ {
+              "id" : 17,
+              "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 0,
+              "revision" : 1
+            }, {
+              "id" : 18,
+              "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 17,
+              "revision" : 1
+            } ]
+          } ]
+        },
+        "aliasChanges" : [ ],
+        "candidates" : [ {
+          "id" : null,
+          "kind" : "PUBLISHER",
+          "entityId" : null,
+          "name" : null,
+          "rawName" : "原登记出版社",
+          "normalizedValue" : "原登记出版社",
+          "matchKind" : "UNMATCHED",
+          "status" : "PENDING",
+          "evidence" : {
+            "basis" : "legacy_book_publisher"
+          }
+        }, {
+          "id" : null,
+          "kind" : "CATEGORY",
+          "entityId" : 16,
+          "name" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+          "rawName" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+          "normalizedValue" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+          "matchKind" : "EXACT",
+          "status" : "PENDING",
+          "evidence" : {
+            "basis" : "legacy_book_category_id",
+            "dimension" : "UNVERIFIED"
+          }
+        } ],
+        "sourceDigest" : null,
+        "sourceStatus" : "MANUAL_LEGACY_EVIDENCE"
+      }
+    },
+    "receipt" : null
+  },
+  "themeReceipt" : {
+    "schemaVersion" : 1,
+    "requestId" : 13,
+    "operationKey" : "3c92f492-b736-46ff-8eca-0a39ad3b12dc",
+    "mode" : "MANUAL",
+    "actorId" : 811001,
+    "confirmedAt" : "2026-10-16T17:03:42Z",
+    "book" : {
+      "bookId" : 11,
+      "changed" : true,
+      "beforeRevision" : 1,
+      "afterRevision" : 2,
+      "eventId" : 16,
+      "identity" : {
+        "schemaVersion" : 1,
+        "bookId" : 11,
+        "publisherRaw" : "原登记出版社",
+        "publisherId" : 10,
+        "categoryId" : 16,
+        "categoryFieldKind" : "LEGACY",
+        "identityRevision" : 2,
+        "publisher" : {
+          "id" : 10,
+          "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+          "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+          "status" : 1,
+          "deleted" : 0,
+          "revision" : 0,
+          "aliases" : [ ],
+          "sourceName" : "原登记出版社",
+          "relationKind" : "CONFIRMED",
+          "linkRevision" : 1
+        },
+        "themes" : [ {
+          "id" : 18,
+          "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+          "normalizedName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+          "status" : 1,
+          "deleted" : 0,
+          "parentId" : 17,
+          "level" : 2,
+          "sortOrder" : 0,
+          "dimension" : "TOPIC",
+          "revision" : 1,
+          "aliases" : [ ],
+          "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61 / 合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+          "parentChainActive" : true,
+          "parentChain" : [ {
+            "id" : 17,
+            "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "status" : 1,
+            "dimension" : "TOPIC",
+            "parentId" : 0,
+            "revision" : 1
+          }, {
+            "id" : 18,
+            "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "status" : 1,
+            "dimension" : "TOPIC",
+            "parentId" : 17,
+            "revision" : 1
+          } ],
+          "categoryId" : 18,
+          "sourceName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+          "relationKind" : "CONFIRMED",
+          "linkRevision" : 2
+        } ],
+        "catalogDigest" : "72dc86b940bed9db5b038b428ca387f02b5efb914201db6e0760dedc88a0dfaf"
+      },
+      "applied" : {
+        "aliases" : [ ],
+        "categoryDimensions" : [ {
+          "categoryId" : 17,
+          "dimension" : "TOPIC"
+        }, {
+          "categoryId" : 18,
+          "dimension" : "TOPIC"
+        } ],
+        "publisher" : null,
+        "themes" : {
+          "action" : "REPLACE",
+          "categoryIds" : [ 18 ]
+        }
+      },
+      "aliasChanges" : [ ]
+    }
+  },
+  "aliasPreview" : {
+    "requestId" : 14,
+    "operationKey" : "07a4207d-4f80-4979-8c9e-fef52b5c9e6b",
+    "mode" : "MANUAL",
+    "state" : "PREVIEWED",
+    "previewDigest" : "0c338cdd6ba1688ff6db7f037ca861a62ad0175eedd27ec602e0e0f71674d124",
+    "expiresAt" : "2026-10-16T17:18:42Z",
+    "preview" : {
+      "schemaVersion" : 1,
+      "mode" : "MANUAL",
+      "reason" : "合成核实依据",
+      "createdAt" : "2026-10-16T17:03:42Z",
+      "expiresAt" : "2026-10-16T17:18:42Z",
+      "book" : {
+        "bookId" : 11,
+        "expectedRevision" : 2,
+        "catalogDigest" : "72dc86b940bed9db5b038b428ca387f02b5efb914201db6e0760dedc88a0dfaf",
+        "before" : {
+          "schemaVersion" : 1,
+          "bookId" : 11,
+          "publisherRaw" : "原登记出版社",
+          "publisherId" : 10,
+          "categoryId" : 16,
+          "categoryFieldKind" : "LEGACY",
+          "identityRevision" : 2,
+          "publisher" : {
+            "id" : 10,
+            "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "status" : 1,
+            "deleted" : 0,
+            "revision" : 0,
+            "aliases" : [ ],
+            "sourceName" : "原登记出版社",
+            "relationKind" : "CONFIRMED",
+            "linkRevision" : 1
+          },
+          "themes" : [ {
+            "id" : 18,
+            "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "normalizedName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "status" : 1,
+            "deleted" : 0,
+            "parentId" : 17,
+            "level" : 2,
+            "sortOrder" : 0,
+            "dimension" : "TOPIC",
+            "revision" : 1,
+            "aliases" : [ ],
+            "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61 / 合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "parentChainActive" : true,
+            "parentChain" : [ {
+              "id" : 17,
+              "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 0,
+              "revision" : 1
+            }, {
+              "id" : 18,
+              "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 17,
+              "revision" : 1
+            } ],
+            "categoryId" : 18,
+            "sourceName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "relationKind" : "CONFIRMED",
+            "linkRevision" : 2
+          } ],
+          "catalogDigest" : "72dc86b940bed9db5b038b428ca387f02b5efb914201db6e0760dedc88a0dfaf"
+        },
+        "after" : {
+          "schemaVersion" : 1,
+          "bookId" : 11,
+          "publisherRaw" : "原登记出版社",
+          "publisherId" : 10,
+          "categoryId" : 16,
+          "categoryFieldKind" : "LEGACY",
+          "identityRevision" : 3,
+          "publisher" : {
+            "id" : 10,
+            "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "status" : 1,
+            "deleted" : 0,
+            "revision" : 1,
+            "aliases" : [ {
+              "id" : null,
+              "name" : "合成别名",
+              "normalizedName" : "合成别名",
+              "origin" : "MANUAL",
+              "status" : "ACTIVE",
+              "revision" : 1
+            } ],
+            "sourceName" : "原登记出版社",
+            "relationKind" : "CONFIRMED",
+            "linkRevision" : 1
+          },
+          "themes" : [ {
+            "id" : 18,
+            "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "normalizedName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "status" : 1,
+            "deleted" : 0,
+            "parentId" : 17,
+            "level" : 2,
+            "sortOrder" : 0,
+            "dimension" : "TOPIC",
+            "revision" : 1,
+            "aliases" : [ ],
+            "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61 / 合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "parentChainActive" : true,
+            "parentChain" : [ {
+              "id" : 17,
+              "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 0,
+              "revision" : 1
+            }, {
+              "id" : 18,
+              "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 17,
+              "revision" : 1
+            } ],
+            "categoryId" : 18,
+            "sourceName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "relationKind" : "CONFIRMED",
+            "linkRevision" : 2
+          } ],
+          "catalogDigest" : "2b47487a6ccb106f080a7e93ce65c0b9f08a634dcf2485a770ffb8a8c7e5d023"
+        },
+        "changedFields" : [ "aliases" ],
+        "willChange" : true,
+        "changes" : {
+          "aliases" : [ {
+            "action" : "ADD",
+            "kind" : "PUBLISHER",
+            "name" : "合成别名",
+            "ownerId" : 10
+          } ],
+          "categoryDimensions" : [ ],
+          "publisher" : null,
+          "themes" : null
+        },
+        "targetSnapshot" : {
+          "publishers" : [ {
+            "id" : 10,
+            "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "status" : 1,
+            "deleted" : 0,
+            "revision" : 0,
+            "aliases" : [ ]
+          } ],
+          "categories" : [ {
+            "id" : 17,
+            "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "normalizedName" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "status" : 1,
+            "deleted" : 0,
+            "parentId" : 0,
+            "level" : 1,
+            "sortOrder" : 0,
+            "dimension" : "TOPIC",
+            "revision" : 1,
+            "aliases" : [ ],
+            "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "parentChainActive" : true,
+            "parentChain" : [ {
+              "id" : 17,
+              "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 0,
+              "revision" : 1
+            } ]
+          }, {
+            "id" : 18,
+            "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "normalizedName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "status" : 1,
+            "deleted" : 0,
+            "parentId" : 17,
+            "level" : 2,
+            "sortOrder" : 0,
+            "dimension" : "TOPIC",
+            "revision" : 1,
+            "aliases" : [ ],
+            "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61 / 合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "parentChainActive" : true,
+            "parentChain" : [ {
+              "id" : 17,
+              "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 0,
+              "revision" : 1
+            }, {
+              "id" : 18,
+              "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 17,
+              "revision" : 1
+            } ]
+          } ]
+        },
+        "afterTargetSnapshot" : {
+          "publishers" : [ {
+            "id" : 10,
+            "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+            "status" : 1,
+            "deleted" : 0,
+            "revision" : 1,
+            "aliases" : [ {
+              "id" : null,
+              "name" : "合成别名",
+              "normalizedName" : "合成别名",
+              "origin" : "MANUAL",
+              "status" : "ACTIVE",
+              "revision" : 1
+            } ]
+          } ],
+          "categories" : [ {
+            "id" : 17,
+            "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "normalizedName" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "status" : 1,
+            "deleted" : 0,
+            "parentId" : 0,
+            "level" : 1,
+            "sortOrder" : 0,
+            "dimension" : "TOPIC",
+            "revision" : 1,
+            "aliases" : [ ],
+            "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "parentChainActive" : true,
+            "parentChain" : [ {
+              "id" : 17,
+              "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 0,
+              "revision" : 1
+            } ]
+          }, {
+            "id" : 18,
+            "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "normalizedName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "status" : 1,
+            "deleted" : 0,
+            "parentId" : 17,
+            "level" : 2,
+            "sortOrder" : 0,
+            "dimension" : "TOPIC",
+            "revision" : 1,
+            "aliases" : [ ],
+            "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61 / 合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "parentChainActive" : true,
+            "parentChain" : [ {
+              "id" : 17,
+              "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 0,
+              "revision" : 1
+            }, {
+              "id" : 18,
+              "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+              "status" : 1,
+              "dimension" : "TOPIC",
+              "parentId" : 17,
+              "revision" : 1
+            } ]
+          } ]
+        },
+        "aliasChanges" : [ {
+          "kind" : "PUBLISHER",
+          "ownerId" : 10,
+          "ownerName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+          "action" : "ADD",
+          "name" : "合成别名",
+          "beforeAliases" : [ ],
+          "afterAliases" : [ {
+            "id" : null,
+            "name" : "合成别名",
+            "normalizedName" : "合成别名",
+            "origin" : "MANUAL",
+            "status" : "ACTIVE",
+            "revision" : 1
+          } ],
+          "willChange" : true
+        } ],
+        "candidates" : [ {
+          "id" : null,
+          "kind" : "PUBLISHER",
+          "entityId" : null,
+          "name" : null,
+          "rawName" : "原登记出版社",
+          "normalizedValue" : "原登记出版社",
+          "matchKind" : "UNMATCHED",
+          "status" : "PENDING",
+          "evidence" : {
+            "basis" : "legacy_book_publisher"
+          }
+        }, {
+          "id" : null,
+          "kind" : "CATEGORY",
+          "entityId" : 16,
+          "name" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+          "rawName" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+          "normalizedValue" : "合成主题1f96afb7-442c-4180-97c8-8402b58ac98d",
+          "matchKind" : "EXACT",
+          "status" : "PENDING",
+          "evidence" : {
+            "basis" : "legacy_book_category_id",
+            "dimension" : "UNVERIFIED"
+          }
+        } ],
+        "sourceDigest" : null,
+        "sourceStatus" : "MANUAL_LEGACY_EVIDENCE"
+      }
+    },
+    "receipt" : null
+  },
+  "aliasReceipt" : {
+    "schemaVersion" : 1,
+    "requestId" : 14,
+    "operationKey" : "07a4207d-4f80-4979-8c9e-fef52b5c9e6b",
+    "mode" : "MANUAL",
+    "actorId" : 811001,
+    "confirmedAt" : "2026-10-16T17:03:42Z",
+    "book" : {
+      "bookId" : 11,
+      "changed" : true,
+      "beforeRevision" : 2,
+      "afterRevision" : 3,
+      "eventId" : 18,
+      "identity" : {
+        "schemaVersion" : 1,
+        "bookId" : 11,
+        "publisherRaw" : "原登记出版社",
+        "publisherId" : 10,
+        "categoryId" : 16,
+        "categoryFieldKind" : "LEGACY",
+        "identityRevision" : 3,
+        "publisher" : {
+          "id" : 10,
+          "name" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+          "normalizedName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+          "status" : 1,
+          "deleted" : 0,
+          "revision" : 1,
+          "aliases" : [ {
+            "id" : 8,
+            "name" : "合成别名",
+            "normalizedName" : "合成别名",
+            "origin" : "MANUAL",
+            "status" : "ACTIVE",
+            "revision" : 1
+          } ],
+          "sourceName" : "原登记出版社",
+          "relationKind" : "CONFIRMED",
+          "linkRevision" : 1
+        },
+        "themes" : [ {
+          "id" : 18,
+          "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+          "normalizedName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+          "status" : 1,
+          "deleted" : 0,
+          "parentId" : 17,
+          "level" : 2,
+          "sortOrder" : 0,
+          "dimension" : "TOPIC",
+          "revision" : 1,
+          "aliases" : [ ],
+          "path" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61 / 合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+          "parentChainActive" : true,
+          "parentChain" : [ {
+            "id" : 17,
+            "name" : "合成主题9eecad6a-71fa-42c4-9b67-ee25b346ff61",
+            "status" : 1,
+            "dimension" : "TOPIC",
+            "parentId" : 0,
+            "revision" : 1
+          }, {
+            "id" : 18,
+            "name" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+            "status" : 1,
+            "dimension" : "TOPIC",
+            "parentId" : 17,
+            "revision" : 1
+          } ],
+          "categoryId" : 18,
+          "sourceName" : "合成子类f3977d98-f5bd-409e-977e-27b95b65f27c",
+          "relationKind" : "CONFIRMED",
+          "linkRevision" : 2
+        } ],
+        "catalogDigest" : "4fe900a23a0ee4056bf597e0b8de7fb50341497c5866f90ef6772d929c7144d3"
+      },
+      "applied" : {
+        "aliases" : [ {
+          "action" : "ADD",
+          "kind" : "PUBLISHER",
+          "name" : "合成别名",
+          "ownerId" : 10
+        } ],
+        "categoryDimensions" : [ ],
+        "publisher" : null,
+        "themes" : null
+      },
+      "aliasChanges" : [ {
+        "kind" : "PUBLISHER",
+        "ownerId" : 10,
+        "ownerName" : "合成出版社9f1de911-16f9-4c04-8694-64b35e87879c",
+        "action" : "ADD",
+        "name" : "合成别名",
+        "beforeAliases" : [ ],
+        "afterAliases" : [ {
+          "id" : null,
+          "name" : "合成别名",
+          "normalizedName" : "合成别名",
+          "origin" : "MANUAL",
+          "status" : "ACTIVE",
+          "revision" : 1
+        } ],
+        "willChange" : true
+      } ]
+    }
+  }
+}

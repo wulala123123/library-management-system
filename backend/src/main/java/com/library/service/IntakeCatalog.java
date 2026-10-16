@@ -78,6 +78,7 @@ public class IntakeCatalog {
         return view(id);
     }
     /** Legacy full metadata forms are supported only with unchanged stock. */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateAll(Long id, Metadata data) {
         LinkedHashMap<String, Object> values = new LinkedHashMap<>();
         JsonNode node = json.valueToTree(data);
@@ -85,6 +86,7 @@ public class IntakeCatalog {
         updateColumns(id, values);
     }
     private void updateColumns(Long id, LinkedHashMap<String, Object> values) {
+        var identityBefore = com.library.catalogidentity.CatalogIdentityHistory.book(jdbc,id);
         String oldTitle = values.containsKey("title") ? jdbc.queryForObject("SELECT title FROM book WHERE id=? AND deleted=0", String.class, id) : null;
         if (values.containsKey("isbn")) {
             Book existing = byIsbn((String) values.get("isbn"));
@@ -97,6 +99,7 @@ public class IntakeCatalog {
         if (jdbc.update("UPDATE book SET " + String.join(",", assignments) + ",update_time=CURRENT_TIMESTAMP WHERE id=? AND deleted=0", args.toArray()) != 1)
             throw error(409, "PREVIEW_STALE", "书目已变化，请重新读取");
         if (values.containsKey("title") && attributeHistory != null) attributeHistory.title(id, oldTitle, (String) values.get("title"));
+        com.library.catalogidentity.CatalogIdentityHistory.recordBook(jdbc,id,identityBefore,"LEGACY_BOOK_METADATA");
     }
     public Metadata newMetadata(JsonNode input) {
         LinkedHashMap<String, Object> values = parse(input, true);

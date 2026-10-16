@@ -47,6 +47,10 @@ public class Book {
     @TableLogic
     private Integer deleted;
 
+    /** B35 ABA guard for identity previews; does not replace legacy fields. */
+    @JsonIgnore
+    private Long catalogIdentityRevision;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

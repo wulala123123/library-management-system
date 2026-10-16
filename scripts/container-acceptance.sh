@@ -276,6 +276,240 @@ library_attributes_mysql="$("${library_dc[@]}" ps -q mysql)"
 "${library_dc[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_MIGRATION_PASSWORD" exec mysql -u library_migrator --default-character-set=utf8mb4 "$MYSQL_DATABASE"' < "$library_test/attributes-source-fixture.sql"
 library_attributes_acceptance http://localhost:18089 "$library_test/install/.env" seed
 # END B33-A ATTRIBUTES SEED
+# BEGIN B35 IDENTITY SEED
+cat > "$library_test/catalog_identity_acceptance.py" <<'B35_PY'
+"""Embed verbatim in the public container acceptance script after API freeze.
+
+Only synthetic acceptance deployments at 18089/18090 are accepted. All new
+business uses real HTTP APIs. snapshot-sql prints SELECT-only byte projections.
+"""
+import argparse
+import base64
+import copy
+import hashlib
+import hmac
+import json
+import os
+from pathlib import Path
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import uuid
+
+IDENTITY_COLUMNS={
+ 'catalog_publisher_profile':'publisher_id normalized_name normalized_key revision updated_at',
+ 'catalog_publisher_alias':'id publisher_id alias_name normalized_name alias_key origin status revision created_at updated_at',
+ 'catalog_category_profile':'category_id normalized_name normalized_key dimension revision updated_at',
+ 'catalog_category_alias':'id category_id alias_name normalized_name alias_key origin status revision created_at updated_at',
+ 'catalog_book_publisher':'book_id publisher_id source_name relation_kind revision updated_at',
+ 'catalog_book_theme':'book_id category_id source_name relation_kind revision updated_at',
+ 'catalog_identity_request':'id operation_key book_id actor_id mode input_hash schema_version request_json preview_json preview_digest state created_at expires_at receipt_json committed_at',
+ 'catalog_identity_candidate':'id request_id book_id entity_kind raw_value normalized_value match_kind candidate_id evidence_json status created_at',
+ 'catalog_identity_event':'id request_id book_id entity_kind entity_id before_revision after_revision changed_fields_json before_json after_json evidence_json actor_id occurred_at reason',
+}
+def guard(base,env,mode):
+    u=urllib.parse.urlsplit(base)
+    assert os.environ.get('LIBRARY_ACCEPTANCE')=='1','Explicit isolated acceptance flag required'
+    assert (u.scheme=='http' and u.hostname in ('localhost','127.0.0.1') and u.port in (18089,18090)
+        and not u.username and not u.password and u.path in ('','/') and not u.query and not u.fragment
+        and env.get('FRONTEND_PORT')==str(u.port) and env.get('APP_NETWORK_SUBNET')==('172.30.89.0/24' if u.port==18089 else '172.30.90.0/24')
+        and env.get('FRONTEND_INTERNAL_IP')==('172.30.89.10' if u.port==18089 else '172.30.90.10')),'B35 fixture requires the exact isolated acceptance deployment'
+    assert mode in ('seed','check','snapshot-sql') and (mode!='seed' or u.port==18089),'Never seed the recovered deployment'
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,*args):return None
+
+class Client:
+    def __init__(self,base,env):
+        self.base=base
+        enc=lambda value:base64.urlsafe_b64encode(value).rstrip(b'=')
+        payload=dict(sub='1',role='ADMIN',version=0,iat=int(time.time()),exp=int(time.time())+3600)
+        unsigned=enc(b'{"alg":"HS256","typ":"JWT"}')+b'.'+enc(json.dumps(payload).encode())
+        self.token=(unsigned+b'.'+enc(hmac.new(env['JWT_SECRET'].encode(),unsigned,hashlib.sha256).digest())).decode()
+        self.opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),NoRedirect())
+    def call(self,path,method='GET',body=None):
+        assert path.startswith('/api/') and method in ('GET','POST','PUT')
+        headers={'Content-Type':'application/json','Authorization':'Bearer '+self.token}
+        request=urllib.request.Request(self.base+path,None if body is None else json.dumps(body,ensure_ascii=False).encode(),headers,method=method)
+        with self.opener.open(request,timeout=120) as response:
+            payload=response.read(2097153)
+            assert response.status==200 and len(payload)<=2097152,'Unexpected B35 HTTP response'
+            value=json.loads(payload)
+        assert set(value)=={'code','message','data'} and value['code']==200,'Unexpected B35 envelope'
+        return value['data']
+    def denied(self,path,method,body,status,reasons):
+        try:self.call(path,method,body)
+        except urllib.error.HTTPError as error:
+            payload=error.read(16385);assert error.code==status and len(payload)<=16384
+            value=json.loads(payload);assert value['code']==status
+            actual=value.get('data',{});reason=actual.get('reasonCode') if isinstance(actual,dict) else value.get('message')
+            assert reason in reasons,'Unexpected B35 refusal reason'
+        else:raise AssertionError('Expected B35 refusal')
+
+def identity(c,book):return c.call('/api/catalog-identities/books/'+str(book))
+def current_input(c,book,changes):
+    view=identity(c,book)
+    return dict(operationKey=str(uuid.uuid4()),mode='MANUAL',reason='B35隔离合成生命周期验收',bookId=book,
+        expectedRevision=view['identityRevision'],expectedCatalogDigest=view['catalogDigest'],sourceDigest=None,
+        changes={key:changes.get(key,[] if key in ('aliases','categoryDimensions') else None) for key in ('publisher','themes','aliases','categoryDimensions')})
+def preview(c,book,changes):
+    body=current_input(c,book,changes);view=c.call('/api/catalog-identities/previews','POST',body)
+    assert view['mode']=='MANUAL' and view['state']=='PREVIEWED' and view['receipt'] is None
+    assert view['preview']['book']['sourceDigest'] is None
+    assert c.call('/api/catalog-identities/previews','POST',body)==view,'Preview key replay differs'
+    assert c.call('/api/catalog-identities/requests/by-key?key='+body['operationKey'])==view
+    return dict(input=body,preview=view)
+def confirm(c,saved):
+    view=saved['preview'];body=dict(operationKey=saved['input']['operationKey'],previewDigest=view['previewDigest'])
+    path='/api/catalog-identities/'+str(view['requestId'])+'/confirm'
+    receipt=c.call(path,'POST',body)
+    assert c.call(path,'POST',body)==receipt,'Original B35 receipt replay differs'
+    request=c.call('/api/catalog-identities/'+str(view['requestId']))
+    assert request['state']=='COMMITTED' and request['receipt']==receipt and request['preview']==view['preview']
+    assert c.call('/api/catalog-identities/requests/by-key?key='+body['operationKey'])==request
+    saved.update(confirmation=body,receipt=receipt,committed=request)
+    return receipt
+
+def category(c,name,parent=0,status=1):
+    return c.call('/api/categories','POST',dict(name=name,parentId=parent,status=status,sortOrder=0))
+def publisher(c,name):return c.call('/api/publishers','POST',dict(name=name,status=1))
+def attribute(c,book):return c.call('/api/catalog-books/'+str(book)+'/attributes')
+def stable_old(c,book):
+    return dict(metadata=c.call('/api/books/'+str(book)+'/metadata'),attribute=attribute(c,book),
+        catalog=c.call('/api/catalog-books/'+str(book)),events=c.call('/api/catalog-books/'+str(book)+'/attribute-events?page=1&size=100'))
+def selected_lists(c,marker):
+    suffix='?page=1&size=100&keyword='+urllib.parse.quote(marker,safe='')
+    return {kind:c.call('/api/catalog-identities/'+kind+suffix) for kind in ('publishers','categories')}
+
+def seed(c):
+    marker='B35'+uuid.uuid4().hex[:16]
+    p=publisher(c,marker+'出版社');root=category(c,marker+'主题父');child=category(c,marker+'主题子',root['id']);other=category(c,marker+'主题二',root['id']);legacy=category(c,marker+'原年龄分类')
+    key=str(uuid.uuid4());body=dict(idempotencyKey=key,source=dict(type='MANUAL',purchaseOrderId=None),reason='B35隔离独立书目',lines=[dict(lineKey=str(uuid.uuid4()),target=dict(bookId=None,newBook=dict(title=marker+'原登记书名',publisher=p['name'],isbn=marker,categoryId=legacy['id']),purchaseItemId=None),copies=[dict(input='SCANNED',barcode='000'+marker+' ',location=None)])])
+    intake=c.call('/api/inventory-intakes/previews','POST',body);confirmation=dict(idempotencyKey=key,previewDigest=intake['previewDigest'])
+    receipt=c.call('/api/inventory-intakes/'+str(intake['intakeId'])+'/confirm','POST',confirmation);book=receipt['books'][0]['bookId']
+    assert receipt['copies'][0]['barcode']=='000'+marker+' '
+    # An independent B33 age label must survive all identity writes unchanged.
+    attr=attribute(c,book);attr_key=str(uuid.uuid4())
+    attr_body=dict(operationKey=attr_key,mode='MANUAL',reason='B35隔离独立年龄标签',bookId=book,expectedRevision=attr['profile']['revision'],expectedCatalogDigest=attr['catalogDigest'],sourceDigest=None,changes=dict(displayTitleOverride=None,bindingCode=None,ageLabels=dict(action='SET',value=['AGE_3_4']),adoptedSourceTitle=None))
+    attr_view=c.call('/api/catalog-attributes/previews','POST',attr_body);attr_confirmation=dict(operationKey=attr_key,previewDigest=attr_view['previewDigest'])
+    attr_receipt=c.call('/api/catalog-attributes/'+str(attr_view['requestId'])+'/confirm','POST',attr_confirmation)
+    old=stable_old(c,book);initial=identity(c,book)
+    assert initial['publisherId'] is None and initial['themes']==[] and initial['categoryId']==legacy['id'] and initial['categoryFieldKind']=='LEGACY'
+    assert old['attribute']['profile']['ageLabels']==['AGE_3_4']
+    # No name match or old category ID may become an accepted link automatically.
+    assert any(v['entityId']==p['id'] and v['matchKind']=='EXACT' for v in initial['candidates'] if v['kind']=='PUBLISHER')
+    bad=current_input(c,book,dict(themes=dict(action='REPLACE',categoryIds=[child['id']])))
+    c.denied('/api/catalog-identities/previews','POST',bad,409,{'CATEGORY_TOPIC_REQUIRED'})
+    bad=copy.deepcopy(bad);bad['operationKey']=str(uuid.uuid4());bad['mode']='SOURCE'
+    c.denied('/api/catalog-identities/previews','POST',bad,409,{'CATALOG_IDENTITY_SOURCE_NOT_ENABLED'})
+    bad=current_input(c,book,dict(publisher=dict(action='LINK',publisherId=p['id'])));bad['sourceDigest']='a'*64
+    c.denied('/api/catalog-identities/previews','POST',bad,400,{'INVALID_INPUT'})
+    # Formal MANUAL preview/confirm classifies parent + children and keeps age separate.
+    dimensions=[dict(categoryId=v['id'],dimension='TOPIC') for v in (root,child,other)]+[dict(categoryId=legacy['id'],dimension='LEGACY_AGE')]
+    operation=preview(c,book,dict(publisher=dict(action='LINK',publisherId=p['id']),themes=dict(action='REPLACE',categoryIds=[other['id'],child['id']]),aliases=[dict(kind='PUBLISHER',ownerId=p['id'],action='ADD',name=marker+'别名'),dict(kind='CATEGORY',ownerId=child['id'],action='ADD',name=marker+'主题别名')],categoryDimensions=dimensions))
+    first=confirm(c,operation);assert first['book']['changed'] and first['book']['eventId'] is not None
+    actual=identity(c,book)
+    assert actual['publisherId']==p['id'] and [v['categoryId'] for v in actual['themes']]==sorted([child['id'],other['id']])
+    assert all(v['dimension']=='TOPIC' and v['parentChainActive'] for v in actual['themes'])
+    assert actual['categoryId']==legacy['id'] and stable_old(c,book)==old,'Identity writes changed old metadata, original category, B33 age or audit'
+    # An age-classified category remains ineligible as a new theme.
+    bad=current_input(c,book,dict(themes=dict(action='REPLACE',categoryIds=[legacy['id']])))
+    c.denied('/api/catalog-identities/previews','POST',bad,409,{'CATEGORY_TOPIC_REQUIRED'})
+    # A semantic no-op has no event or version increase. Original committed receipt wins.
+    same=preview(c,book,dict(publisher=dict(action='LINK',publisherId=p['id']),themes=dict(action='REPLACE',categoryIds=[child['id'],other['id']])))
+    nochange=confirm(c,same);assert not nochange['book']['changed'] and nochange['book']['eventId'] is None and nochange['book']['beforeRevision']==nochange['book']['afterRevision']
+    # Retired and active aliases, two immutable committed receipts, and a pending
+    # preview all remain nonempty across recreate/update/full backup restore.
+    retire=preview(c,book,dict(aliases=[dict(kind='PUBLISHER',ownerId=p['id'],action='CLEAR',name=marker+'别名'),dict(kind='PUBLISHER',ownerId=p['id'],action='ADD',name=marker+'保留别名')]))
+    confirm(c,retire)
+    stale=preview(c,book,dict(publisher=dict(action='CLEAR',publisherId=None)))
+    c.call('/api/categories','PUT',dict(id=root['id'],name=root['name'],parentId=0,status=0,sortOrder=0))
+    bad=current_input(c,book,dict(themes=dict(action='REPLACE',categoryIds=[child['id']])))
+    c.denied('/api/catalog-identities/previews','POST',bad,409,{'CATEGORY_PARENT_DISABLED'})
+    c.call('/api/categories','PUT',dict(id=root['id'],name=root['name'],parentId=0,status=1,sortOrder=0))
+    c.denied('/api/catalog-identities/'+str(stale['preview']['requestId'])+'/confirm','POST',dict(operationKey=stale['input']['operationKey'],previewDigest=stale['preview']['previewDigest']),409,{'CATALOG_IDENTITY_CHANGED'})
+    pending=preview(c,book,dict(publisher=dict(action='CLEAR',publisherId=None)))
+    assert stable_old(c,book)==old
+    return dict(marker=marker,bookId=book,identity=identity(c,book),lists=selected_lists(c,marker),old=old,operations=[operation,same,retire],pending=pending,stale=stale,
+        intake=dict(view=intake,confirmation=confirmation,receipt=receipt),attributeOperation=dict(view=attr_view,confirmation=attr_confirmation,receipt=attr_receipt))
+
+def check(c,state):
+    book=state['bookId']
+    def same():
+        assert identity(c,book)==state['identity'] and selected_lists(c,state['marker'])==state['lists'],'B35 persisted identity or alias bytes changed'
+        assert stable_old(c,book)==state['old'],'Old metadata/B33 values changed across lifecycle'
+    same()
+    for saved in state['operations']:
+        route='/api/catalog-identities/'+str(saved['preview']['requestId'])
+        assert c.call(route)==saved['committed']
+        assert c.call('/api/catalog-identities/requests/by-key?key='+saved['input']['operationKey'])==saved['committed']
+        assert c.call(route+'/confirm','POST',saved['confirmation'])==saved['receipt']
+    for name in ('pending','stale'):
+        pending=state[name];assert c.call('/api/catalog-identities/requests/by-key?key='+pending['input']['operationKey'])==pending['preview']
+        assert c.call('/api/catalog-identities/'+str(pending['preview']['requestId']))==pending['preview']
+    for key,prefix,idname in (('intake','/api/inventory-intakes/','intakeId'),('attributeOperation','/api/catalog-attributes/','requestId')):
+        saved=state[key];assert c.call(prefix+str(saved['view'][idname])+'/confirm','POST',saved['confirmation'])==saved['receipt']
+    same()
+
+def snapshot_sql(state):
+    """Per-row hashes avoid GROUP_CONCAT truncation; preserve JSON original bytes."""
+    lines=[]
+    for table,fields in sorted(IDENTITY_COLUMNS.items()):
+        cells=["IF(`"+name+"` IS NULL,NULL,HEX(CAST(`"+name+"` AS BINARY)))" for name in fields.split()]
+        lines.append("SELECT '"+table+"' AS t,SHA2(CAST(JSON_ARRAY("+','.join(cells)+") AS CHAR),256) AS digest FROM `"+table+"` ORDER BY digest;")
+    for table,ids in (('book',[state['bookId']]),('publisher',[v['id'] for v in state['lists']['publishers']['records']]),('book_category',[v['id'] for v in state['lists']['categories']['records']])):
+        assert ids and all(type(i) is int and i>0 for i in ids)
+        lines.append("SELECT '"+table+"-revision' AS t,SHA2(CAST(JSON_ARRAY(id,catalog_identity_revision) AS CHAR),256) AS digest FROM `"+table+"` WHERE id IN ("+','.join(map(str,ids))+") ORDER BY id;")
+    return '\n'.join(lines)+'\n'
+
+def main(argv=None):
+    p=argparse.ArgumentParser();p.add_argument('--base',required=True);p.add_argument('--env',required=True);p.add_argument('--state',required=True);p.add_argument('--mode',choices=('seed','check','snapshot-sql'),required=True)
+    args=p.parse_args(argv);env=dict(line.split('=',1) for line in Path(args.env).read_text(encoding='utf-8').splitlines() if '=' in line and not line.startswith('#'))
+    guard(args.base,env,args.mode);state_path=Path(args.state)
+    assert not state_path.is_symlink()
+    if args.mode=='seed':
+        assert not state_path.exists(),'Fresh independent B35 fixture required'
+        state=seed(Client(args.base,env))
+        with state_path.open('x',encoding='utf-8') as stream:json.dump(state,stream,ensure_ascii=False,sort_keys=True)
+        print('B35 isolated formal MANUAL confirmation, aliases, themes, dimensions and immutable receipts passed')
+    else:
+        state=json.loads(state_path.read_text(encoding='utf-8'))
+        if args.mode=='snapshot-sql':print(snapshot_sql(state),end='')
+        else:
+            check(Client(args.base,env),state)
+            print('B35 identity, alias, pending request and original receipt HTTP checks passed')
+    return 0
+
+if __name__=='__main__':raise SystemExit(main())
+B35_PY
+library_identity_acceptance() {
+    LIBRARY_ACCEPTANCE=1 python3 "$library_test/catalog_identity_acceptance.py" --base "$1" --env "$2" --state "$library_test/identity-state.json" --mode "$3"
+}
+library_identity_snapshot() {
+    local library_identity_project="$1" library_identity_tag="$2" library_identity_mysql
+    [[ "$library_identity_project" == library || "$library_identity_project" == library-recovery ]]
+    library_identity_mysql="$(docker ps -q --filter "label=com.docker.compose.project=$library_identity_project" --filter label=com.docker.compose.service=mysql)"
+    [[ -n "$library_identity_mysql" && "$library_identity_mysql" != *$'\n'* ]]
+    [[ "$(docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' "$library_identity_mysql")" == "$library_identity_project" ]]
+    docker exec -i "$library_identity_mysql" sh -c 'MYSQL_PWD="$MYSQL_MIGRATION_PASSWORD" exec mysql -u library_migrator --default-character-set=utf8mb4 --batch --raw --skip-column-names "$MYSQL_DATABASE"' < "$library_test/identity-persistence.sql" > "$library_test/identity-$library_identity_tag.tsv"
+    if [[ "$library_identity_tag" != before ]]; then
+        cmp --silent "$library_test/identity-before.tsv" "$library_test/identity-$library_identity_tag.tsv"
+    fi
+}
+library_identity_acceptance http://localhost:18089 "$library_test/install/.env" seed
+library_identity_acceptance http://localhost:18089 "$library_test/install/.env" snapshot-sql > "$library_test/identity-persistence.sql"
+library_identity_snapshot library before
+python3 - "$library_test/identity-before.tsv" <<'B35_NONEMPTY_PY'
+import re,sys
+from pathlib import Path
+rows=[line.split('\t') for line in Path(sys.argv[1]).read_text().splitlines()]
+assert rows and all(len(row)==2 and re.fullmatch('[0-9a-f]{64}',row[1]) for row in rows)
+required=set('catalog_publisher_profile catalog_publisher_alias catalog_category_profile catalog_category_alias catalog_book_publisher catalog_book_theme catalog_identity_request catalog_identity_candidate catalog_identity_event book-revision publisher-revision book_category-revision'.split())
+assert {row[0] for row in rows}==required,'Every B35 table and owned technical revision must be nonempty'
+print('B35 all nine tables contain synthetic business; original JSON byte hashes captured')
+B35_NONEMPTY_PY
+# END B35 IDENTITY SEED
 "${library_dc[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysql -u library_app -D "$MYSQL_DATABASE" -e "SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1"'
 if "${library_dc[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysql -u library_app -D "$MYSQL_DATABASE" -e "CREATE TABLE acceptance_ddl_probe (id INT)"' >/dev/null 2>&1; then
     echo 'Application account unexpectedly has schema-write privileges' >&2; exit 1
@@ -288,6 +522,10 @@ python3 "$library_release/scripts/container_smoke.py" --base http://localhost:18
 # BEGIN B33-A ATTRIBUTES RECREATE
 library_attributes_acceptance http://localhost:18089 "$library_test/install/.env" check
 # END B33-A ATTRIBUTES RECREATE
+# BEGIN B35 IDENTITY RECREATE
+library_identity_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_identity_snapshot library recreate
+# END B35 IDENTITY RECREATE
 echo 'Container recreate preserved data and files'
 python3 "$library_repo/scripts/package_release.py" acceptance-update
 # Reproduce a release whose JAR changes by one byte while keeping its size and
@@ -319,6 +557,10 @@ python3 "$library_release/scripts/container_smoke.py" --base http://localhost:18
 # BEGIN B33-A ATTRIBUTES UPDATE
 library_attributes_acceptance http://localhost:18089 "$library_test/install/.env" check
 # END B33-A ATTRIBUTES UPDATE
+# BEGIN B35 IDENTITY UPDATE
+library_identity_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_identity_snapshot library update
+# END B35 IDENTITY UPDATE
 echo 'Application update preserved data and files'
 python3 "$library_repo/scripts/package_release.py" acceptance-broken
 python3 - "$library_repo/dist/library-management-system-acceptance-broken.zip" <<'PY'
@@ -339,6 +581,10 @@ python3 "$library_release/scripts/container_smoke.py" --base http://localhost:18
 # BEGIN B33-A ATTRIBUTES FAILED_UPDATE
 library_attributes_acceptance http://localhost:18089 "$library_test/install/.env" check
 # END B33-A ATTRIBUTES FAILED_UPDATE
+# BEGIN B35 IDENTITY FAILED_UPDATE
+library_identity_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_identity_snapshot library failed_update
+# END B35 IDENTITY FAILED_UPDATE
 echo 'Failed-start rollback restored previous application and data'
 APP_VERSION="$(basename "$library_release")" bash "$library_release/scripts/backup.sh" "$library_test/backup"
 sed -e 's/18089/18090/g' -e 's/172.30.89/172.30.90/g' "$library_test/install/.env" > "$library_test/recovery/.env"
@@ -349,4 +595,8 @@ python3 "$library_release/scripts/container_smoke.py" --base http://localhost:18
 # BEGIN B33-A ATTRIBUTES RESTORE
 library_attributes_acceptance http://localhost:18090 "$library_test/recovery/.env" check
 # END B33-A ATTRIBUTES RESTORE
+# BEGIN B35 IDENTITY RESTORE
+library_identity_acceptance http://localhost:18090 "$library_test/recovery/.env" check
+library_identity_snapshot library-recovery restore
+# END B35 IDENTITY RESTORE
 echo 'First install, recreate, update, failed-start rollback, backup and isolated restore passed'

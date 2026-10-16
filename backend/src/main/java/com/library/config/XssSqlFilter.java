@@ -46,7 +46,8 @@ public class XssSqlFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String pathInfo = request.getRequestURI();
         String queryString = request.getQueryString();
-        boolean literalCatalog = "GET".equals(request.getMethod()) && "/catalog-books".equals(servletPath(request));
+        boolean literalCatalog = "GET".equals(request.getMethod()) && ("/catalog-books".equals(servletPath(request))
+                || "/catalog-identities/publishers".equals(servletPath(request)) || "/catalog-identities/categories".equals(servletPath(request)));
         boolean literalBarcode = "GET".equals(request.getMethod()) && "/book-copies".equals(servletPath(request));
         String[] barcodeValues = literalBarcode ? request.getParameterValues("barcode") : null;
         boolean duplicateBarcode = barcodeValues != null && barcodeValues.length != 1;
@@ -88,6 +89,7 @@ public class XssSqlFilter extends OncePerRequestFilter {
         return ("POST".equals(request.getMethod()) &&
                 (path.equals("/inventory-intakes/previews") || path.matches("/inventory-intakes/[0-9]+/confirm")
                 || path.equals("/catalog-attributes/previews") || path.matches("/catalog-attributes/[0-9]+/confirm")
+                || path.equals("/catalog-identities/previews") || path.matches("/catalog-identities/[0-9]+/confirm")
                 || path.equals("/book-copy-actions/previews") || path.equals("/book-copy-actions/v2/previews") || path.matches("/book-copy-actions/[0-9]+/confirm")
                 || path.equals("/stocktakes") || path.matches("/stocktakes/[0-9]+/(observations|corrections|coverage|change-checks|rechecks|prepares|confirm|cancel)")
                 || path.equals("/stocktake-resolutions") || path.matches("/stocktake-resolutions/[0-9]+/(link|revoke)")
