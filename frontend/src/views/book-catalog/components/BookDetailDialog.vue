@@ -12,22 +12,26 @@
     <template v-else-if="book">
       <div class="detail-body">
         <div class="detail-cover">
-          <img v-if="book.coverImage" :src="getCoverUrl(book.coverImage)" :alt="book.title" />
+          <img v-if="book.coverImage" :src="getCoverUrl(book.coverImage)" :alt="bookDisplayTitle(book)" />
           <div v-else class="cover-placeholder-lg">
-            <span>{{ book.title.charAt(0) }}</span>
+            <span>{{ bookDisplayTitle(book).charAt(0) }}</span>
           </div>
           <div class="cover-actions">
-            <el-button type="primary" size="large" round @click="handleBorrow" :disabled="book.stockAvailable <= 0">
-              {{ book.stockAvailable > 0 ? '生成借阅码' : '暂无库存' }}
+            <el-button type="primary" size="large" round @click="handleBorrow" :disabled="loading || generating || (book.stockAvailable ?? 0) <= 0">
+              {{ (book.stockAvailable ?? 0) > 0 ? '生成借阅码' : '暂无库存' }}
             </el-button>
           </div>
         </div>
 
         <div class="detail-info">
-          <h2 class="detail-title">{{ book.title }}</h2>
+          <h2 class="detail-title">{{ bookDisplayTitle(book) }}</h2>
           <p class="detail-author">{{ book.author || '未知作者' }}<span v-if="book.publisher"> · {{ book.publisher }}</span></p>
 
           <div class="info-grid">
+            <div class="info-item"><span class="info-label">登记书名</span><span>{{ book.catalogTitle }}</span></div>
+            <div class="info-item"><span class="info-label">已采用来源原书名</span><span>{{ book.adoptedSourceTitle ?? '未设置' }}</span></div>
+            <div class="info-item"><span class="info-label">装帧</span><span>{{ bindingText(book.bindingCode) }}</span></div>
+            <div class="info-item"><span class="info-label">适读年龄标签</span><span>{{ ageText(book.ageLabels) }}</span></div>
             <div class="info-item">
               <span class="info-label">ISBN</span>
               <span class="info-value">{{ book.isbn || '-' }}</span>
@@ -54,7 +58,7 @@
             </div>
             <div class="info-item">
               <span class="info-label">可借册数</span>
-              <span class="info-value" :class="{ 'stock-low': book.stockAvailable <= 3, 'stock-out': book.stockAvailable <= 0 }">
+              <span class="info-value" :class="{ 'stock-low': (book.stockAvailable ?? 0) <= 3, 'stock-out': (book.stockAvailable ?? 0) <= 0 }">
                 {{ displayValue(book.stockAvailable, '待核实') }} 册
               </span>
             </div>
@@ -74,7 +78,7 @@
 
     <template #footer>
       <el-button @click="emit('update:visible', false)">关闭</el-button>
-      <el-button type="primary" @click="handleBorrow" :disabled="!book || book.stockAvailable <= 0">生成借阅码</el-button>
+      <el-button type="primary" @click="handleBorrow" :disabled="loading || generating || !book || (book.stockAvailable ?? 0) <= 0">生成借阅码</el-button>
     </template>
   </el-dialog>
 </template>
@@ -82,42 +86,36 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getBookById } from '@/api/book'
+import { getCatalogBook, type CatalogBook } from '@/api/catalogAttribute'
+import { bookDisplayTitle, ageText, bindingText } from '@/utils/catalogAttributes'
 import { generateBorrowCode } from '@/api/borrowCode'
-import type { Book } from '@/types'
 import { displayValue, displayPrice } from '@/utils/display'
 
 const props = defineProps<{ visible: boolean; bookId: number | null }>()
 const emit = defineEmits<{ (e: 'update:visible', val: boolean): void; (e: 'borrowed'): void }>()
 
 const loading = ref(false)
-const book = ref<Book | null>(null)
+const book = ref<CatalogBook | null>(null), generating = ref(false)
+let detailRequest = 0
 
-watch(() => props.visible, (val) => {
-  if (val && props.bookId) {
-    fetchDetail()
-  }
-})
-
+watch(() => [props.visible, props.bookId], () => { ++detailRequest; book.value = null; if (props.visible && props.bookId) fetchDetail() }, { immediate: true })
 async function fetchDetail() {
   if (!props.bookId) return
-  loading.value = true
-  try {
-    book.value = await getBookById(props.bookId)
-  } catch {
-    book.value = null
-  } finally {
-    loading.value = false
-  }
+  const request = ++detailRequest, id = props.bookId; loading.value = true
+  try { const result = await getCatalogBook(id); if (request === detailRequest && props.visible && props.bookId === id) book.value = result }
+  catch { if (request === detailRequest) book.value = null }
+  finally { if (request === detailRequest) loading.value = false }
 }
 
 async function handleBorrow() {
-  if (!book.value || book.value.stockAvailable <= 0) return
+  if (!book.value || (book.value.stockAvailable ?? 0) <= 0 || generating.value || loading.value) return
+  const selected = book.value, request = detailRequest; generating.value = true
   try {
-    const codeRes = await generateBorrowCode(book.value.id)
+    const codeRes = await generateBorrowCode(selected.id)
+    if (request !== detailRequest || !props.visible || props.bookId !== selected.id) return
     const borrowCode = codeRes?.code || '未知'
     ElMessageBox.alert(
-      `已为您生成借阅码《${book.value.title}》！\n\n您的借阅码为：${borrowCode}\n有效期30分钟，核销后完成借阅。借阅码不预留库存，请及时核销。`,
+      `已为您生成借阅码《${bookDisplayTitle(selected)}》！\n\n您的借阅码为：${borrowCode}\n有效期30分钟，核销后完成借阅。借阅码不预留库存，请及时核销。`,
       '已生成借阅码，核销后完成借阅',
       { confirmButtonText: '我知道了', type: 'success' }
     )
@@ -125,7 +123,7 @@ async function handleBorrow() {
     emit('borrowed')
   } catch (error: any) {
     ElMessage.error(error.message || '借阅失败')
-  }
+  } finally { generating.value = false }
 }
 
 function getCoverUrl(url: string) {

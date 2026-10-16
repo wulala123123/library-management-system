@@ -14,7 +14,7 @@
 
       <el-table v-loading="loading" :data="inventoryList" stripe border size="default">
         <el-table-column prop="id" label="ID" width="70" align="center" />
-        <el-table-column prop="title" label="图书名称" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="title" label="登记书名" min-width="180" show-overflow-tooltip />
         <el-table-column prop="isbn" label="ISBN" width="140" show-overflow-tooltip />
         <el-table-column label="库位" min-width="140" show-overflow-tooltip><template #default="{ row }">{{ displayValue(row.location) }}</template></el-table-column>
         <el-table-column prop="stockTotal" label="实体册总数（册）" width="140" align="center" />

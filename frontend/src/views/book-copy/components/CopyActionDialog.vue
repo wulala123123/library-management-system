@@ -16,7 +16,7 @@
           </el-form>
           <el-alert v-if="action === 'RESTORE'" title="恢复只回到临时停用：总库存 +1，可借不变。请明确现在位置，核实可借后另办启用。" type="info" :closable="false" />
           <article v-for="draft in drafts" :key="draft.context.copy.id" class="copy-draft">
-            <strong>{{ draft.context.copy.book.title }}</strong>
+            <strong>登记书名：{{ draft.context.copy.book.title }}</strong>
             <p>实体册 {{ draft.context.copy.id }} · 条码 <code>{{ rawText(draft.context.copy.barcode) }}</code>（{{ utf8Bytes(draft.context.copy.barcode) }} 字节）</p>
             <p>{{ stateLabel(draft.context.copy) }} · 原版本 {{ draft.context.copy.actionVersion }}</p>
             <CopyPlacement :placement="draft.context.copy.placement" :raw-text="draft.context.copy.location" :anomaly="draft.context.copy.locationReferenceAnomaly" />

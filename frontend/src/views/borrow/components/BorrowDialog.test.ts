@@ -4,6 +4,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 
 const api = vi.hoisted(() => ({ search: vi.fn(), borrow: vi.fn() }))
 vi.mock('@/api/user', () => ({ searchUsers: api.search }))
+vi.mock('@/api/catalogAttribute', () => ({ getCatalogBooks: vi.fn().mockResolvedValue({ records: [] }) }))
 vi.mock('@/api/book', () => ({ getBookPage: vi.fn().mockResolvedValue({ records: [] }), getBookCopies: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/api/borrow', () => ({ adminBorrowBook: api.borrow }))
 vi.mock('element-plus', () => ({ ElMessage: { success: vi.fn(), error: vi.fn() } }))

@@ -2,6 +2,7 @@
   <el-dialog :model-value="visible" :title="isEdit ? '编辑书目资料' : '新书目与首批实体册'" width="720px" :close-on-click-modal="false" :close-on-press-escape="!loading && !intakeVisible" :before-close="beforeClose">
     <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" />
     <el-alert v-if="isEdit" title="这里只保存书目资料。增加库存请使用“登记实体册”，现有总数和可借数由业务流程维护。" type="info" :closable="false" />
+    <section v-if="isEdit || createdBookId" class="attribute-entry"><p>{{ createdBookId ? '入库已完成，属性待补充；属性第二步失败不重复入库。' : '展示名称、装帧和年龄标签独立预览确认，保存反馈与登记资料分开。' }}</p><el-button :disabled="loading || intakeVisible" @click="attributeVisible = true">独立编辑书目属性</el-button><p v-if="attributeSaved">本书属性已独立保存；登记资料表单的未保存输入仍保留。</p></section>
     <el-form v-if="canManage" ref="formRef" :model="form" :rules="rules" :disabled="loading || !!loadError" label-width="100px" size="default">
       <div class="cover-upload-section">
         <label class="section-label">封面图片</label>
@@ -39,7 +40,7 @@
         </el-col>
       </el-row>
 
-      <el-form-item label="书名" prop="title"><el-input v-model="form.title" placeholder="请输入书名" /></el-form-item>
+      <el-form-item label="登记书名" prop="title"><el-input v-model="form.title" placeholder="请输入书名" /></el-form-item>
       <el-form-item label="作者" prop="author"><el-input v-model="form.author" placeholder="请输入作者" /></el-form-item>
 
       <el-row :gutter="20">
@@ -66,10 +67,11 @@
 
     <template #footer>
       <el-button :disabled="loading || intakeVisible" @click="handleClose">取消</el-button>
-      <el-button v-if="canManage" type="primary" :loading="loading" :disabled="!!loadError || intakeVisible" @click="handleSubmit">{{ isEdit ? '保存书目资料' : '下一步：登记实体册' }}</el-button>
+      <el-button v-if="canManage && !created" type="primary" :loading="loading" :disabled="!!loadError || intakeVisible" @click="handleSubmit">{{ isEdit ? '保存书目资料' : '下一步：登记实体册' }}</el-button>
     </template>
   </el-dialog>
   <IntakeDialog :visible="intakeVisible" :new-book="preparedBook" @update:visible="onIntakeVisible" @success="onIntakeSuccess" />
+  <BookAttributeDialog v-model:visible="attributeVisible" :book-id="createdBookId || bookId" :intake-completed="!!createdBookId" @success="onAttributeSuccess" />
 </template>
 
 <script setup lang="ts">
@@ -82,6 +84,7 @@ import { getCategoryList } from '@/api/category'
 import { useUserStore } from '@/store/modules/user'
 import type { IntakeReceipt } from '@/api/inventoryIntake'
 import IntakeDialog from './IntakeDialog.vue'
+import BookAttributeDialog from './BookAttributeDialog.vue'
 import { metadataChanges, metadataKeys } from './intakeDraft'
 
 interface Props { visible: boolean; bookId: number | null }
@@ -99,6 +102,9 @@ const isEdit = computed(() => !!props.bookId)
 const categories = ref<any[]>([])
 const loadError = ref(''), metadataDigest = ref(''), original = ref<Partial<BookMetadata>>({})
 const intakeVisible = ref(false), preparedBook = ref<BookMetadata | null>(null), created = ref(false)
+const createdBookId = ref<number | null>(null), attributeVisible = ref(false), attributeSaved = ref(false)
+let detailRequest = 0
+function onAttributeSuccess() { attributeSaved.value = true; emit('success') }
 
 const form = reactive({
   isbn: '', title: '', author: '' as string | null, publisher: '' as string | null, publishDate: null as string | null,
@@ -115,27 +121,30 @@ const rules: FormRules = {
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
 }
 
-watch(() => props.visible, async (val) => {
-  if (val) {
+watch(() => [props.visible, props.bookId], async () => {
+  const request = ++detailRequest
+  if (props.visible) {
     if (!canManage.value) return
-    loadError.value = ''; created.value = false
+    resetForm(); loadError.value = ''; created.value = false; createdBookId.value = null; attributeSaved.value = false
     try {
-      categories.value = await getCategoryList() || []
+      const values = await getCategoryList() || []; if (request === detailRequest) categories.value = values
     } catch {}
-    if (props.bookId) await loadBookDetail()
+    if (request === detailRequest && props.bookId) await loadBookDetail()
   } else resetForm()
 })
 
 async function loadBookDetail() {
+  const request = ++detailRequest, id = props.bookId!
   loading.value = true
   try {
-    const { book, metadataDigest: digest } = await getBookMetadata(props.bookId!)
+    const { book, metadataDigest: digest } = await getBookMetadata(id)
+    if (request !== detailRequest || !props.visible || props.bookId !== id) return
     const values = Object.fromEntries(metadataKeys.map(key => [key, book[key] ?? null]))
     Object.assign(form, values); original.value = { ...values }; metadataDigest.value = digest
     previewUrl.value = ''
     pendingFile.value = null
-  } catch { loadError.value = '书目资料读取失败，请关闭后重试，当前不能保存。' }
-  finally { loading.value = false }
+  } catch { if (request === detailRequest) loadError.value = '书目资料读取失败，请关闭后重试，当前不能保存。' }
+  finally { if (request === detailRequest) loading.value = false }
 }
 
 function resetForm() {
@@ -169,7 +178,7 @@ function removeCover() {
 
 function handleClose() { if (!loading.value && !intakeVisible.value) emit('update:visible', false) }
 function beforeClose(done: () => void) { if (!loading.value && !intakeVisible.value) { handleClose(); done() } }
-function onIntakeVisible(value: boolean) { intakeVisible.value = value; if (!value && created.value) handleClose() }
+function onIntakeVisible(value: boolean) { intakeVisible.value = value }
 async function savePendingCover(bookId: number) {
   const file = pendingFile.value
   if (!file) return
@@ -181,12 +190,13 @@ async function savePendingCover(bookId: number) {
 async function onIntakeSuccess(receipt: IntakeReceipt) {
   created.value = true
   const bookId = receipt.copies[0]?.bookId
+  createdBookId.value = bookId ?? null
   if (bookId) await savePendingCover(bookId)
   emit('success')
 }
 
 async function handleSubmit() {
-  if (!canManage.value || !formRef.value || loading.value || loadError.value || intakeVisible.value) return
+  if (!canManage.value || !formRef.value || loading.value || loadError.value || intakeVisible.value || created.value) return
   try { await formRef.value.validate() } catch { return }
   if (loading.value) return
   loading.value = true

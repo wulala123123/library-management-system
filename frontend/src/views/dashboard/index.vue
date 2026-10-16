@@ -87,7 +87,7 @@
       <div class="panel-card hot-panel animate-fade-in">
         <div class="panel-header">
           <h3>热门图书</h3>
-          <span>已接入借阅明细排行</span>
+          <span>已接入借阅明细排行 · 登记书名</span>
         </div>
         <div v-if="hotBooks.length" class="hot-list">
           <div v-for="(book, i) in hotBooks" :key="i" class="hot-item">

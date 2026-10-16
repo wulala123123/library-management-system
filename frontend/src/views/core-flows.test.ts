@@ -4,6 +4,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 
 const api = vi.hoisted(() => ({ login: vi.fn(), captcha: vi.fn(), code: vi.fn(), borrow: vi.fn(), verify: vi.fn(), push: vi.fn(), myBorrows: vi.fn(), returnBook: vi.fn(), renew: vi.fn(), orders: vi.fn(), instock: vi.fn(), role: 'READER' }))
 vi.mock('@/api/auth', () => ({ loginApi: api.login, getCaptchaImage: api.captcha, registerApi: vi.fn() }))
+vi.mock('@/api/catalogAttribute', () => ({ getCatalogBook: vi.fn().mockResolvedValue({ id: 7, catalogTitle: '测试图书', displayTitle: '测试图书', stockAvailable: 1, bindingCode: null, ageLabels: null }), getCatalogBooks: vi.fn().mockResolvedValue({ records: [] }) }))
 vi.mock('@/api/book', () => ({ getBookById: vi.fn().mockResolvedValue({ id: 7, title: '测试图书', stockAvailable: 1 }), getBookPage: vi.fn() }))
 vi.mock('@/api/borrowCode', () => ({ generateBorrowCode: api.code, verifyBorrowCode: api.verify, getMyBorrowCodes: vi.fn().mockResolvedValue({ records: [] }), getBorrowCodePage: vi.fn().mockResolvedValue({ records: [], total: 0 }), invalidateBorrowCode: vi.fn() }))
 vi.mock('@/api/borrow', () => ({ borrowBook: api.borrow, getMyBorrows: api.myBorrows, selfReturnBook: api.returnBook, renewBook: api.renew }))

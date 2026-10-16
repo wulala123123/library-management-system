@@ -23,7 +23,7 @@ const digest = 'a'.repeat(64)
 const book = { id: 10, isbn: '9781234567890', title: '已有图书', categoryId: 7, stockTotal: 5, location: 'A区-3层-01架' }
 async function dialog(bookId: number | null = null, realIntake = false) {
   const wrapper = mount(BookDialog, { props: { visible: false, bookId }, attachTo: document.body,
-    global: { plugins: [ElementPlus], stubs: { teleport: true, transition: false, ElSelect: select, ElOption: option, ...(realIntake ? {} : { IntakeDialog: intake }) } } })
+    global: { plugins: [ElementPlus], stubs: { teleport: true, transition: false, ElSelect: select, ElOption: option, BookAttributeDialog: true, ...(realIntake ? {} : { IntakeDialog: intake }) } } })
   wrappers.push(wrapper); await wrapper.setProps({ visible: true }); await flushPromises(); return wrapper
 }
 async function required(wrapper: ReturnType<typeof mount>) {
@@ -151,4 +151,26 @@ it('cover failure after a receipt keeps successful intake separate and never res
 it('makes no management requests when a reader opens the form', async () => {
   Object.assign(api.user, { isAdmin: false, isLibrarian: false }); await dialog(10)
   expect(api.detail).not.toHaveBeenCalled(); expect(api.categories).not.toHaveBeenCalled(); expect(api.update).not.toHaveBeenCalled()
+})
+it('keeps new-book intake success final when the independent attribute step fails or is reopened', async () => {
+  const wrapper = await dialog(); await required(wrapper); await submit(wrapper)
+  await wrapper.get('[data-test="receipt"]').trigger('click'); await flushPromises()
+  wrapper.findComponent(intake).vm.$emit('update:visible', false); await flushPromises()
+  expect(wrapper.text()).toContain('入库已完成，属性待补充')
+  expect(wrapper.findAll('button').some(button => button.text().trim() === '下一步：登记实体册')).toBe(false)
+  await wrapper.findAll('button').find(button => button.text().trim() === '独立编辑书目属性')!.trigger('click'); await flushPromises()
+  const attributes = wrapper.findComponent({ name: 'BookAttributeDialog' })
+  expect(attributes.props('bookId')).toBe(10); expect(attributes.props('intakeCompleted')).toBe(true)
+  attributes.vm.$emit('update:visible', false); await flushPromises()
+  await wrapper.findAll('button').find(button => button.text().trim() === '独立编辑书目属性')!.trigger('click'); await flushPromises()
+  expect(wrapper.find('[data-test="new-intake"]').exists()).toBe(false)
+  expect(api.preview).not.toHaveBeenCalled(); expect(api.update).not.toHaveBeenCalled()
+})
+it('saving independent attributes keeps unsaved registration metadata input for its own later save', async () => {
+  const wrapper = await dialog(10)
+  await wrapper.get('input[placeholder="请输入书名"]').setValue('尚未保存的登记名')
+  await wrapper.findAll('button').find(button => button.text().trim() === '独立编辑书目属性')!.trigger('click'); await flushPromises()
+  wrapper.findComponent({ name: 'BookAttributeDialog' }).vm.$emit('success'); await flushPromises()
+  expect((wrapper.get('input[placeholder="请输入书名"]').element as HTMLInputElement).value).toBe('尚未保存的登记名')
+  expect(wrapper.text()).toContain('登记资料表单的未保存输入仍保留'); expect(api.update).not.toHaveBeenCalled()
 })

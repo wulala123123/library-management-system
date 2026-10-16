@@ -1,6 +1,6 @@
 <template>
   <el-dialog :model-value="visible" title="办理借阅" width="520px" :close-on-click-modal="false" @close="handleClose">
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="90px" size="default">
+    <el-form ref="formRef" :model="form" :rules="rules" :disabled="submitting" label-width="90px" size="default">
       <el-form-item label="选择读者" prop="userId">
         <el-select v-model="form.userId" filterable remote placeholder="搜索姓名/手机号/卡号/登录账号" style="width: 100%" :remote-method="searchUsers" :loading="userLoading">
           <el-option v-for="u in userOptions" :key="u.id" :label="borrowerLabel(u)" :value="u.id" />
@@ -9,14 +9,16 @@
 
       <el-form-item label="选择图书" prop="bookId">
         <el-select v-model="form.bookId" filterable remote placeholder="搜索图书名称/ISBN/馆内条码" style="width: 100%" :remote-method="searchBooks" :loading="bookLoading" @change="loadCopies">
-          <el-option v-for="b in bookOptions" :key="b.id" :label="`${b.title} (${b.isbn})`" :value="b.id">
+          <el-option v-for="b in bookOptions" :key="b.id" :label="`${bookDisplayTitle(b)} (${b.isbn ?? '未设置ISBN'})`" :value="b.id">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span>{{ b.title }}</span>
+              <span>{{ bookDisplayTitle(b) }}</span>
               <span style="color: #999; font-size: 12px;">库存:{{ b.stockAvailable ?? b.stockTotal }}</span>
             </div>
           </el-option>
         </el-select>
       </el-form-item>
+
+      <p v-if="selectedBook">本次选择展示名称：{{ bookDisplayTitle(selectedBook) }}</p>
 
       <el-form-item v-if="copyOptions.length" label="馆内条码">
         <el-select v-model="form.copyId" placeholder="自动分配可借册" clearable style="width: 100%">
@@ -41,11 +43,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { computed, ref, reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { adminBorrowBook } from '@/api/borrow'
-import { getBookPage, getBookCopies, type BookCopy } from '@/api/book'
+import { getBookCopies, type BookCopy } from '@/api/book'
+import { getCatalogBooks, type CatalogBook } from '@/api/catalogAttribute'
+import { bookDisplayTitle } from '@/utils/catalogAttributes'
 import { searchUsers as searchUsersApi, type BorrowerSummary } from '@/api/user'
 import { displayValue } from '@/utils/display'
 import CopyPlacement from '@/components/locations/CopyPlacement.vue'
@@ -61,11 +65,13 @@ const userLoading = ref(false)
 const bookLoading = ref(false)
 
 const userOptions = ref<BorrowerSummary[]>([])
-const bookOptions = ref<any[]>([])
+const bookOptions = ref<CatalogBook[]>([])
+const selectedBook = computed(() => bookOptions.value.find(book => book.id === form.bookId))
 const copyOptions = ref<BookCopy[]>([])
 const bookSearchText = ref('')
 let copyRequest = 0
 let userRequest = 0
+let bookRequest = 0
 const borrowerLabel = (user: BorrowerSummary) => `${displayValue(user.realName, '未设置姓名')} · ${user.username} · 卡号 ${displayValue(user.cardNo)} · ${displayValue(user.phone, '未设置手机号')}`
 
 const form = reactive({
@@ -82,9 +88,7 @@ const rules: FormRules = {
   borrowDays: [{ required: true, message: '请输入借阅天数', trigger: 'blur' }],
 }
 
-watch(() => props.visible, (val) => {
-  if (val) resetForm()
-})
+watch(() => props.visible, () => { resetForm() })
 
 function resetForm() {
   if (formRef.value) formRef.value.resetFields()
@@ -95,6 +99,7 @@ function resetForm() {
   bookSearchText.value = ''
   copyRequest++
   userRequest++
+  bookRequest++; bookLoading.value = false
 }
 
 async function loadCopies(id: number) {
@@ -103,7 +108,7 @@ async function loadCopies(id: number) {
   copyOptions.value = []
   try {
     const copies = await getBookCopies(id)
-    if (request !== copyRequest) return
+    if (request !== copyRequest || !props.visible || form.bookId !== id) return
     copyOptions.value = copies || []
     const exactCopy = copies?.find(c => c.barcode === bookSearchText.value)
     form.copyId = exactCopy?.id
@@ -122,22 +127,24 @@ async function searchUsers(query: string) {
 }
 
 async function searchBooks(query: string) {
-  if (!query || query.length < 1) return
+  const request = ++bookRequest
+  if (!query.length || !props.visible) { bookOptions.value = []; bookLoading.value = false; return }
   bookLoading.value = true
   bookSearchText.value = query
   try {
-    const res = await getBookPage({ page: 1, size: 20, keyword: query })
-    bookOptions.value = res?.records || []
-  } catch { bookOptions.value = [] } finally { bookLoading.value = false }
+    const res = await getCatalogBooks({ page: 1, size: 20, keyword: query })
+    if (request === bookRequest && props.visible) bookOptions.value = res?.records || []
+  } catch { if (request === bookRequest) bookOptions.value = [] } finally { if (request === bookRequest) bookLoading.value = false }
 }
 
-function handleClose() { emit('update:visible', false) }
+function handleClose() { if (!submitting.value) emit('update:visible', false) }
 
 async function handleSubmit() {
-  if (!formRef.value) return
+  if (!formRef.value || submitting.value || bookLoading.value || !selectedBook.value) return
+  const selection = selectedBook.value
   await formRef.value.validate(async (valid) => {
-    if (!valid) return
-    submitting.value = true
+    if (!valid || form.bookId !== selection.id || !props.visible) return
+    const title = bookDisplayTitle(selection); submitting.value = true
     try {
       await adminBorrowBook({
         userId: form.userId!,
@@ -146,8 +153,8 @@ async function handleSubmit() {
         borrowDays: form.borrowDays,
         remark: form.remark || undefined,
       })
-      ElMessage.success('借阅办理成功')
-      handleClose()
+      ElMessage.success(`《${title}》借阅办理成功`)
+      emit('update:visible', false)
       emit('success')
     } catch (e: any) {
       ElMessage.error(e.message || '借阅失败')

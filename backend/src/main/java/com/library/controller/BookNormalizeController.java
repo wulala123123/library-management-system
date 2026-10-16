@@ -27,6 +27,7 @@ public class BookNormalizeController {
 
     private final BookMapper bookMapper;
     private final BookNormalizeLogMapper normalizeLogMapper;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @Operation(summary = "获取待规范化图书列表")
     @GetMapping("/pending")
@@ -80,6 +81,7 @@ public class BookNormalizeController {
         logEntry.setNewPublisher(book.getPublisher());
 
         bookMapper.updateById(book);
+        com.library.catalogattributes.CatalogAttributeHistory.recordLegacyTitleChange(jdbc, id, logEntry.getOldTitle(), book.getTitle(), "LEGACY_BOOK_NORMALIZE");
         normalizeLogMapper.insert(logEntry);
 
         return Result.success(book);
@@ -121,6 +123,7 @@ public class BookNormalizeController {
             logEntry.setNewPublisher(book.getPublisher());
 
             bookMapper.updateById(book);
+            com.library.catalogattributes.CatalogAttributeHistory.recordLegacyTitleChange(jdbc, book.getId(), logEntry.getOldTitle(), book.getTitle(), "LEGACY_BOOK_NORMALIZE");
             normalizeLogMapper.insert(logEntry);
             count++;
         }

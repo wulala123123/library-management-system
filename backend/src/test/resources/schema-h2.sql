@@ -631,3 +631,93 @@ CREATE TABLE IF NOT EXISTS stocktake_resolution_event (
  CONSTRAINT ck_stocktake_resolution_event CHECK(kind IN ('DECIDE','INTENT','LINK','REVOKE'))
 );
 -- Only application append/read APIs; no hard database immutability claim.
+
+CREATE ALIAS IF NOT EXISTS JSON_VALID FOR "com.library.catalogattributes.CatalogAttributeH2Json.valid";
+CREATE ALIAS IF NOT EXISTS JSON_EXTRACT FOR "com.library.catalogattributes.CatalogAttributeH2Json.extract";
+CREATE ALIAS IF NOT EXISTS JSON_TYPE FOR "com.library.catalogattributes.CatalogAttributeH2Json.type";
+CREATE ALIAS IF NOT EXISTS JSON_CONTAINS_PATH FOR "com.library.catalogattributes.CatalogAttributeH2Json.contains";
+CREATE TABLE IF NOT EXISTS catalog_book_attribute (
+ book_id BIGINT NOT NULL PRIMARY KEY,
+ revision BIGINT NOT NULL DEFAULT 0,
+ display_title_override VARCHAR(200) NULL,
+ display_origin VARCHAR(8) NOT NULL DEFAULT 'UNKNOWN',
+ adopted_source_title VARCHAR(200) NULL,
+ binding_code VARCHAR(16) NULL,
+ binding_origin VARCHAR(8) NOT NULL DEFAULT 'UNKNOWN',
+ age_known TINYINT NOT NULL DEFAULT 0,
+ age_origin VARCHAR(8) NOT NULL DEFAULT 'UNKNOWN',
+ updated_at DATETIME NOT NULL,
+ CONSTRAINT fk_catalog_attribute_book FOREIGN KEY(book_id) REFERENCES book(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_catalog_attribute_revision CHECK(revision>=0),
+ CONSTRAINT ck_catalog_display_origin CHECK(display_origin IN ('UNKNOWN','MANUAL','SOURCE')),
+ CONSTRAINT ck_catalog_binding_origin CHECK(binding_origin IN ('UNKNOWN','MANUAL','SOURCE')),
+ CONSTRAINT ck_catalog_age_origin CHECK(age_origin IN ('UNKNOWN','MANUAL','SOURCE')),
+ CONSTRAINT ck_catalog_binding_code CHECK(binding_code IS NULL OR binding_code IN ('BOARD','PAPERBACK','HARDCOVER')),
+ CONSTRAINT ck_catalog_age_known CHECK(age_known IN (0,1)),
+ CONSTRAINT ck_catalog_display_shape CHECK((display_origin<>'UNKNOWN' OR display_title_override IS NULL) AND (display_origin<>'SOURCE' OR display_title_override IS NOT NULL)),
+ CONSTRAINT ck_catalog_binding_shape CHECK((binding_origin<>'UNKNOWN' OR binding_code IS NULL) AND (binding_origin<>'SOURCE' OR binding_code IS NOT NULL)),
+ CONSTRAINT ck_catalog_age_shape CHECK((age_origin<>'UNKNOWN' OR age_known=0) AND (age_origin<>'SOURCE' OR age_known=1))
+);
+
+CREATE TABLE IF NOT EXISTS catalog_book_age_label (
+ book_id BIGINT NOT NULL,
+ label_code VARCHAR(16) NOT NULL,
+ PRIMARY KEY(book_id,label_code),
+ KEY idx_catalog_age_label(label_code,book_id),
+ CONSTRAINT fk_catalog_age_attribute FOREIGN KEY(book_id) REFERENCES catalog_book_attribute(book_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_catalog_age_code CHECK(label_code IN ('AGE_0_2','AGE_3_4','AGE_5_6','AGE_7_9','AGE_10_12'))
+);
+
+CREATE TABLE IF NOT EXISTS catalog_attribute_request (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ operation_key VARBINARY(128) NOT NULL,
+ actor_id BIGINT NOT NULL,
+ mode VARCHAR(8) NOT NULL,
+ input_hash CHAR(64) NOT NULL,
+ schema_version INT NOT NULL DEFAULT 1,
+ request_json LONGTEXT NOT NULL,
+ preview_json LONGTEXT NOT NULL,
+ preview_digest CHAR(64) NOT NULL,
+ state VARCHAR(12) NOT NULL,
+ created_at DATETIME NOT NULL,
+ expires_at DATETIME NOT NULL,
+ receipt_json LONGTEXT NULL,
+ committed_at DATETIME NULL,
+ UNIQUE KEY uk_catalog_attribute_key(operation_key),
+ KEY idx_catalog_attribute_actor(actor_id,id),
+ CONSTRAINT ck_catalog_request_mode CHECK(mode IN ('MANUAL','SOURCE')),
+ CONSTRAINT ck_catalog_request_version CHECK(schema_version=1),
+ CONSTRAINT ck_catalog_request_input CHECK(JSON_VALID(request_json)),
+ CONSTRAINT ck_catalog_request_preview CHECK(JSON_VALID(preview_json)),
+ CONSTRAINT ck_catalog_request_receipt CHECK(receipt_json IS NULL OR JSON_VALID(receipt_json)),
+ CONSTRAINT ck_catalog_request_state CHECK((state='PREVIEWED' AND receipt_json IS NULL AND committed_at IS NULL) OR (state='COMMITTED' AND receipt_json IS NOT NULL AND committed_at IS NOT NULL))
+);
+
+CREATE TABLE IF NOT EXISTS catalog_attribute_event (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ book_id BIGINT NOT NULL,
+ request_id BIGINT NULL,
+ kind VARCHAR(16) NOT NULL,
+ before_revision BIGINT NOT NULL,
+ after_revision BIGINT NOT NULL,
+ schema_version INT NOT NULL DEFAULT 1,
+ changed_fields_json LONGTEXT NOT NULL,
+ before_json LONGTEXT NOT NULL,
+ after_json LONGTEXT NOT NULL,
+ source_evidence_json LONGTEXT NULL,
+ actor_id BIGINT NOT NULL,
+ occurred_at DATETIME NOT NULL,
+ reason VARCHAR(500) NOT NULL,
+ UNIQUE KEY uk_catalog_event_revision(book_id,after_revision),
+ KEY idx_catalog_event_book(book_id,id),
+ KEY idx_catalog_event_request(request_id,id),
+ CONSTRAINT fk_catalog_event_book FOREIGN KEY(book_id) REFERENCES book(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT fk_catalog_event_request FOREIGN KEY(request_id) REFERENCES catalog_attribute_request(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_catalog_event_revision CHECK(before_revision>=0 AND after_revision=before_revision+1),
+ CONSTRAINT ck_catalog_event_version CHECK(schema_version=1),
+ CONSTRAINT ck_catalog_event_kind CHECK((kind='LEGACY_TITLE' AND request_id IS NULL AND source_evidence_json IS NULL) OR (kind='MANUAL' AND request_id IS NOT NULL AND source_evidence_json IS NULL) OR (kind='SOURCE' AND request_id IS NOT NULL AND source_evidence_json IS NOT NULL)),
+ CONSTRAINT ck_catalog_event_fields CHECK(JSON_VALID(changed_fields_json)),
+ CONSTRAINT ck_catalog_event_before CHECK(JSON_VALID(before_json)),
+ CONSTRAINT ck_catalog_event_after CHECK(JSON_VALID(after_json)),
+ CONSTRAINT ck_catalog_event_source CHECK(source_evidence_json IS NULL OR JSON_VALID(source_evidence_json))
+);

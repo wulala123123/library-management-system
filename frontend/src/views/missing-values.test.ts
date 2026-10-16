@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 const api = vi.hoisted(() => ({ detail: vi.fn(), books: vi.fn(), members: vi.fn() }))
 vi.mock('@/api/book', () => ({ getBookById: api.detail, getBookPage: api.books, deleteBook: vi.fn(), createBook: vi.fn(), updateBook: vi.fn(), uploadBookCover: vi.fn() }))
+vi.mock('@/api/catalogAttribute', () => ({ getCatalogBook: api.detail, getCatalogBooks: api.books }))
 vi.mock('@/api/category', () => ({ getCategoryList: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/store/modules/user', () => ({ useUserStore: () => ({ isAdmin: true, isLibrarian: false }) }))
 vi.mock('@/api/borrowCode', () => ({ generateBorrowCode: vi.fn() }))
@@ -22,7 +23,7 @@ const column = defineComponent({ props: ['prop', 'label'], setup(props, { slots 
 const stubs = { ElDialog: slot, ElButton: slot, ElForm: slot, ElFormItem: slot, ElInput: true, ElSelect: true, ElRadioGroup: true, ElRadioButton: true, ElImage: true, ElTag: slot, ElTable: table, ElTableColumn: column, ElPagination: true, ElTabs: slot, ElTabPane: slot, ElDescriptions: slot, ElDescriptionsItem: slot, ElEmpty: slot, BookDialog: true, BookDetailDialog: true }
 const wrappers: ReturnType<typeof mount>[] = []
 function page(component: any, props = {}) { const wrapper = mount(component, { props, global: { stubs, directives: { loading: () => {} } } }); wrappers.push(wrapper); return wrapper }
-const book = { id: 1, title: '合成测试图书', isbn: '0000123', pages: 0, price: 0, publishDate: null, location: '  ', description: null, stockTotal: 0, stockAvailable: 0, createTime: '2026-10-15' }
+const book = { id: 1, title: '合成测试图书', catalogTitle: '合成测试图书', displayTitle: '合成测试图书', adoptedSourceTitle: null, bindingCode: null, ageLabels: null, isbn: '0000123', pages: 0, price: 0, publishDate: null, location: '  ', description: null, stockTotal: 0, stockAvailable: 0, createTime: '2026-10-15' }
 beforeEach(() => {
   vi.clearAllMocks()
   api.detail.mockResolvedValue(book)

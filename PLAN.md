@@ -8,7 +8,7 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | 阶段3 B33-A精确契约与实现；B35、B34及B36补录独立接续 |
-| 工作项状态 | B32盘点18ecdb6已验收上线；真实BOOK两步只读核对完成（1008条/988书目、六字段同书无冲突）；B33-A契约已验收，后端/前端及发布准备执行中；未采用真实值或改生产资料 |
+| 工作项状态 | B32盘点18ecdb6已验收上线；真实BOOK两步只读核对完成（1008条/988书目、六字段同书无冲突）；B33-A后端/前端定向验收通过，完整Verify候选准备中；发布工具待真实DDL绑定，未采用真实值或改生产资料 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
 | 应用代码基线 | 已验收生产 `18ecdb65a9d672dc1ce2d87264cbb6dd7c5d7ced`，V1–V11；已推main及工作分支，保留全部既有文档/技能和业务成果 |
@@ -34,9 +34,10 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | BOOK来源工具 / v1.1 | 已交付，经理接纳 | `logs/catalog-stage3/catalog-metadata-source/`冻结 | 71文件哈希、43离线及27真实MySQL合成检查通过；进程退出、33079释放 |
 | BOOK实际来源核对 | 已完成，经理验收 | `logs/catalog-stage3/catalog-metadata-manager/`来源证据冻结 | inventory及六字段compare只读成功，原文私有；未采用值、客户端已退出 |
 | B33-A契约 | 已交付，经理接纳 | `logs/catalog-stage3/catalog-metadata-design/contract-b33a.md`冻结 | SHAb8647cde；单书目V12四表、新DTO及旧title共同revision |
-| B33-A后端 / v1 | `/root/mapping_correction` | 新catalogattributes模块/V12/定向测试；指定旧标题写者、删除及Security/XSS接入；独占backend/target及合成33079 | `logs/catalog-stage3/catalog-attributes-backend/`；无生产/SSH/真实源明细权限 |
-| B33-A前端 / v1 | `/root/statistics_backend` | frontend（不改依赖锁）；合成5179/4179 | `logs/catalog-stage3/catalog-attributes-frontend/`；新DTO、表单/来源明确采用/当前选书标题及筛选 |
-| B33-A发布准备 / v1 | 已交付，经理接纳离线准备 | `logs/catalog-stage3/catalog-attributes-release/`及container-acceptance新增段暂冻结 | 32项/111预期拒绝、140文件hash通过；待最终后端/V12/DDL/API绑定及实际CI |
+| B33-A后端 / v1 | 已交付，经理接纳定向验收 | 源码冻结；33079补证由原执行者独占 | 22源码/104证据hash，45H2及33真实MySQL、50旧表保值与非空持久化通过 |
+| B33-A前端 / v1 | 已交付，经理接纳本地/合成验收 | frontend及证据冻结；4179已释放 | 30源码/37证据hash、59项定向+最终选书10项补测、类型构建/浏览器通过；待真实联调与CI |
+| B33-A发布准备 / v1.2 | `/root/intake_release_prepare` | 仅`logs/catalog-stage3/catalog-attributes-release/`；public脚本经理接管冻结 | v1.1的36项/132拒绝及488文件hash已接纳；最终源码/API核对，待实际DDL后经理review |
+| 实际DDL补证 | `/root/mapping_correction` | 仅后端证据`metadata-export-v1/`新datadir/两合成库，独占33079 | 仅八条固定metadata SELECT导出V11/V12，不重跑旧测试或改源码 |
 
 B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
 

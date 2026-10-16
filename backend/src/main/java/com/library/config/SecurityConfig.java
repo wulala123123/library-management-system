@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/forgot-password/**").denyAll()
                         .requestMatchers(HttpMethod.GET, "/captcha/image").permitAll()
                         .requestMatchers(HttpMethod.GET, "/books", "/books/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/catalog-books", "/catalog-books/{bookId}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/categories", "/categories/{id}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/notices", "/notices/{id}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/publishers/{id}").permitAll()

@@ -18,22 +18,24 @@
                 :remote-method="searchBooks"
                 :loading="bookLoading"
                 value-key="id"
+                :disabled="generating"
+                @change="selectionChanged"
               >
                 <el-option
                   v-for="b in bookOptions"
                   :key="b.id"
-                  :label="b.title"
+                  :label="bookDisplayTitle(b)"
                   :value="b.id"
                 >
                   <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>{{ b.title }}</span>
+                    <span>{{ bookDisplayTitle(b) }}</span>
                     <span style="color: #999; font-size: 12px;">库存:{{ b.stockAvailable ?? b.stockTotal }}</span>
                   </div>
                 </el-option>
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" :loading="generating" :disabled="!selectedBookId" @click="handleGenerate">生成借阅码</el-button>
+              <el-button type="primary" :loading="generating" :disabled="!selectedBookId || bookLoading || !selectionReady" @click="handleGenerate">生成借阅码</el-button>
             </el-form-item>
           </el-form>
 
@@ -42,7 +44,7 @@
               <div class="code-display">
                 <div class="code-value">{{ generatedCode.code }}</div>
                 <div class="code-info">
-                  <p>图书：{{ generatedCode.bookTitle }}</p>
+                  <p>本次选择展示名称：{{ generatedSelectionDisplayTitle }}</p>
                   <p>有效期至：{{ formatTime(generatedCode.expireTime) }}</p>
                   <p>状态：{{ statusLabel(generatedCode.status) }}</p>
                 </div>
@@ -116,20 +118,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { generateBorrowCode, verifyBorrowCode, getMyBorrowCodes } from '@/api/borrowCode'
-import { getBookPage } from '@/api/book'
+import { getCatalogBook, getCatalogBooks, type CatalogBook } from '@/api/catalogAttribute'
+import { bookDisplayTitle } from '@/utils/catalogAttributes'
 
 const route = useRoute()
 
 const activeTab = ref('generate')
 const selectedBookId = ref<number | undefined>(undefined)
 const bookLoading = ref(false)
-const bookOptions = ref<any[]>([])
+const bookOptions = ref<CatalogBook[]>([])
+const selectionReady = computed(() => bookOptions.value.some(book => book.id === selectedBookId.value))
 const generating = ref(false)
 const generatedCode = ref<any>(null)
+const generatedSelectionDisplayTitle = ref('')
+let bookRequest = 0, generationRequest = 0
+function selectionChanged() { ++generationRequest; generatedCode.value = null; generatedSelectionDisplayTitle.value = '' }
 
 const codeInput = ref('')
 const verifying = ref(false)
@@ -143,34 +150,36 @@ const myTotal = ref(0)
 
 onMounted(() => {
   loadMyCodes()
-  if (route.query.bookId) {
-    const bookId = Number(route.query.bookId)
-    if (!isNaN(bookId)) {
-      selectedBookId.value = bookId
-      const bookTitle = route.query.bookTitle as string
-      if (bookTitle) {
-        bookOptions.value = [{ id: bookId, title: bookTitle }]
-      } else {
-        searchBooks(String(bookId))
-      }
-    }
-  }
 })
+watch(() => route.query.bookId, async value => {
+  const request = ++bookRequest, id = Number(value); selectionChanged(); selectedBookId.value = undefined; bookOptions.value = []
+  if (!Number.isSafeInteger(id) || id <= 0) return
+  bookLoading.value = true
+  try { const book = await getCatalogBook(id); if (request === bookRequest) { bookOptions.value = [book]; selectedBookId.value = book.id } }
+  catch { ElMessage.error('所选书目加载失败，请重新选择。') }
+  finally { if (request === bookRequest) bookLoading.value = false }
+}, { immediate: true })
 
 async function searchBooks(query: string) {
-  if (!query || query.length < 1) return
+  const request = ++bookRequest
+  if (!query.length) { bookOptions.value = []; bookLoading.value = false; return }
   bookLoading.value = true
   try {
-    const res = await getBookPage({ page: 1, size: 20, keyword: query })
-    bookOptions.value = res?.records || []
-  } catch { bookOptions.value = [] } finally { bookLoading.value = false }
+    const res = await getCatalogBooks({ page: 1, size: 20, keyword: query })
+    if (request === bookRequest) bookOptions.value = res?.records || []
+  } catch { if (request === bookRequest) bookOptions.value = [] } finally { if (request === bookRequest) bookLoading.value = false }
 }
 
 async function handleGenerate() {
-  if (!selectedBookId.value) { ElMessage.warning('请先选择图书'); return }
+  if (generating.value || bookLoading.value || !selectionReady.value || !selectedBookId.value) { ElMessage.warning('请先加载并选择图书'); return }
+  const id = selectedBookId.value, request = ++generationRequest
   generating.value = true
   try {
-    generatedCode.value = await generateBorrowCode(selectedBookId.value)
+    const selected = await getCatalogBook(id)
+    if (request !== generationRequest || selectedBookId.value !== id) return
+    const result = await generateBorrowCode(id)
+    if (request !== generationRequest || selectedBookId.value !== id) return
+    generatedSelectionDisplayTitle.value = bookDisplayTitle(selected); generatedCode.value = result
     ElMessage.success('借阅码生成成功')
     loadMyCodes()
   } catch { ElMessage.error('生成失败') } finally { generating.value = false }

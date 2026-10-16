@@ -46,12 +46,13 @@ public class XssSqlFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String pathInfo = request.getRequestURI();
         String queryString = request.getQueryString();
+        boolean literalCatalog = "GET".equals(request.getMethod()) && "/catalog-books".equals(servletPath(request));
         boolean literalBarcode = "GET".equals(request.getMethod()) && "/book-copies".equals(servletPath(request));
         String[] barcodeValues = literalBarcode ? request.getParameterValues("barcode") : null;
         boolean duplicateBarcode = barcodeValues != null && barcodeValues.length != 1;
         if (containsSqlInjection(pathInfo) || containsPathTraversal(pathInfo)
                 || duplicateBarcode
-                || (literalBarcode ? unsafeNonBarcodeParameters(request)
+                || (literalCatalog ? unsafeNonCatalogParameters(request) : literalBarcode ? unsafeNonBarcodeParameters(request)
                     : queryString != null && (containsSqlInjection(queryString) || containsPathTraversal(queryString)))) {
             log.warn("请求路径检测到攻击模式，已拦截: path={}", pathInfo);
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -59,6 +60,8 @@ public class XssSqlFilter extends OncePerRequestFilter {
             response.getWriter().write("{\"code\":400,\"message\":\"请求包含非法字符\"}");
             return;
         }
+
+        if (literalCatalog) { filterChain.doFilter(request, response); return; }
 
         if (literalBarcode) {
             filterChain.doFilter(new XssSqlRequestWrapper(request, true), response);
@@ -84,6 +87,7 @@ public class XssSqlFilter extends OncePerRequestFilter {
         String path = servletPath(request);
         return ("POST".equals(request.getMethod()) &&
                 (path.equals("/inventory-intakes/previews") || path.matches("/inventory-intakes/[0-9]+/confirm")
+                || path.equals("/catalog-attributes/previews") || path.matches("/catalog-attributes/[0-9]+/confirm")
                 || path.equals("/book-copy-actions/previews") || path.equals("/book-copy-actions/v2/previews") || path.matches("/book-copy-actions/[0-9]+/confirm")
                 || path.equals("/stocktakes") || path.matches("/stocktakes/[0-9]+/(observations|corrections|coverage|change-checks|rechecks|prepares|confirm|cancel)")
                 || path.equals("/stocktake-resolutions") || path.matches("/stocktake-resolutions/[0-9]+/(link|revoke)")
@@ -110,6 +114,15 @@ public class XssSqlFilter extends OncePerRequestFilter {
             String name = parameter.getKey();
             if (containsSqlInjection(name) || containsPathTraversal(name)) return true;
             if ("barcode".equals(name)) continue;
+            for (String value : parameter.getValue()) if (containsSqlInjection(value) || containsPathTraversal(value)) return true;
+        }
+        return false;
+    }
+
+    private static boolean unsafeNonCatalogParameters(HttpServletRequest request) {
+        for (Map.Entry<String, String[]> parameter : request.getParameterMap().entrySet()) {
+            if (containsSqlInjection(parameter.getKey()) || containsPathTraversal(parameter.getKey())) return true;
+            if ("keyword".equals(parameter.getKey())) continue;
             for (String value : parameter.getValue()) if (containsSqlInjection(value) || containsPathTraversal(value)) return true;
         }
         return false;

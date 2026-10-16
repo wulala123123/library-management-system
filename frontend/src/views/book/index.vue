@@ -27,6 +27,7 @@
           <el-button @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
+      <CatalogAttributeFilters v-model="attributeFilters" @change="handleSearch" />
     </div>
 
     <div class="card-container">
@@ -52,7 +53,8 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="title" label="书名" min-width="180" show-overflow-tooltip />
+        <el-table-column label="展示名称" min-width="230"><template #default="{ row }"><strong>{{ bookDisplayTitle(row) }}</strong><details><summary>登记及已采用原名</summary><p>登记书名：{{ row.catalogTitle }}</p><p>已采用来源原书名：{{ row.adoptedSourceTitle ?? '未设置' }}</p></details></template></el-table-column>
+        <el-table-column label="装帧 / 年龄标签" min-width="210"><template #default="{ row }">{{ bindingText(row.bindingCode) }}<br />{{ ageText(row.ageLabels) }}</template></el-table-column>
         <el-table-column prop="author" label="作者" width="120" show-overflow-tooltip />
         <el-table-column prop="isbn" label="ISBN" width="140" show-overflow-tooltip />
         <el-table-column prop="publisher" label="出版社" width="140" show-overflow-tooltip />
@@ -66,9 +68,11 @@
             <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '在馆' : '下架' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="320" align="center" fixed="right">
+        <el-table-column label="操作" width="430" align="center" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleEdit(row)">书目资料</el-button>
+            <el-button type="primary" link size="small" @click="openAttributes(row.id)">属性</el-button>
+            <el-button v-if="user.isAdmin" type="primary" link size="small" @click="openSource(row.id)">来源核对</el-button>
             <el-button type="primary" link size="small" @click="handleIntake(row)">登记实体册</el-button>
             <el-button type="success" link size="small" @click="handleBorrow(row)">借阅</el-button>
             <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
@@ -89,7 +93,9 @@
     </div>
 
     <BookDialog v-model:visible="dialogVisible" :book-id="editBookId" @success="fetchBookList" />
-    <IntakeDialog v-model:visible="intakeVisible" :book-id="intakeBook?.id" :book-title="intakeBook?.title" @success="fetchBookList" />
+    <IntakeDialog v-model:visible="intakeVisible" :book-id="intakeBook?.id" :book-title="intakeBook?.catalogTitle" @success="fetchBookList" />
+    <BookAttributeDialog v-model:visible="attributeVisible" :book-id="attributeBookId" @success="fetchBookList" />
+    <BookSourceAdoptionDialog v-if="user.isAdmin" v-model:visible="sourceVisible" :book-id="sourceBookId" @success="fetchBookList" />
   </div>
   <el-empty v-else description="仅管理员和馆员可管理书目与实体册。" />
 </template>
@@ -100,10 +106,15 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BookDialog from './components/BookDialog.vue'
 import IntakeDialog from './components/IntakeDialog.vue'
+import BookAttributeDialog from './components/BookAttributeDialog.vue'
+import BookSourceAdoptionDialog from './components/BookSourceAdoptionDialog.vue'
+import CatalogAttributeFilters from '@/components/catalog/CatalogAttributeFilters.vue'
 import { useUserStore } from '@/store/modules/user'
-import { getBookPage, deleteBook } from '@/api/book'
+import { deleteBook } from '@/api/book'
+import { getCatalogBooks, type CatalogBook } from '@/api/catalogAttribute'
 import { getCategoryList } from '@/api/category'
-import type { Book, BookCategory } from '@/types'
+import type { BookCategory } from '@/types'
+import { ageText, bindingText, bookDisplayTitle, catalogPageCsv, emptyAttributeFilters, attributeFilterQuery } from '@/utils/catalogAttributes'
 import { displayValue } from '@/utils/display'
 import { downloadCsv } from '@/utils/statistics'
 
@@ -111,12 +122,15 @@ const router = useRouter()
 const user = useUserStore(), canManage = computed(() => user.isAdmin || user.isLibrarian)
 
 const loading = ref(false)
-const bookList = ref<Book[]>([])
+const bookList = ref<CatalogBook[]>([])
 const total = ref(0)
 const categories = ref<BookCategory[]>([])
 const dialogVisible = ref(false)
 const editBookId = ref<number | null>(null)
-const intakeVisible = ref(false), intakeBook = ref<Book | null>(null)
+const intakeVisible = ref(false), intakeBook = ref<CatalogBook | null>(null)
+const attributeVisible = ref(false), attributeBookId = ref<number | null>(null), sourceVisible = ref(false), sourceBookId = ref<number | null>(null), attributeFilters = ref(emptyAttributeFilters())
+function openAttributes(id: number) { attributeBookId.value = id; attributeVisible.value = true }
+function openSource(id: number) { if (user.isAdmin) { sourceBookId.value = id; sourceVisible.value = true } }
 
 const queryParams = reactive({ page: 1, size: 10, keyword: '', categoryId: undefined as number | undefined, status: null as number | null })
 
@@ -132,27 +146,30 @@ async function fetchCategories() {
   } catch {}
 }
 
+let listRequest = 0
 async function fetchBookList() {
   if (!canManage.value) return
-  loading.value = true
+  const request = ++listRequest; loading.value = true
   try {
-    const res = await getBookPage(queryParams)
+    const res = await getCatalogBooks({ ...queryParams, ...attributeFilterQuery(attributeFilters.value) })
+    if (request !== listRequest) return
     bookList.value = res?.records || []
     total.value = res?.total || 0
   } catch {
+    if (request !== listRequest) return
     bookList.value = []
     total.value = 0
   } finally {
-    loading.value = false
+    if (request === listRequest) loading.value = false
   }
 }
 
 function handleSearch() { queryParams.page = 1; fetchBookList() }
-function resetQuery() { Object.assign(queryParams, { page: 1, keyword: '', categoryId: undefined, status: null }); fetchBookList() }
+function resetQuery() { Object.assign(queryParams, { page: 1, keyword: '', categoryId: undefined, status: null }); attributeFilters.value = emptyAttributeFilters(); fetchBookList() }
 function handleAdd() { editBookId.value = null; dialogVisible.value = true }
-function handleEdit(row: Book) { editBookId.value = row.id; dialogVisible.value = true }
-function handleIntake(row: Book) { if (canManage.value) { intakeBook.value = row; intakeVisible.value = true } }
-function handleBorrow(row: Book) { router.push({ path: '/borrow/code', query: { bookId: String(row.id), bookTitle: row.title } }) }
+function handleEdit(row: CatalogBook) { editBookId.value = row.id; dialogVisible.value = true }
+function handleIntake(row: CatalogBook) { if (canManage.value) { intakeBook.value = row; intakeVisible.value = true } }
+function handleBorrow(row: CatalogBook) { router.push({ path: '/borrow-code', query: { bookId: String(row.id) } }) }
 function getImageUrl(url: string) {
   if (!url) return ''
   if (url.startsWith('http')) return url
@@ -164,28 +181,13 @@ function handleExport() {
     ElMessage.warning('暂无数据可导出')
     return
   }
-  const headers = ['书目ID', 'ISBN', '书名', '作者', '出版社', '出版日期', '页数', '库位', '简介', '实体册总数（册）', '状态']
-  const rows = bookList.value.map((row: Book) => [
-    row.id,
-    row.isbn,
-    row.title,
-    row.author || '',
-    row.publisher || '',
-    displayValue(row.publishDate?.split('T')[0]),
-    displayValue(row.pages),
-    displayValue(row.location),
-    displayValue(row.description, '待补充'),
-    displayValue(row.stockTotal, '待核实'),
-    row.status === 1 ? '在馆' : '下架',
-  ])
-  const csvContent = [headers, ...rows].map(r => r.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\r\n')
-  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob([catalogPageCsv(bookList.value)], { type: 'text/csv;charset=utf-8;' })
   downloadCsv(blob, '本页书目.csv')
   ElMessage.success('导出成功')
 }
-async function handleDelete(row: Book) {
+async function handleDelete(row: CatalogBook) {
   try {
-    await ElMessageBox.confirm(`确定要删除图书"${row.title}"吗？`, '警告', { type: 'warning' })
+    await ElMessageBox.confirm(`确定要删除图书"${bookDisplayTitle(row)}"吗？`, '警告', { type: 'warning' })
     await deleteBook(row.id)
     ElMessage.success('删除成功')
     fetchBookList()

@@ -5,7 +5,7 @@
         <div class="card-container">
           <div class="section-header">
             <div class="header-row">
-              <h3>图书名称规范化审核</h3>
+              <h3>登记书名规范化审核</h3>
               <div>
                 <el-button type="primary" @click="handleBatchNormalize" :loading="batchLoading" :disabled="!hasIssues">
                   一键修正所有问题
@@ -17,7 +17,7 @@
 
           <el-table :data="pendingBooks" border stripe v-loading="loading" row-key="id">
             <el-table-column prop="id" label="ID" width="60" />
-            <el-table-column label="书名" min-width="200">
+            <el-table-column label="登记书名" min-width="200">
               <template #default="{ row }">
                 <div>
                   <span>{{ row.title }}</span>
@@ -95,7 +95,7 @@
 
     <el-dialog v-model="editVisible" title="修正图书信息" width="500px">
       <el-form :model="editForm" label-width="80px">
-        <el-form-item label="书名">
+        <el-form-item label="登记书名">
           <el-input v-model="editForm.title" />
         </el-form-item>
         <el-form-item label="作者">

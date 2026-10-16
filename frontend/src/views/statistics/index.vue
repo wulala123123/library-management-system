@@ -32,7 +32,7 @@
 
     <el-row :gutter="20" style="margin-top: 20px;">
       <el-col :xs="24" :lg="12">
-        <el-card shadow="hover"><template #header>热门图书 TOP10（已接入借阅明细）</template>
+        <el-card shadow="hover"><template #header>热门图书 TOP10（已接入借阅明细，登记书名）</template>
           <div v-if="hotBooks.length">
             <div v-for="(book, i) in hotBooks" :key="i" class="hot-item">
               <span class="rank" :class="{ top3: i < 3 }">{{ i + 1 }}</span>

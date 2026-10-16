@@ -18,7 +18,7 @@
       <el-alert v-if="error" :title="error" type="error" :closable="false" />
       <div v-if="tab === 'copies'" class="action-toolbar"><span>本页已明确选择 {{ selectedIds.length }} 册（最多 100 册）</span><el-button type="primary" :disabled="!selectedIds.length || selectedIds.length > 100" @click="startAction(selectedIds)">办理所选实体册</el-button></div>
       <el-table v-if="tab === 'catalog'" :data="catalog" v-loading="loading" stripe border>
-        <el-table-column label="书目" min-width="210"><template #default="{ row }"><strong>{{ row.book.title }}</strong><p class="note">ISBN：{{ displayValue(row.book.isbn) }}</p></template></el-table-column>
+        <el-table-column label="登记书名" min-width="210"><template #default="{ row }"><strong>{{ row.book.title }}</strong><p class="note">ISBN：{{ displayValue(row.book.isbn) }}</p></template></el-table-column>
         <el-table-column label="汇总总 / 可借" width="140"><template #default="{ row }">{{ row.totalCopies }} / {{ row.availableCopies }} 册</template></el-table-column>
         <el-table-column label="原始登记总 / 可借 / 在借 / 其他" min-width="250"><template #default="{ row }">{{ row.registeredCopies }} / {{ row.registeredAvailableCopies }} / {{ row.registeredBorrowedCopies }} / {{ row.registeredOtherCopies }} 册</template></el-table-column>
         <el-table-column prop="borrowedCopies" label="在借明细（册）" width="140" />
@@ -31,7 +31,7 @@
       <el-table v-else :data="copies" v-loading="loading" stripe border row-key="id" @selection-change="selectCopies">
         <el-table-column type="selection" width="45" />
         <el-table-column label="馆内条码原文" min-width="180"><template #default="{ row }"><code>{{ rawText(row.barcode) }}</code></template></el-table-column>
-        <el-table-column label="书目" min-width="200"><template #default="{ row }">{{ row.book.title }}</template></el-table-column>
+        <el-table-column label="登记书名" min-width="200"><template #default="{ row }">{{ row.book.title }}</template></el-table-column>
         <el-table-column label="ISBN" min-width="150"><template #default="{ row }">{{ displayValue(row.book.isbn) }}</template></el-table-column>
         <el-table-column label="册状态" min-width="160"><template #default="{ row }">{{ stateText(row) }}</template></el-table-column>
         <el-table-column label="册有效位置" min-width="350"><template #default="{ row }"><CopyPlacement :placement="row.placement" :raw-text="row.location" :anomaly="row.locationReferenceAnomaly" /></template></el-table-column>
@@ -44,10 +44,10 @@
         <el-alert v-if="detail.needsVerification" title="该册状态或借阅关联需要核实，查询不会自动修正。" type="warning" :closable="false" />
         <el-descriptions :column="2" border>
           <el-descriptions-item label="馆内条码">{{ detail.copy.barcode }}</el-descriptions-item>
-          <el-descriptions-item label="书目">{{ detail.copy.book.title }}</el-descriptions-item>
+          <el-descriptions-item label="登记书名">{{ detail.copy.book.title }}</el-descriptions-item>
           <el-descriptions-item label="册状态">{{ stateText(detail.copy) }}</el-descriptions-item>
           <el-descriptions-item label="册有效位置"><CopyPlacement :placement="detail.copy.placement" :raw-text="detail.copy.location" :anomaly="detail.copy.locationReferenceAnomaly" /><p>位置来源事件 {{ detail.copy.lastLocationActionId ?? 'NULL' }}</p></el-descriptions-item>
-          <el-descriptions-item label="书目位置">{{ displayValue(detail.copy.book.location, '未设置') }}</el-descriptions-item>
+          <el-descriptions-item label="书目登记位置">{{ displayValue(detail.copy.book.location, '未设置') }}</el-descriptions-item>
           <el-descriptions-item label="出版日期 / 页数">{{ displayValue(detail.copy.book.publishDate, '待补充') }} / {{ displayValue(detail.copy.book.pages, '待补充') }}</el-descriptions-item>
         </el-descriptions>
         <el-button type="primary" @click="startAction([detail.copy.id])">办理此册状态或位置</el-button>

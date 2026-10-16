@@ -17,12 +17,13 @@
         </el-select>
         <el-radio-group v-model="sortBy" size="default" @change="handleSearch" style="margin-left: 8px;">
           <el-radio-button value="default">默认</el-radio-button>
-          <el-radio-button value="hot">热门</el-radio-button>
-          <el-radio-button value="new">最新</el-radio-button>
+          <el-radio-button value="hot">本页热门</el-radio-button>
+          <el-radio-button value="new">本页最新</el-radio-button>
         </el-radio-group>
       </div>
     </div>
 
+    <CatalogAttributeFilters v-model="attributeFilters" @change="handleSearch" />
     <div v-loading="loading" class="book-grid" :class="{ 'grid-empty': !bookList.length && !loading }">
       <transition-group name="book-card">
         <div v-for="(book, idx) in bookList" :key="book.id"
@@ -32,38 +33,38 @@
             <img
               v-if="book.coverImage"
               :src="getImageUrl(book.coverImage)"
-              :alt="book.title"
+              :alt="bookDisplayTitle(book)"
               loading="lazy"
               @error="handleImageError($event)"
             />
-            <div v-else class="cover-placeholder" :style="{ '--hue': getHue(book.title) }">
+            <div v-else class="cover-placeholder" :style="{ '--hue': getHue(bookDisplayTitle(book)) }">
               <svg viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect width="160" height="200" rx="4" fill="url(#cp)"/>
                 <rect x="10" y="12" width="140" height="176" rx="2" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
                 <line x1="20" y1="50" x2="90" y2="50" stroke="rgba(255,255,255,0.18)" stroke-width="3" stroke-linecap="round"/>
                 <line x1="20" y1="66" x2="75" y2="66" stroke="rgba(255,255,255,0.12)" stroke-width="2.5" stroke-linecap="round"/>
                 <line x1="20" y1="80" x2="85" y2="80" stroke="rgba(255,255,255,0.1)" stroke-width="2" stroke-linecap="round"/>
-                <text x="18" y="155" fill="rgba(255,255,255,0.7)" font-size="28" font-weight="700">{{ book.title.charAt(0) }}</text>
+                <text x="18" y="155" fill="rgba(255,255,255,0.7)" font-size="28" font-weight="700">{{ bookDisplayTitle(book).charAt(0) }}</text>
                 <defs><linearGradient id="cp" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" :style="`stop-color:hsl(${getHue(book.title)},25%,35%)`"/>
-                  <stop offset="100%" :style="`stop-color:hsl(${getHue(book.title)},22%,26%)`"/>
+                  <stop offset="0%" :style="`stop-color:hsl(${getHue(bookDisplayTitle(book))},25%,35%)`"/>
+                  <stop offset="100%" :style="`stop-color:hsl(${getHue(bookDisplayTitle(book))},22%,26%)`"/>
                 </linearGradient></defs>
               </svg>
             </div>
 
             <div class="cover-actions">
-              <button class="action-chip" @click.stop="handleBorrow(book)" :disabled="book.stockAvailable <= 0">
-                {{ book.stockAvailable > 0 ? '借阅' : '已借完' }}
+              <button class="action-chip" @click.stop="handleBorrow(book)" :disabled="(book.stockAvailable ?? 0) <= 0">
+                {{ (book.stockAvailable ?? 0) > 0 ? '借阅' : '已借完' }}
               </button>
             </div>
 
-            <span v-if="book.stockAvailable <= 0" class="stock-tag tag-empty">已借完</span>
-            <span v-else-if="book.stockAvailable <= 3" class="stock-tag tag-low">仅剩{{ book.stockAvailable }}册</span>
-            <span v-else-if="book.stockAvailable >= 10" class="stock-tag tag-hot">热销</span>
+            <span v-if="(book.stockAvailable ?? 0) <= 0" class="stock-tag tag-empty">已借完</span>
+            <span v-else-if="(book.stockAvailable ?? 0) <= 3" class="stock-tag tag-low">仅剩{{ book.stockAvailable }}册</span>
+            <span v-else-if="(book.stockAvailable ?? 0) >= 10" class="stock-tag tag-hot">热销</span>
           </div>
 
           <div class="card-body">
-            <h3 class="book-title">{{ book.title }}</h3>
+            <h3 class="book-title">{{ bookDisplayTitle(book) }}</h3>
             <p class="book-meta">
               <span>{{ book.author || '未知作者' }}</span>
               <span v-if="book.categoryName" class="cat-label">{{ book.categoryName }}</span>
@@ -116,18 +117,22 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
-import { getBookPage, type BookPageParams } from '@/api/book'
+import { getCatalogBooks, type CatalogBook, type CatalogQuery } from '@/api/catalogAttribute'
+import CatalogAttributeFilters from '@/components/catalog/CatalogAttributeFilters.vue'
+import { bookDisplayTitle, emptyAttributeFilters, attributeFilterQuery } from '@/utils/catalogAttributes'
 import { getCategoryList } from '@/api/category'
 import { generateBorrowCode } from '@/api/borrowCode'
-import type { Book, BookCategory } from '@/types'
+import type { BookCategory } from '@/types'
 import BookDetailDialog from './components/BookDetailDialog.vue'
 import { displayPrice, displayValue } from '@/utils/display'
 
 const loading = ref(false)
-const bookList = ref<Book[]>([])
+const bookList = ref<CatalogBook[]>([])
 const total = ref(0)
 const categories = ref<BookCategory[]>([])
-const sortBy = ref('default')
+const sortBy = ref('default'), attributeFilters = ref(emptyAttributeFilters())
+let bookRequest = 0
+const borrowing = ref(false)
 const detailVisible = ref(false)
 const selectedBookId = ref<number | null>(null)
 
@@ -143,19 +148,20 @@ async function fetchCategories() {
 }
 
 async function fetchBooks() {
-  loading.value = true
+  const request = ++bookRequest; loading.value = true
   try {
-    const params: BookPageParams = { page: queryParams.page, size: queryParams.size }
-    if (queryParams.keyword) params.keyword = queryParams.keyword.trim()
+    const params: CatalogQuery = { page: queryParams.page, size: queryParams.size, ...attributeFilterQuery(attributeFilters.value) }
+    if (queryParams.keyword) params.keyword = queryParams.keyword
     if (queryParams.categoryId) params.categoryId = queryParams.categoryId
-    const res = await getBookPage(params)
-    let books: Book[] = res?.records || []
-    if (sortBy.value === 'hot') books.sort((a, b) => (b.stockTotal - b.stockAvailable) - (a.stockTotal - a.stockAvailable))
-    else if (sortBy.value === 'new') books.sort((a, b) => new Date(b.createTime).getTime() - new Date(a.createTime).getTime())
+    const res = await getCatalogBooks(params)
+    if (request !== bookRequest) return
+    let books: CatalogBook[] = res?.records || []
+    if (sortBy.value === 'hot') books.sort((a, b) => ((b.stockTotal ?? 0) - (b.stockAvailable ?? 0)) - ((a.stockTotal ?? 0) - (a.stockAvailable ?? 0)))
+    else if (sortBy.value === 'new') books.sort((a, b) => new Date(b.createTime || '').getTime() - new Date(a.createTime || '').getTime())
     bookList.value = books
     total.value = res?.total || 0
-  } catch { bookList.value = []; total.value = 0 }
-  finally { loading.value = false }
+  } catch { if (request === bookRequest) { bookList.value = []; total.value = 0 } }
+  finally { if (request === bookRequest) loading.value = false }
 }
 
 function handleSearch() { queryParams.page = 1; fetchBooks() }
@@ -175,25 +181,27 @@ function getHue(title: string): number {
   return Math.abs(hash % 360)
 }
 
-function handleBookClick(book: Book) { selectedBookId.value = book.id; detailVisible.value = true }
+function handleBookClick(book: CatalogBook) { selectedBookId.value = book.id; detailVisible.value = true }
 
-async function handleBorrow(book: Book) {
-  if (book.stockAvailable <= 0) { ElMessage.warning('该图书暂时无库存'); return }
+async function handleBorrow(book: CatalogBook) {
+  if (borrowing.value) return
+  borrowing.value = true
+  if ((book.stockAvailable ?? 0) <= 0) { borrowing.value = false; ElMessage.warning('该图书暂时无库存'); return }
   try {
-    await ElMessageBox.confirm(`确定要借阅《${book.title}》吗？系统将为您生成借阅码。`, '确认借阅', {
+    await ElMessageBox.confirm(`确定要借阅《${bookDisplayTitle(book)}》吗？系统将为您生成借阅码。`, '确认借阅', {
       confirmButtonText: '确定', cancelButtonText: '取消', type: 'info',
     })
     try {
       const codeRes = await generateBorrowCode(book.id)
       const borrowCode = codeRes?.code || '未知'
       ElMessageBox.alert(
-        `已为您生成借阅码《${book.title}》！\n\n您的借阅码为：${borrowCode}\n有效期30分钟，核销后完成借阅。借阅码不预留库存，请及时核销。`,
+        `已为您生成借阅码《${bookDisplayTitle(book)}》！\n\n您的借阅码为：${borrowCode}\n有效期30分钟，核销后完成借阅。借阅码不预留库存，请及时核销。`,
         '已生成借阅码，核销后完成借阅',
         { confirmButtonText: '我知道了', type: 'success', dangerouslyUseHTMLString: false }
       )
       fetchBooks()
     } catch (error: any) { ElMessage.error(error.message || '借阅失败') }
-  } catch {}
+  } catch {} finally { borrowing.value = false }
 }
 </script>
 

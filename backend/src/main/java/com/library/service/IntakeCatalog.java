@@ -29,6 +29,9 @@ public class IntakeCatalog {
     private final JdbcTemplate jdbc;
     private final BookMapper books;
     private final ObjectMapper json;
+    private com.library.catalogattributes.CatalogAttributeLegacyWriter attributeHistory;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setAttributeHistory(com.library.catalogattributes.CatalogAttributeLegacyWriter history) { this.attributeHistory = history; }
     private static final LinkedHashMap<String, String> COLUMNS = new LinkedHashMap<>();
     static {
         COLUMNS.put("isbn", "isbn"); COLUMNS.put("title", "title"); COLUMNS.put("author", "author");
@@ -82,6 +85,7 @@ public class IntakeCatalog {
         updateColumns(id, values);
     }
     private void updateColumns(Long id, LinkedHashMap<String, Object> values) {
+        String oldTitle = values.containsKey("title") ? jdbc.queryForObject("SELECT title FROM book WHERE id=? AND deleted=0", String.class, id) : null;
         if (values.containsKey("isbn")) {
             Book existing = byIsbn((String) values.get("isbn"));
             if (existing != null && !existing.getId().equals(id)) throw error(409, "CATALOG_CONFLICT", "ISBN已被书目占用，请核对");
@@ -92,6 +96,7 @@ public class IntakeCatalog {
         // Column identifiers come exclusively from the static whitelist; no stock columns are writable.
         if (jdbc.update("UPDATE book SET " + String.join(",", assignments) + ",update_time=CURRENT_TIMESTAMP WHERE id=? AND deleted=0", args.toArray()) != 1)
             throw error(409, "PREVIEW_STALE", "书目已变化，请重新读取");
+        if (values.containsKey("title") && attributeHistory != null) attributeHistory.title(id, oldTitle, (String) values.get("title"));
     }
     public Metadata newMetadata(JsonNode input) {
         LinkedHashMap<String, Object> values = parse(input, true);
