@@ -122,5 +122,5 @@ sed -e 's/18089/18090/g' -e 's/172.30.89/172.30.90/g' "$library_test/install/.en
 library_recovery_release="$library_release"
 LIBRARY_PROJECT_NAME=library-recovery LIBRARY_ENV_FILE="$library_test/recovery/.env" bash "$library_release/scripts/restore.sh" "$library_test/backup"
 library_verify_backend "$library_recovery_release" library-recovery
-python3 "$library_release/scripts/container_smoke.py" --base http://localhost:18090 --env "$library_test/recovery/.env" --state "$library_test/state.json" --check-state
+python3 "$library_release/scripts/container_smoke.py" --base http://localhost:18090 --env "$library_test/recovery/.env" --state "$library_test/state.json" --check-state --complete-recovered-link
 echo 'First install, recreate, update, failed-start rollback, backup and isolated restore passed'

@@ -91,6 +91,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '库存管理', icon: 'Box', roles: ['ADMIN', 'LIBRARIAN'] },
       },
       {
+        path: 'stocktakes',
+        name: 'StocktakeManagement',
+        component: () => import('@/views/stocktake/index.vue'),
+        meta: { title: '盘点与差异', icon: 'DocumentChecked', roles: ['ADMIN', 'LIBRARIAN'] },
+      },
+      {
         path: 'statistics',
         name: 'Statistics',
         component: () => import('@/views/statistics/index.vue'),

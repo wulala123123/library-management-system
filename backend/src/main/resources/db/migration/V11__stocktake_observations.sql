@@ -1,0 +1,133 @@
+-- Observations and reports are independent evidence. No legacy row is updated.
+CREATE TABLE stocktake_session (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ owner_id BIGINT NOT NULL,
+ campaign_key VARCHAR(100) NULL,
+ scope_json LONGTEXT NOT NULL,
+ state VARCHAR(16) NOT NULL DEFAULT 'DRAFT',
+ revision BIGINT NOT NULL DEFAULT 0,
+ baseline_snapshot_id BIGINT NULL,
+ final_snapshot_id BIGINT NULL,
+ final_receipt_json LONGTEXT NULL,
+ created_at DATETIME NOT NULL,
+ confirmed_at DATETIME NULL,
+ KEY idx_stocktake_owner (owner_id,id),
+ CONSTRAINT ck_stocktake_scope CHECK(JSON_VALID(scope_json)),
+ CONSTRAINT ck_stocktake_revision CHECK(revision>=0),
+ CONSTRAINT ck_stocktake_state CHECK(state IN ('DRAFT','FINALIZED','CANCELLED')),
+ CONSTRAINT ck_stocktake_final CHECK((state='FINALIZED' AND final_snapshot_id IS NOT NULL AND final_receipt_json IS NOT NULL AND confirmed_at IS NOT NULL) OR (state<>'FINALIZED' AND final_snapshot_id IS NULL AND final_receipt_json IS NULL AND confirmed_at IS NULL)),
+ CONSTRAINT ck_stocktake_receipt CHECK(final_receipt_json IS NULL OR JSON_VALID(final_receipt_json))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE stocktake_operation (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ operation_key VARBINARY(128) NOT NULL,
+ actor_id BIGINT NOT NULL,
+ operation VARCHAR(32) NOT NULL,
+ session_id BIGINT NULL,
+ input_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+ request_json LONGTEXT NOT NULL,
+ success_receipt_json LONGTEXT NULL,
+ committed_at DATETIME NULL,
+ UNIQUE KEY uk_stocktake_operation_key(operation_key),
+ KEY idx_stocktake_operation_session(session_id,id),
+ CONSTRAINT fk_stocktake_operation_session FOREIGN KEY(session_id) REFERENCES stocktake_session(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_stocktake_operation_request CHECK(JSON_VALID(request_json)),
+ CONSTRAINT ck_stocktake_operation_commit CHECK((success_receipt_json IS NULL AND committed_at IS NULL) OR (success_receipt_json IS NOT NULL AND committed_at IS NOT NULL)),
+ CONSTRAINT ck_stocktake_operation_receipt CHECK(success_receipt_json IS NULL OR JSON_VALID(success_receipt_json))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE stocktake_snapshot (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ session_id BIGINT NOT NULL,
+ snapshot_kind VARCHAR(16) NOT NULL,
+ source_revision BIGINT NOT NULL,
+ schema_version INT NOT NULL DEFAULT 1,
+ snapshot_json LONGTEXT NOT NULL,
+ digest CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+ creator_id BIGINT NOT NULL,
+ created_at DATETIME NOT NULL,
+ expires_at DATETIME NULL,
+ UNIQUE KEY uk_stocktake_snapshot_session(session_id,id),
+ KEY idx_stocktake_snapshot_session(session_id,id),
+ CONSTRAINT fk_stocktake_snapshot_session FOREIGN KEY(session_id) REFERENCES stocktake_session(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_stocktake_snapshot_kind CHECK(snapshot_kind IN ('BASELINE','REVIEW')),
+ CONSTRAINT ck_stocktake_snapshot_version CHECK(schema_version=1 AND source_revision>=0),
+ CONSTRAINT ck_stocktake_snapshot_json CHECK(JSON_VALID(snapshot_json))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ALTER TABLE stocktake_session
+ ADD CONSTRAINT fk_stocktake_baseline FOREIGN KEY(id,baseline_snapshot_id) REFERENCES stocktake_snapshot(session_id,id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ ADD CONSTRAINT fk_stocktake_final FOREIGN KEY(id,final_snapshot_id) REFERENCES stocktake_snapshot(session_id,id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+CREATE TABLE stocktake_observation (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ session_id BIGINT NOT NULL,
+ client_event_key VARBINARY(128) NULL,
+ input_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
+ kind VARCHAR(16) NOT NULL,
+ raw_barcode VARBINARY(1024) NULL,
+ observed_placement_json LONGTEXT NULL,
+ resolved_copy_id_at_scan BIGINT NULL,
+ signature_json LONGTEXT NOT NULL,
+ referenced_observation_id BIGINT NULL,
+ actor_id BIGINT NOT NULL,
+ accepted_at DATETIME NOT NULL,
+ client_observed_at DATETIME NULL,
+ reason VARCHAR(500) NOT NULL,
+ UNIQUE KEY uk_stocktake_client_event(session_id,client_event_key),
+ UNIQUE KEY uk_stocktake_observation_session(session_id,id),
+ KEY idx_stocktake_observation_session(session_id,id),
+ CONSTRAINT fk_stocktake_observation_session FOREIGN KEY(session_id) REFERENCES stocktake_session(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT fk_stocktake_observation_reference FOREIGN KEY(session_id,referenced_observation_id) REFERENCES stocktake_observation(session_id,id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT fk_stocktake_observed_copy FOREIGN KEY(resolved_copy_id_at_scan) REFERENCES book_copy(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_stocktake_observation_kind CHECK(kind IN ('SCAN','VOID','CORRECTION','COVERAGE','RECHECK')),
+ CONSTRAINT ck_stocktake_observation_signature CHECK(JSON_VALID(signature_json)),
+ CONSTRAINT ck_stocktake_observation_placement CHECK(observed_placement_json IS NULL OR JSON_VALID(observed_placement_json))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE stocktake_difference (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ session_id BIGINT NOT NULL,
+ review_snapshot_id BIGINT NOT NULL,
+ difference_key VARBINARY(256) NOT NULL,
+ type VARCHAR(48) NOT NULL,
+ copy_id BIGINT NULL,
+ raw_identity VARBINARY(1024) NULL,
+ evidence_json LONGTEXT NOT NULL,
+ creator_id BIGINT NOT NULL,
+ created_at DATETIME NOT NULL,
+ UNIQUE KEY uk_stocktake_difference(session_id,review_snapshot_id,difference_key),
+ UNIQUE KEY uk_stocktake_difference_session(session_id,id),
+ KEY idx_stocktake_difference_review(session_id,review_snapshot_id,type,id),
+ CONSTRAINT fk_stocktake_difference_snapshot FOREIGN KEY(session_id,review_snapshot_id) REFERENCES stocktake_snapshot(session_id,id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT fk_stocktake_difference_copy FOREIGN KEY(copy_id) REFERENCES book_copy(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_stocktake_difference_evidence CHECK(JSON_VALID(evidence_json))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE stocktake_resolution (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ session_id BIGINT NOT NULL,
+ intent_json LONGTEXT NOT NULL,
+ state VARCHAR(24) NOT NULL,
+ version BIGINT NOT NULL DEFAULT 0,
+ actor_id BIGINT NOT NULL,
+ created_at DATETIME NOT NULL,
+ UNIQUE KEY uk_stocktake_resolution_session(session_id,id),
+ CONSTRAINT fk_stocktake_resolution_session FOREIGN KEY(session_id) REFERENCES stocktake_session(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_stocktake_resolution_state CHECK(state IN ('OPEN','NO_ACTION','AWAITING_LINK','LINKED','REVOKED')),
+ CONSTRAINT ck_stocktake_resolution_version CHECK(version>=0),
+ CONSTRAINT ck_stocktake_resolution_intent CHECK(JSON_VALID(intent_json))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE stocktake_resolution_event (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ resolution_id BIGINT NOT NULL,
+ operation_id BIGINT NOT NULL,
+ kind VARCHAR(16) NOT NULL,
+ source_identity VARBINARY(128) NULL,
+ evidence_json LONGTEXT NOT NULL,
+ actor_id BIGINT NOT NULL,
+ occurred_at DATETIME NOT NULL,
+ reason VARCHAR(500) NOT NULL,
+ UNIQUE KEY uk_stocktake_resolution_source(source_identity),
+ KEY idx_stocktake_resolution_event(resolution_id,id),
+ CONSTRAINT fk_stocktake_resolution_event FOREIGN KEY(resolution_id) REFERENCES stocktake_resolution(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT fk_stocktake_resolution_operation FOREIGN KEY(operation_id) REFERENCES stocktake_operation(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_stocktake_resolution_event CHECK(kind IN ('DECIDE','INTENT','LINK','REVOKE')),
+ CONSTRAINT ck_stocktake_resolution_evidence CHECK(JSON_VALID(evidence_json))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- Only application append/read APIs; no hard database immutability claim.

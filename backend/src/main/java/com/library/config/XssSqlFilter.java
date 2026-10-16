@@ -85,6 +85,8 @@ public class XssSqlFilter extends OncePerRequestFilter {
         return ("POST".equals(request.getMethod()) &&
                 (path.equals("/inventory-intakes/previews") || path.matches("/inventory-intakes/[0-9]+/confirm")
                 || path.equals("/book-copy-actions/previews") || path.equals("/book-copy-actions/v2/previews") || path.matches("/book-copy-actions/[0-9]+/confirm")
+                || path.equals("/stocktakes") || path.matches("/stocktakes/[0-9]+/(observations|corrections|coverage|change-checks|rechecks|prepares|confirm|cancel)")
+                || path.equals("/stocktake-resolutions") || path.matches("/stocktake-resolutions/[0-9]+/(link|revoke)")
                 || path.equals("/bookshelves") || path.equals("/bookshelves/storeys") || path.equals("/bookshelves/locations")))
                 || ("PUT".equals(request.getMethod()) && (path.matches("/books/[0-9]+/metadata") || path.equals("/bookshelves") || path.equals("/bookshelves/storeys") || path.equals("/bookshelves/locations") || path.matches("/bookshelves/locations/[0-9]+/(clear|assign/[0-9]+)")))
                 || ("DELETE".equals(request.getMethod()) && path.matches("/bookshelves/(?:storeys/|locations/)?[0-9]+"));

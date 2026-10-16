@@ -73,6 +73,11 @@
               <transition name="fade"><span v-if="!isCollapsed">库存管理</span></transition>
             </router-link>
 
+            <router-link v-if="isAdmin || isLibrarian" to="/stocktakes" class="nav-item" :class="{ active: route.path === '/stocktakes' }">
+              <el-icon><DocumentChecked /></el-icon>
+              <transition name="fade"><span v-if="!isCollapsed">盘点与差异</span></transition>
+            </router-link>
+
             <router-link v-if="isAdmin || isLibrarian" to="/statistics" class="nav-item" :class="{ active: route.path === '/statistics' }">
               <el-icon><DataAnalysis /></el-icon>
               <transition name="fade"><span v-if="!isCollapsed">统计报表</span></transition>

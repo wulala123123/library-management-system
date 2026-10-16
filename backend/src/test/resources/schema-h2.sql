@@ -511,3 +511,123 @@ CREATE TABLE IF NOT EXISTS location_structure_event (
  CONSTRAINT ck_structure_snapshot CHECK(snapshot_version=1),
  CONSTRAINT ck_structure_versions CHECK((before_version IS NULL AND after_version=0 AND operation='CREATE') OR (before_version>=0 AND after_version=before_version+1 AND operation<>'CREATE'))
 );
+
+-- V11 stocktake test equivalent.
+-- Observations and reports are independent evidence. No legacy row is updated.
+CREATE TABLE IF NOT EXISTS stocktake_session (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ owner_id BIGINT NOT NULL,
+ campaign_key VARCHAR(100) NULL,
+ scope_json CLOB NOT NULL,
+ state VARCHAR(16) NOT NULL DEFAULT 'DRAFT',
+ revision BIGINT NOT NULL DEFAULT 0,
+ baseline_snapshot_id BIGINT NULL,
+ final_snapshot_id BIGINT NULL,
+ final_receipt_json CLOB NULL,
+ created_at DATETIME NOT NULL,
+ confirmed_at DATETIME NULL,
+ CONSTRAINT ck_stocktake_revision CHECK(revision>=0),
+ CONSTRAINT ck_stocktake_state CHECK(state IN ('DRAFT','FINALIZED','CANCELLED')),
+ CONSTRAINT ck_stocktake_final CHECK((state='FINALIZED' AND final_snapshot_id IS NOT NULL AND final_receipt_json IS NOT NULL AND confirmed_at IS NOT NULL) OR (state<>'FINALIZED' AND final_snapshot_id IS NULL AND final_receipt_json IS NULL AND confirmed_at IS NULL))
+);
+CREATE TABLE IF NOT EXISTS stocktake_operation (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ operation_key VARBINARY(128) NOT NULL,
+ actor_id BIGINT NOT NULL,
+ operation VARCHAR(32) NOT NULL,
+ session_id BIGINT NULL,
+ input_hash CHAR(64) NOT NULL,
+ request_json CLOB NOT NULL,
+ success_receipt_json CLOB NULL,
+ committed_at DATETIME NULL,
+ CONSTRAINT uk_stocktake_operation_key UNIQUE(operation_key),
+ CONSTRAINT ck_stocktake_operation_commit CHECK((success_receipt_json IS NULL AND committed_at IS NULL) OR (success_receipt_json IS NOT NULL AND committed_at IS NOT NULL)),
+ CONSTRAINT fk_stocktake_operation_session FOREIGN KEY(session_id) REFERENCES stocktake_session(id) ON DELETE RESTRICT ON UPDATE RESTRICT
+);
+CREATE TABLE IF NOT EXISTS stocktake_snapshot (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ session_id BIGINT NOT NULL,
+ snapshot_kind VARCHAR(16) NOT NULL,
+ source_revision BIGINT NOT NULL,
+ schema_version INT NOT NULL DEFAULT 1,
+ snapshot_json CLOB NOT NULL,
+ digest CHAR(64) NOT NULL,
+ creator_id BIGINT NOT NULL,
+ created_at DATETIME NOT NULL,
+ expires_at DATETIME NULL,
+ CONSTRAINT uk_stocktake_snapshot_session UNIQUE(session_id,id),
+ CONSTRAINT fk_stocktake_snapshot_session FOREIGN KEY(session_id) REFERENCES stocktake_session(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_stocktake_snapshot_kind CHECK(snapshot_kind IN ('BASELINE','REVIEW')),
+ CONSTRAINT ck_stocktake_snapshot_version CHECK(schema_version=1 AND source_revision>=0)
+);
+ALTER TABLE stocktake_session
+ ADD CONSTRAINT IF NOT EXISTS fk_stocktake_baseline FOREIGN KEY(id,baseline_snapshot_id) REFERENCES stocktake_snapshot(session_id,id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE stocktake_session
+ ADD CONSTRAINT IF NOT EXISTS fk_stocktake_final FOREIGN KEY(id,final_snapshot_id) REFERENCES stocktake_snapshot(session_id,id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+CREATE TABLE IF NOT EXISTS stocktake_observation (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ session_id BIGINT NOT NULL,
+ client_event_key VARBINARY(128) NULL,
+ input_hash CHAR(64) NULL,
+ kind VARCHAR(16) NOT NULL,
+ raw_barcode VARBINARY(1024) NULL,
+ observed_placement_json CLOB NULL,
+ resolved_copy_id_at_scan BIGINT NULL,
+ signature_json CLOB NOT NULL,
+ referenced_observation_id BIGINT NULL,
+ actor_id BIGINT NOT NULL,
+ accepted_at DATETIME NOT NULL,
+ client_observed_at DATETIME NULL,
+ reason VARCHAR(500) NOT NULL,
+ CONSTRAINT uk_stocktake_client_event UNIQUE(session_id,client_event_key),
+ CONSTRAINT uk_stocktake_observation_session UNIQUE(session_id,id),
+ CONSTRAINT fk_stocktake_observation_session FOREIGN KEY(session_id) REFERENCES stocktake_session(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT fk_stocktake_observation_reference FOREIGN KEY(session_id,referenced_observation_id) REFERENCES stocktake_observation(session_id,id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT fk_stocktake_observed_copy FOREIGN KEY(resolved_copy_id_at_scan) REFERENCES book_copy(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_stocktake_observation_kind CHECK(kind IN ('SCAN','VOID','CORRECTION','COVERAGE','RECHECK'))
+);
+CREATE TABLE IF NOT EXISTS stocktake_difference (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ session_id BIGINT NOT NULL,
+ review_snapshot_id BIGINT NOT NULL,
+ difference_key VARBINARY(256) NOT NULL,
+ type VARCHAR(48) NOT NULL,
+ copy_id BIGINT NULL,
+ raw_identity VARBINARY(1024) NULL,
+ evidence_json CLOB NOT NULL,
+ creator_id BIGINT NOT NULL,
+ created_at DATETIME NOT NULL,
+ CONSTRAINT uk_stocktake_difference UNIQUE(session_id,review_snapshot_id,difference_key),
+ CONSTRAINT uk_stocktake_difference_session UNIQUE(session_id,id),
+ CONSTRAINT fk_stocktake_difference_snapshot FOREIGN KEY(session_id,review_snapshot_id) REFERENCES stocktake_snapshot(session_id,id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT fk_stocktake_difference_copy FOREIGN KEY(copy_id) REFERENCES book_copy(id) ON DELETE RESTRICT ON UPDATE RESTRICT
+);
+CREATE TABLE IF NOT EXISTS stocktake_resolution (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ session_id BIGINT NOT NULL,
+ intent_json CLOB NOT NULL,
+ state VARCHAR(24) NOT NULL,
+ version BIGINT NOT NULL DEFAULT 0,
+ actor_id BIGINT NOT NULL,
+ created_at DATETIME NOT NULL,
+ CONSTRAINT uk_stocktake_resolution_session UNIQUE(session_id,id),
+ CONSTRAINT fk_stocktake_resolution_session FOREIGN KEY(session_id) REFERENCES stocktake_session(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_stocktake_resolution_state CHECK(state IN ('OPEN','NO_ACTION','AWAITING_LINK','LINKED','REVOKED')),
+ CONSTRAINT ck_stocktake_resolution_version CHECK(version>=0)
+);
+CREATE TABLE IF NOT EXISTS stocktake_resolution_event (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ resolution_id BIGINT NOT NULL,
+ operation_id BIGINT NOT NULL,
+ kind VARCHAR(16) NOT NULL,
+ source_identity VARBINARY(128) NULL,
+ evidence_json CLOB NOT NULL,
+ actor_id BIGINT NOT NULL,
+ occurred_at DATETIME NOT NULL,
+ reason VARCHAR(500) NOT NULL,
+ CONSTRAINT uk_stocktake_resolution_source UNIQUE(source_identity),
+ CONSTRAINT fk_stocktake_resolution_event FOREIGN KEY(resolution_id) REFERENCES stocktake_resolution(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT fk_stocktake_resolution_operation FOREIGN KEY(operation_id) REFERENCES stocktake_operation(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_stocktake_resolution_event CHECK(kind IN ('DECIDE','INTENT','LINK','REVOKE'))
+);
+-- Only application append/read APIs; no hard database immutability claim.
