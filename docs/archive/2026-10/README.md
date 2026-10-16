@@ -20,6 +20,7 @@
 - [逐册状态与文本位置](catalog-copy-actions-2026-10-16.md)
 - [结构化库位与逐册关联](catalog-structured-locations-2026-10-16.md)
 - [有限范围盘点与差异关联](catalog-stocktake-2026-10-16.md)
+- [书目属性与展示名称](catalog-attributes-2026-10-16.md)
 
 ## 候选包来源
 

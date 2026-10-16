@@ -7,8 +7,8 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | 阶段3 B33-A精确契约与实现；B35、B34及B36补录独立接续 |
-| 工作项状态 | B32盘点18ecdb6已验收上线；真实BOOK两步只读核对完成（1008条/988书目、六字段同书无冲突）；B33-A后端/前端定向验收通过，完整Verify候选准备中；发布工具待真实DDL绑定，未采用真实值或改生产资料 |
+| 下一工作项 | 阶段3 B35出版社/分类身份核实；B34套装及B36出版信息补录独立接续 |
+| 工作项状态 | B32盘点18ecdb6已验收上线；真实BOOK两步只读核对完成（1008条/988书目、六字段同书无冲突）；B33-A a3ba1fd完整Verify通过（后端461/前端242），产物及实际DDL/API已核验；第一轮生产新备/隔离升级开始，未采用真实值 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
 | 应用代码基线 | 已验收生产 `18ecdb65a9d672dc1ce2d87264cbb6dd7c5d7ced`，V1–V11；已推main及工作分支，保留全部既有文档/技能和业务成果 |
@@ -20,7 +20,7 @@
 
 1. B22 七户登记已完成，保留首次预览、V7 新备及隔离复验证据，禁止重跑整批导入或会员完整保存。
 2. 入库、逐册动作及结构化库位已上线验收，不重复发布或旧修正；`logs/catalog-stage3/stocktake-manager/manager-final-acceptance.json`保存本批结果，执行进程已退出。
-3. B32已完成；BOOK实际来源核对已完成；B33-A按已验收单书目契约实施展示名、年龄原标签及装帧的来源采用/手工维护/筛选。B35身份关联独立接续，未经核实不采用值或自动合并。
+3. B32已完成；BOOK实际来源核对已完成；B33-A已按单书目契约上线展示名、年龄原标签、装帧、来源采用/手工维护/筛选；生产未自动采用来源值。B35身份关联独立接续，未经核实不采用值或自动合并。
 
 ## 有效执行者
 
@@ -34,10 +34,11 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | BOOK来源工具 / v1.1 | 已交付，经理接纳 | `logs/catalog-stage3/catalog-metadata-source/`冻结 | 71文件哈希、43离线及27真实MySQL合成检查通过；进程退出、33079释放 |
 | BOOK实际来源核对 | 已完成，经理验收 | `logs/catalog-stage3/catalog-metadata-manager/`来源证据冻结 | inventory及六字段compare只读成功，原文私有；未采用值、客户端已退出 |
 | B33-A契约 | 已交付，经理接纳 | `logs/catalog-stage3/catalog-metadata-design/contract-b33a.md`冻结 | SHAb8647cde；单书目V12四表、新DTO及旧title共同revision |
-| B33-A后端 / v1 | 已交付，经理接纳定向验收 | 源码冻结；33079补证由原执行者独占 | 22源码/104证据hash，45H2及33真实MySQL、50旧表保值与非空持久化通过 |
-| B33-A前端 / v1 | 已交付，经理接纳本地/合成验收 | frontend及证据冻结；4179已释放 | 30源码/37证据hash、59项定向+最终选书10项补测、类型构建/浏览器通过；待真实联调与CI |
-| B33-A发布准备 / v1.2 | `/root/intake_release_prepare` | 仅`logs/catalog-stage3/catalog-attributes-release/`；public脚本经理接管冻结 | v1.1的36项/132拒绝及488文件hash已接纳；最终源码/API核对，待实际DDL后经理review |
-| 实际DDL补证 | `/root/mapping_correction` | 仅后端证据`metadata-export-v1/`新datadir/两合成库，独占33079 | 仅八条固定metadata SELECT导出V11/V12，不重跑旧测试或改源码 |
+| B33-A后端 / v1 | 已上线，经理验收 | 生产a3ba1fd；源码与V12冻结 | Verify后端461/0失败，V12与旧表保值、非空持久化通过 |
+| B33-A前端 / v1 | 已上线，经理验收 | 生产a3ba1fd；浏览器只读通过 | Verify前端242/0失败，AGE ANY/UNKNOWN、展示名和CSV通过 |
+| B33-A发布工具 / v1.2 | 已交付，经理接纳冻结 | `logs/catalog-stage3/catalog-attributes-release/`及public容器新增段冻结 | 1036文件hash、36离线+13受影响检查通过；实际DDL/API已审定 |
+| 实际DDL补证 | 已交付，经理验收 | 后端证据`metadata-export-v1/`冻结，33079释放 | 实际8结果集、50→54表，旧定义不变；自有进程退出 |
+| B33-A发布 | 已完成，经理验收 | `logs/catalog-stage3/catalog-attributes-manager/release-v2/`冻结 | 两轮最新V11新备隔离升级、部署、GET-only verify通过；生产业务采用仍0 |
 
 B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
 
