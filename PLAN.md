@@ -11,8 +11,8 @@
 | 工作项状态 | V9前后端本地交付已审，86个后端不同用例及55项前端定向测试通过，源清单匹配；干净DDL和GET契约已独立审定。待完整Verify及发布，线上仍为24463a4 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
-| 应用代码基线 | 已验收生产 `24463a4fd48e6c28e8b90d5d28fd01da9ecf86cb`，V1–V8；工作分支文档checkpoint `4fc8b1f`，后续V9实现尚未提交 |
-| 完整 Verify | [38775997648](https://github.com/wulala123123/library-management-system/actions/runs/38775997648) 全部成功，产物 `11994176451`；首次 `38774595681` 的二进制快照引用比较误报及修复证据保留 |
+| 应用代码基线 | 已验收生产 `24463a4fd48e6c28e8b90d5d28fd01da9ecf86cb`，V1–V8；V9候选 `065eeaa3a2ae3351b999ca6a8d64a5783fe09b56` 已推main及工作分支，文档checkpoint 4fc8b1f包含其中 |
+| 完整 Verify | V9首次 [38835810914](https://github.com/wulala123123/library-management-system/actions/runs/38835810914)：278后端用例中2个旧View比较失败；单一测试修正已审，受影响类17项通过，待新提交完整Verify。生产V8 [38775997648](https://github.com/wulala123123/library-management-system/actions/runs/38775997648) 已通过 |
 | 最近维护结果 | [统一实体入库](docs/archive/2026-10/catalog-intake-2026-10-16.md)；[逐册查询](docs/archive/2026-10/catalog-query-2026-10-15.md)；此前会员/来源登记及第一批保留 |
 | 恢复依据 | `git status --short`、当前阶段勾选、下述有效执行者与私有证据 |
 
@@ -28,9 +28,9 @@
 
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
-| 阶段 3 逐册动作后端 / v1 | `/root/mapping_correction`（交付已审，进程退出） | 后端30文件；target与33079已释放 | 86个不同用例通过；干净V8/V9元数据已审，契约未变；证据 `logs/catalog-stage3/copy-actions-backend/` |
+| 阶段 3 逐册动作后端 / v1 | `/root/mapping_correction`（CI返工交付已审，进程退出） | 原30文件未变，仅新增受影响入库测试修正；target/33079释放 | 17项MySQL入库测试通过，原View/持久JSON严格核对且当前V2单独验证；证据仍为 `logs/catalog-stage3/copy-actions-backend/` |
 | 阶段 3 逐册动作前端 / v1 | `/root/statistics_backend`（交付已审，进程退出） | 前端22文件；自建服务/页已关闭 | 55项定向、构建、审计及合成浏览器通过；恢复来源及原口径文案已补齐；证据 `logs/catalog-stage3/copy-actions-frontend/` |
-| 阶段 3 逐册动作发布准备 / v1，定向返工 | `/root/intake_release_prepare` | 仅 `logs/catalog-stage3/copy-actions-release/`；无网络、服务器或DB操作 | 66项离线检查已复跑；修正继承验证器的needsVerification新语义及原状态精确分组，交付后验收；最终候选、DDL和GET契约待绑定 |
+| 阶段 3 逐册动作发布准备 / v1 | `/root/intake_release_prepare`（返工交付已审，进程退出） | 仅 `logs/catalog-stage3/copy-actions-release/`；无网络、服务器或DB操作 | 78项离线/246项预期拒绝已复跑；新旧flag语义及原状态精确分组已核对。工具和两份契约经理接纳，待最终成功CI/产物绑定 |
 
 B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
 
