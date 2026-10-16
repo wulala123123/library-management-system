@@ -8,7 +8,7 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | 阶段3 B36完整Verify、两次最新全备隔离恢复升级及发布验收，随后接B32盘点；B33–B35资料任务保留 |
-| 工作项状态 | B36实现/定向验收通过；首候选31bb8b6的Verify38845930076仅因新测试固定本机端口失败，单文件修正已验收，重跑完整Verify；生产仍bedaf62 |
+| 工作项状态 | B36实现/定向验收通过；f161586的Verify38846348243后端336项全过，旧导入测试字母排序V10早于V1失败；三处数字排序已修，继续完整Verify；生产仍bedaf62 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
 | 应用代码基线 | 已验收生产 `bedaf62c1d294ad33e3522fa779081b56b2b5605`，V1–V9；已推main及工作分支，保留全部既有文档/技能和业务成果 |

@@ -27,7 +27,8 @@ def run():
     try:
         db = Database(container, schema)
         root = Path(__file__).resolve().parent.parent
-        for migration in sorted((root / "backend/src/main/resources/db/migration").glob("V*.sql")):
+        for migration in sorted((root / "backend/src/main/resources/db/migration").glob("V*.sql"),
+                                key=lambda path: int(path.name[1:].split("__", 1)[0])):
             db.run(migration.read_text(encoding="utf-8"))
         db.run("INSERT INTO sys_user(username,password,real_name,role) VALUES ('existing_admin','preserved-hash','原管理员','ADMIN');"
                "INSERT INTO book(isbn,title,author,publisher,stock_total,stock_available) VALUES ('fixture-001','测试绘本','作者','出版社',2,1);"

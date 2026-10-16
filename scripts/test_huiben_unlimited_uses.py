@@ -220,7 +220,8 @@ def mysql_acceptance(db):
     """Requires an already-created isolated schema; all records are synthetic."""
     if not db.schema or not db.schema.startswith("library_transfer_trial_"): raise RuntimeError("Expected an isolated trial schema")
     project = Path(__file__).resolve().parent.parent
-    for migration in sorted((project / "backend/src/main/resources/db/migration").glob("V*.sql")):
+    for migration in sorted((project / "backend/src/main/resources/db/migration").glob("V*.sql"),
+                            key=lambda path: int(path.name[1:].split("__", 1)[0])):
         db.run(migration.read_text(encoding="utf-8"))
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp); source, archives = synthetic_source(root)
@@ -341,7 +342,8 @@ def mysql_permission_acceptance(admin_db, connect_user, test_password):
     app_identity, maintenance_identity = "'" + app_user + "'@'%'", "'" + maintenance_user + "'@'%'"
     project = Path(__file__).resolve().parent.parent
     try:
-        for migration in sorted((project / "backend/src/main/resources/db/migration").glob("V*.sql")):
+        for migration in sorted((project / "backend/src/main/resources/db/migration").glob("V*.sql"),
+                                key=lambda path: int(path.name[1:].split("__", 1)[0])):
             admin_db.run(migration.read_text(encoding="utf-8"))
         admin_db.run("CREATE USER " + app_identity + " IDENTIFIED BY '" + test_password + "';"
             "CREATE USER " + maintenance_identity + " IDENTIFIED BY '" + test_password + "';"
