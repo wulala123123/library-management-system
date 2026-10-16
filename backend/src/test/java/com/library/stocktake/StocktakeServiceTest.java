@@ -8,6 +8,8 @@ import com.library.mapper.*;
 import com.library.security.JwtTokenProvider;
 import com.library.service.*;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -59,4 +61,36 @@ public class StocktakeServiceTest {
     @Test void activeLoanAnomalyNeverBecomesMissingCandidateEvenWithCompleteCoverage(){long b=book(),c=copy(b,unique());jdbc.update("INSERT INTO borrow_record(user_id,book_id,copy_id,borrow_date,due_date,status) VALUES (?,?,?,CURRENT_DATE,CURRENT_DATE,'BORROWING')",member(),b,c);long id=create(c).path("sessionId").asLong();complete(id,0,c);JsonNode p=prepare(id,1,"COMPLETE_SCOPE");assertEquals(0,stock.differences(id,p.path("snapshotId").asLong(),"MISSING_CANDIDATE",c,1,100,clerk).path("total").asInt());assertEquals(1,stock.differences(id,p.path("snapshotId").asLong(),"LOAN_LINK_ANOMALY",c,1,100,clerk).path("total").asInt());}
     @Test void pendingChangesSuppressMissingCandidateUntilExplicitFreshRecheck(){long b=book(),c=copy(b,unique());long id=create(c).path("sessionId").asLong();complete(id,0,c);move(c,"new place");JsonNode p=prepare(id,1,"COMPLETE_SCOPE");assertFalse(p.path("changes").isEmpty());assertEquals(0,stock.differences(id,p.path("snapshotId").asLong(),"MISSING_CANDIDATE",c,1,100,clerk).path("total").asInt());acceptAll(id,1);JsonNode clean=prepare(id,2,"COMPLETE_SCOPE");assertEquals(1,stock.differences(id,clean.path("snapshotId").asLong(),"MISSING_CANDIDATE",c,1,100,clerk).path("total").asInt());}
     @Test void wrongObservedPlaceIsMisplacedWithoutObservedMatch(){long b=book(),c=copy(b,unique());long id=create(c).path("sessionId").asLong();ObjectNode e=(ObjectNode)event(copies.selectById(c).getBarcode(),unique());e.set("observedPlacement",obj("kind","TEXT","text","different physical place"));scan(id,0,e);JsonNode p=prepare(id,1,"PARTIAL");assertEquals(1,stock.differences(id,p.path("snapshotId").asLong(),"MISPLACED_CANDIDATE",c,1,100,clerk).path("total").asInt());assertEquals(0,stock.differences(id,p.path("snapshotId").asLong(),"OBSERVED_MATCH",c,1,100,clerk).path("total").asInt());}
+    @ParameterizedTest
+    @ValueSource(strings={"", "/snapshots/1", "/observations", "/differences", "/changes", "/resolutions",
+            "/export?reviewSnapshotId=1&format=json", "/export?reviewSnapshotId=1&format=csv"})
+    void missingSessionHttpChecksRoleBeforeLookingUpObject(String suffix)throws Exception {
+        String path="/stocktakes/"+Long.MAX_VALUE+suffix;
+        for(String role:List.of("READER","ADMIN","LIBRARIAN")) {
+            Long actor=jdbc.queryForObject("SELECT id FROM sys_user WHERE username=?",Long.class,"stocktake-"+role);
+            String token=tokens.generateToken(actor,"stocktake-"+role,role,0L);
+            var response=mvc.perform(get(path).header("Authorization","Bearer "+token)).andReturn().getResponse();
+            int expected=role.equals("READER")?403:404;
+            assertEquals(expected,response.getStatus(),role+" "+path+": "+response.getContentAsString());
+            JsonNode body=read(response.getContentAsString());
+            assertEquals(expected,body.path("code").asInt());
+            assertEquals(role.equals("READER")?"STOCKTAKE_ROLE_REQUIRED":"STOCKTAKE_NOT_FOUND",
+                    body.path("data").path("reasonCode").asText());
+        }
+        assertEquals(401,mvc.perform(get(path)).andReturn().getResponse().getStatus(),path);
+    }
+    @Test void missingSessionServiceChecksRoleBeforeLookingUpObject() {
+        long missing=Long.MAX_VALUE;
+        List<java.util.function.Function<StocktakeService.Actor,JsonNode>>reads=List.of(
+                a->stock.get(missing,a),a->stock.snapshot(missing,1,a),
+                a->stock.observations(missing,1,20,null,null,a),
+                a->stock.differences(missing,null,null,null,1,20,a),
+                a->stock.changes(missing,null,null,null,1,20,a),
+                a->resolutions.page(missing,1,20,a),a->resolutions.export(missing,1,a));
+        for(var read:reads) {
+            reason("STOCKTAKE_ROLE_REQUIRED",()->read.apply(readerActor));
+            reason("STOCKTAKE_NOT_FOUND",()->read.apply(admin));
+            reason("STOCKTAKE_NOT_FOUND",()->read.apply(clerk));
+        }
+    }
 }

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController @RequiredArgsConstructor
 public class StocktakeController {
     final StocktakeService stock; final StocktakeResolutionService resolutions;
-    Actor actor(Authentication a){if(a==null)throw StocktakeSupport.fail(401,"STOCKTAKE_ROLE_REQUIRED");return new Actor((Long)a.getPrincipal(),a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_ADMIN")),a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_LIBRARIAN")));}
+    Actor actor(Authentication a){if(a==null)throw StocktakeSupport.fail(401,"STOCKTAKE_ROLE_REQUIRED");Actor actor=new Actor((Long)a.getPrincipal(),a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_ADMIN")),a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_LIBRARIAN")));actor.role();return actor;}
     @PostMapping("/stocktakes") public Result<JsonNode>create(@RequestBody JsonNode n,Authentication a){return Result.success(stock.create(n,actor(a)));}
     @GetMapping("/stocktakes") public Result<JsonNode>list(@RequestParam(defaultValue="1")int page,@RequestParam(defaultValue="20")int size,@RequestParam(required=false)String state,@RequestParam(required=false)String campaignKey,Authentication a){return Result.success(stock.sessions(page,size,state,campaignKey,actor(a)));}
     @GetMapping("/stocktakes/operations/by-key") public Result<JsonNode>operation(@RequestParam String key,Authentication a){return Result.success(stock.byKey(key,actor(a)));}

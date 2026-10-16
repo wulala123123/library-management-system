@@ -8,7 +8,7 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | 阶段3 B32盘点实施及验收；B33–B35及B36出版资料补录保留 |
-| 工作项状态 | ff7c5b6结构化库位已上线验收；B32设计v2.1已接纳、规则和权限已确认，后端v1与前端v1.1实现及定向验证已验收，准备目标完整Verify/隔离恢复；尚未上线 |
+| 工作项状态 | ff7c5b6结构化库位已上线验收；B32设计v2.1已接纳、规则和权限已确认，后端/前端v1.1已验收，完整Verify运行中；角色顺序修复进入最终候选，尚未上线 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
 | 应用代码基线 | 已验收生产 `ff7c5b67166859116e43c2dd7e2b71d14949eca1`，V1–V10；已推main及工作分支，保留全部既有文档/技能和业务成果 |
@@ -31,9 +31,9 @@ B36三位执行者均已交付并完成经理返工、验收及发布；专用�
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
 | B32设计 / v2.1 | 已交付，经理接纳 | `logs/catalog-stage3/stocktake-design/design.md` | SHA3b278ea1954f9bf5；基线依赖已满足，精确API/V11草稿已接纳，进入实施 |
-| B32后端 / v1 | `/root/mapping_correction` | `backend/`及`logs/catalog-stage3/stocktake-backend/`；V1–V10迁移及旧业务持久协议冻结；独占本地合成库33079 | v1已验收，44项定向全执行；本地完整执行211/条件跳过169，43旧表结构/值保留；DB与target已交还 |
+| B32后端 / v1 | `/root/mapping_correction` | `backend/`及`logs/catalog-stage3/stocktake-backend/`；V1–V10迁移及旧业务持久协议冻结；独占本地合成库33079 | v1.1已验收：原44定向全执行及角色修复24项H2/32次HTTP通过；43旧表结构/值保留；DB与target已交还 |
 | B32前端 / v1 | `/root/statistics_backend` | `frontend/`及`logs/catalog-stage3/stocktake-frontend/`；无DB/后端/Git/生产权限 | v1.1已验收，31项定向用例含范围重开回归；类型构建/合成浏览器/audit通过，待后端集成与完整Verify |
-| B32发布准备 / v1 | `/root/intake_release_prepare` | 仅`logs/catalog-stage3/stocktake-release/`；旧工具/源码仅读 | 离线准备及实际DDL候选已验收，冻结最终V11/API并补必要离线检查；无网络/DB/Docker/生产 |
+| B32发布准备 / v1 | `/root/intake_release_prepare` | 仅`logs/catalog-stage3/stocktake-release/`；旧工具/源码仅读 | 最终V11/DDL/API工具已冻结验收，40项/121拒绝通过；后续经理绑定CI产物并执行 |
 
 B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
 
