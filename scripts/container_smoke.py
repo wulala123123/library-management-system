@@ -98,13 +98,18 @@ def stocktake_seed(copy_ids, intake_receipt, actions):
         'clientEventKey':str(uuid.uuid4()),'rawBarcode':intake_receipt['copies'][0]['barcode'],
         'observedPlacement':{'kind':'TEXT','text':'盘点实见位置'},'clientObservedAt':None}])['session']
     draft=mutate(draft,'coverage',items=[{'scopeItemId':copy_ids[0],'status':'PARTIAL'}])['session']
-    # Same-address MOVE changes the event/version without changing the established
-    # inventory or placement. Its changed signatures must be explicitly rechecked.
-    address=request('/api/book-copies/'+str(copy_ids[0]))['copy']['placement']['registeredLocation']
+    # Move out and back through the ordinary workflow. The final address matches,
+    # while changed event/version evidence must still require explicit recheck.
+    original=request('/api/book-copies/'+str(copy_ids[0]))['copy']
+    address=original['placement']['registeredLocation']
     target=request('/api/location-addresses/'+str(address['locationId']))['address']
+    actions.append(copy_action(copy_ids[0],'MOVE',schema_version=2,
+        targetLocation={'kind':'TEXT','text':original['location'] or '盘点期间核对位置'}))
     actions.append(copy_action(copy_ids[0],'MOVE',schema_version=2,targetLocation={
         'kind':'REGISTERED','locationId':target['locationId'],'expectedAddressVersion':{
             'location':target['locationVersion'],'storey':target['storeyVersion'],'bookshelf':target['bookshelfVersion']}}))
+    returned=request('/api/book-copies/'+str(copy_ids[0]))['copy']
+    assert returned['placement']==original['placement'] and returned['actionVersion']==original['actionVersion']+2
     changes=mutate(draft,'change-checks')['review']['changes']
     assert any(change['entityKey']=='COPY:'+str(copy_ids[0]) for change in changes)
     pending=mutate(draft,'prepares',completionKind='PARTIAL')['review']
@@ -115,7 +120,7 @@ def stocktake_seed(copy_ids, intake_receipt, actions):
     draft=mutate(draft,'rechecks',items=[{
         'entityKey':change['entityKey'],'changeToken':change['changeToken'],
         'expectedSignatureDigest':change['expectedSignatureDigest'],'decision':'CONFIRM_EXPLANATION',
-        'evidence':'逐册重新实查：独立移位仍为原地址，观察位置差异保留待管理员核实'} for change in changes])['session']
+        'evidence':'逐册重新实查：独立移位往返后已回原地址，观察位置差异保留待管理员核实'} for change in changes])['session']
     draft_review=mutate(draft,'prepares',completionKind='PARTIAL')['review']
     assert not draft_review['changes']
 
