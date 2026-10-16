@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @EnabledIfEnvironmentVariable(named="MYSQL_TEST_URL",matches=".+")
 public class CatalogAttributeMigrationTest {
     @Test void v11ToV12PreservesAllFiftyOldTablesDefinitionsValuesAndFrozenJson()throws Exception{
-        String original=System.getenv("MYSQL_TEST_URL"),user=System.getenv("MYSQL_TEST_USER"),password=System.getenv("MYSQL_TEST_PASSWORD");
+        String original=System.getenv("MYSQL_TEST_URL"),user=System.getenv().getOrDefault("MYSQL_TEST_USER","root"),password=System.getenv("MYSQL_TEST_PASSWORD");
         if(original==null||!original.matches("jdbc:mysql://[^/]+/library_repair_tests(?:\\?.*)?"))throw new IllegalStateException("Disposable schema required");
         String schema="library_repair_tests_b33a_"+UUID.randomUUID().toString().replace("-",""),url=original.replace("/library_repair_tests","/"+schema);
         try(Connection c=DriverManager.getConnection(original,user,password);Statement s=c.createStatement()){s.execute("CREATE DATABASE `"+schema+"` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");}
