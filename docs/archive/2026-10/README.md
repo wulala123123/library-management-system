@@ -22,6 +22,7 @@
 - [有限范围盘点与差异关联](catalog-stocktake-2026-10-16.md)
 - [书目属性与展示名称](catalog-attributes-2026-10-16.md)
 - [出版社与多主题身份](catalog-identities-2026-10-17.md)
+- [出版资料补录](catalog-publication-2026-10-18.md)
 
 ## 候选包来源
 

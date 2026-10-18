@@ -7,21 +7,22 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | 2026-10-18用户要求继续；先推进B36出版日期/页数/简介的有依据补录，同时完成B34套装书目关系设计 |
-| 工作项状态 | B36实现/定向/实际DDL已验收；首次完整Verify39100050408在新合成入库漏分类处失败，已修测试helper并通过21项离线保护，准备修正提交完整Verify。B34设计及规则已确认；生产仍0ed85b7/V13 |
+| 下一工作项 | B34套装目录与多套成员关系；已确认规则及v2.1接口合同冻结，开始后端/前端实现与发布准备 |
+| 工作项状态 | B36已以05f2139/V14完成两轮最新备份恢复升级、发布及线上/浏览器验收；B34仅合同验收完成，尚未实现或上线 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
-| 应用代码基线 | 已验收生产 `0ed85b7c05de85b280fa423ec7239af325a36a64`，V1–V13；已推main及工作分支，保留全部既有文档/技能和业务成果 |
-| 完整 Verify | 生产应用0ed85b7的[38941033076](https://github.com/wulala123123/library-management-system/actions/runs/38941033076)全部成功：后端504/前端287无失败或跳过；产物12063312587及内外包已核验 |
+| 应用代码基线 | 已验收生产 `05f2139b5634216abc8bcb71ce14b8d91891681c`，V1–V14；已推main及工作分支，保留全部既有文档/技能和业务成果 |
+| 完整 Verify | 生产05f2139的[39100576642](https://github.com/wulala123123/library-management-system/actions/runs/39100576642)全部成功：后端554/前端327无失败或跳过；产物12125654270及内外包已核验 |
 | 最近维护结果 | [盘点](docs/archive/2026-10/catalog-stocktake-2026-10-16.md)；[结构化库位](docs/archive/2026-10/catalog-structured-locations-2026-10-16.md)；[逐册状态](docs/archive/2026-10/catalog-copy-actions-2026-10-16.md)；此前入库/会员/来源登记及第一批保留 |
-| 恢复依据 | 当前有效任务及`logs/catalog-stage3/publication-design/contract-b36.md`；B35原最终证据冻结，不重跑已消费发布入口 |
+| 恢复依据 | B34经理合同`logs/catalog-stage3/b34-manager/contract-b34.md`及其两份基础合同；B36最终接纳`publication-manager/manager-final-acceptance.json`。旧发布入口和证据冻结，不重跑 |
 
 ## 下一步
 
 1. B22 七户登记已完成，保留首次预览、V7 新备及隔离复验证据，禁止重跑整批导入或会员完整保存。
 2. 入库、逐册动作及结构化库位已上线验收，不重复发布或旧修正；`logs/catalog-stage3/stocktake-manager/manager-final-acceptance.json`保存本批结果，执行进程已退出。
 3. B33-A和B35均已上线；B35仅MANUAL核实身份、多主题、维度和别名，SOURCE模式关闭；生产未自动采用来源值，未经核实不采用值或自动合并。
-4. B36先完成有依据的单书/批量补录、预览确认、版本/审计及原key恢复；完整Verify、实际DDL/API和两次最新V13新备恢复升级通过后按原授权发布。B34书目关系设计并行，实体配套及整套收费/扣次仍待后续。
+4. B36出版补录已上线，规则和全部验收见[当次记录](docs/archive/2026-10/catalog-publication-2026-10-18.md)，专属隔离资源已清理；保留首次失败与修正证据，不再消费旧入口。
+5. B34按v2.1合同实施套装/稳定成员关系、独立身份guard、只读来源待核实及安全取消预览；随后目标完整Verify、实际DDL/API和两次最新V14新备恢复升级通过后发布。实体配套及整套收费/扣次仍待后续。
 
 ## 有效执行者
 
@@ -32,11 +33,11 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
 | B33/B35来源、契约及原发布 | 已交付/验收上线，全部冻结 | 对应档案及`logs/catalog-stage3/`原目录只读 | B35最近完整CI504/287、两轮恢复和线上验收通过；不重复旧派工和修正 |
-| B36实施契约 / v1 | 经理冻结 | `logs/catalog-stage3/publication-design/contract-b36.md` | 三字段、逐行依据、最多100书目原子预览确认、旧入口ABA/审计；尚未上线 |
-| B36后端 / v1 | 经理接纳，执行者停写 | `backend/src/`冻结；`logs/catalog-stage3/b36-backend/` | 119项通过、22源码及9报告hash核对，真实HTTP/迁移/重启恢复通过；33083释放 |
-| B36前端 / v1.1 | 经理接纳，执行者停写 | `frontend/src/`冻结；`logs/catalog-stage3/b36-frontend/` | 17源码hash及经理36项补测通过；依据单行/简介多行、刷新禁提交及并发保护通过；原浏览器证据保留、5180释放 |
-| B34设计 / v1 | 经理接纳，执行者停写 | `logs/catalog-stage3/b34-design/`冻结 | 42份依据及3输出hash核对通过；原693书目标记只作待核实；用户后续已确认允许多套关系且逐条留据 |
-| B36发布准备 / v1.2 | 经理接手，原返工未启动且已取消 | 经理独占`logs/catalog-stage3/publication-release/` | 21离线检查通过，匿名403/正式入库分类及旧公共字节保护已修；最终CI候选需重新绑定，原失败候选证据保留 |
+| B36全批 | 经理接纳/已上线，原返工任务已取消 | 原`publication-*`、`b36-*`证据冻结 | 完整CI554/327、两次新备隔离升级及最终只读/浏览器通过；所有本地发布进程退出，不重跑 |
+| B34设计 / v1及接口 / v2.1 | 经理接纳，原执行者停写 | 原设计/接口冻结；经理`b34-manager/contract-b34.md`优先 | 47依据/2交付hash核对；补安全取消与确认竞争、生成ID和读取时钟；分配V15，尚未实现 |
+| B34后端 / v1 | 待派`/root/b34_backend` | `backend/src/`及`logs/catalog-stage3/b34-backend/` | 五表/一技术guard、独立协议及旧写入口保护；33085仅合成隔离测试 |
+| B34前端 / v1 | 待派`/root/b34_frontend` | `frontend/src/`及`logs/catalog-stage3/b34-frontend/` | 套装目录、明确成员/逐边依据、来源清单及预览/取消/恢复；5181合成浏览器 |
+| B34发布准备 / v1 | 待派`/root/b34_release_prepare` | 仅`logs/catalog-stage3/b34-release/` | 65旧表和非空B36业务保值，V14→V15准备；公共脚本合入和所有服务器动作仍经理执行 |
 
 B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
 
@@ -58,7 +59,7 @@ B32有限范围盘点及角色边界已启用，生效规则见同一领域规�
 
 ## 证据与恢复边界
 
-会员阶段私有证据：`logs/member-business-stage2/`；本批为`logs/catalog-stage3/b35-manager/`、`b35-release/`及档案链接的交付目录。盘点及此前证据保持只读。第一批原记录在 `logs/member-business-batch1/`、`logs/member-business-batch1-null-contract/` 及服务器同名 `migrations/` 私有目录。
+会员阶段私有证据：`logs/member-business-stage2/`；B36为`logs/catalog-stage3/publication-manager/`、`publication-release/`及档案链接的交付目录；当前B34由上表定位。盘点及此前证据保持只读。第一批原记录在 `logs/member-business-batch1/`、`logs/member-business-batch1-null-contract/` 及服务器同名 `migrations/` 私有目录。
 
 第一批真实修正已经完成，后续不得重跑整批导入或用旧备份覆盖新业务。首次结果保留；最终代码更新只升级应用。收尾直接 Compose 必须设置 `APP_VERSION`，最后启动后再次核对镜像和字节。
 
