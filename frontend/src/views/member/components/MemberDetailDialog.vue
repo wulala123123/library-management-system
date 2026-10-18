@@ -34,6 +34,8 @@
         <MemberEntitlementPanel v-if="userStore.isAdmin" :member-id="member.id" @saved="refresh" />
         <section v-if="userStore.isAdmin" class="finance-section">
           <h3>历史费用与押金</h3>
+          <el-button type="primary" :disabled="!financeTarget" @click="openFinance">查看财务台账与来源核对</el-button>
+          <p v-if="!financeTarget" class="note">会员编号需核对后再读取财务台账。</p>
           <el-descriptions :column="3" border>
             <el-descriptions-item label="历史实缴费用（元）">{{ displayValue(member.financialFacts?.paidFee, '未记录') }}</el-descriptions-item>
             <el-descriptions-item label="历史实缴押金（元）">{{ displayValue(member.financialFacts?.depositAmount, '未记录') }}</el-descriptions-item>
@@ -66,7 +68,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { getMemberById, type MemberDetail } from '@/api/member'
 import { useUserStore } from '@/store/modules/user'
 import { displayValue } from '@/utils/display'
@@ -76,13 +79,17 @@ import MemberEntitlementPanel from './MemberEntitlementPanel.vue'
 const props = defineProps<{ visible: boolean; memberId: number | null }>()
 const emit = defineEmits<{ (e: 'update:visible', value: boolean): void; (e: 'edit', value: MemberDetail): void }>()
 const userStore = useUserStore()
-const canRead = computed(() => userStore.isAdmin || userStore.isLibrarian)
+const router = useRouter()
+const accessInvalidated = ref(false)
+const canRead = computed(() => !accessInvalidated.value && userStore.token !== '' && (userStore.isAdmin || userStore.isLibrarian))
 const member = ref<MemberDetail | null>(null)
+const financeTarget = computed(() => member.value && Number.isSafeInteger(member.value.id) && member.value.id > 0 ? String(member.value.id) : null)
 const loading = ref(false)
 let requestNumber = 0
 const precisionText: Record<string, string> = { DAY: '日', MONTH: '月', YEAR: '年', UNKNOWN: '待核实' }
 const borrowStateText = (state: string) => ({ BORROWING: '借阅中', OVERDUE: '已逾期', RETURNED: '已归还' }[state] ?? state)
 function close(value: boolean) { emit('update:visible', value) }
+function openFinance() { if (!userStore.isAdmin || !financeTarget.value || !props.visible) return; const memberId=financeTarget.value;close(false);router.push({path:`/member-finance/${memberId}`}) }
 async function refresh() {
   const request = ++requestNumber
   member.value = null
@@ -92,7 +99,12 @@ async function refresh() {
   catch { /* The request layer displays the failure. */ }
   finally { if (request === requestNumber) loading.value = false }
 }
-watch(() => [props.visible, props.memberId], refresh, { immediate: true })
+function invalidateAccess() { accessInvalidated.value=true; ++requestNumber; member.value=null; loading.value=false }
+window.addEventListener('auth-access-invalidated',invalidateAccess)
+window.addEventListener('member-finance-access-revoked',invalidateAccess)
+onBeforeUnmount(()=>{++requestNumber;member.value=null;window.removeEventListener('auth-access-invalidated',invalidateAccess);window.removeEventListener('member-finance-access-revoked',invalidateAccess)})
+watch(() => [userStore.userInfo?.id,userStore.userInfo?.role,userStore.token,userStore.isAdmin,userStore.isLibrarian],()=>{accessInvalidated.value=false;refresh()},{flush:'sync'})
+watch(() => [props.visible, props.memberId], refresh, { immediate: true,flush:'sync' })
 defineExpose({ refresh })
 </script>
 

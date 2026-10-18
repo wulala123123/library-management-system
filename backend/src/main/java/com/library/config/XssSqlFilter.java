@@ -46,6 +46,7 @@ public class XssSqlFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String pathInfo = request.getRequestURI();
         String queryString = request.getQueryString();
+        if (com.library.finance.FinanceSupport.isReadPath(request)) { filterChain.doFilter(request,response); return; }
         // B34 validates literal input after the current role, including all query keys.
         if (servletPath(request).matches("/catalog-sets(?:/.*)?|/catalog-set-reviews(?:/.*)?")) { filterChain.doFilter(request,response); return; }
         boolean literalCatalog = "GET".equals(request.getMethod()) && ("/catalog-books".equals(servletPath(request))

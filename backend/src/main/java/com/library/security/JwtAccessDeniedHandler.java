@@ -22,6 +22,9 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
     public void handle(HttpServletRequest request,
                        HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {
+        if (com.library.finance.FinanceSupport.isReadPath(request)) {
+            com.library.finance.FinanceSupport.securityError(response,403,"ADMIN_REQUIRED"); return;
+        }
         String uri = request.getRequestURI();
         log.warn("权限不足: uri={}, message={}", uri, accessDeniedException.getMessage());
 

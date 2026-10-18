@@ -22,6 +22,9 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
+        if (com.library.finance.FinanceSupport.isReadPath(request)) {
+            com.library.finance.FinanceSupport.securityError(response,401,"UNAUTHENTICATED"); return;
+        }
         String uri = request.getRequestURI();
         log.warn("未认证访问: uri={}, message={}", uri, authException.getMessage());
 

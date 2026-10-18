@@ -43,6 +43,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '会员档案', icon: 'User', roles: ['ADMIN', 'LIBRARIAN'] },
       },
       {
+        path: 'member-finance/:memberId',
+        name: 'MemberFinance',
+        component: () => import('@/views/member-finance/index.vue'),
+        meta: { title: '会员财务台账', roles: ['ADMIN'] },
+      },
+      {
         path: 'membership-plans',
         name: 'MembershipPlans',
         component: () => import('@/views/membership-plan/index.vue'),

@@ -7,14 +7,14 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | B34套装目录与多套成员关系；前后端v1.1交付已接纳，提交候选后执行完整Verify与专项发布 |
-| 工作项状态 | B36已以05f2139/V14完成上线验收；B34实现和定向验收通过，实际V15结构已独立验收，完整CI及上线待完成 |
-| 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
+| 下一工作项 | B40-A管理员只读台账：接纳前端v1.1与容器门槛，整体验收后目标完整Verify及独立发布 |
+| 工作项状态 | 阶段3/B34已验收上线并归档；B40-A前后端及容器门槛准备已经理接纳，前后端实际响应衔接通过；准备目标提交完整Verify，财务写流程未开放 |
+| 阶段定义 | [阶段 4](docs/plans/member-business-alignment/stages/04-payments.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
-| 应用代码基线 | 已验收生产 `05f2139b5634216abc8bcb71ce14b8d91891681c`，V1–V14；已推main及工作分支，保留全部既有文档/技能和业务成果 |
-| 完整 Verify | 生产05f2139的[39100576642](https://github.com/wulala123123/library-management-system/actions/runs/39100576642)全部成功：后端554/前端327无失败或跳过；产物12125654270及内外包已核验 |
-| 最近维护结果 | [盘点](docs/archive/2026-10/catalog-stocktake-2026-10-16.md)；[结构化库位](docs/archive/2026-10/catalog-structured-locations-2026-10-16.md)；[逐册状态](docs/archive/2026-10/catalog-copy-actions-2026-10-16.md)；此前入库/会员/来源登记及第一批保留 |
-| 恢复依据 | B34经理合同`logs/catalog-stage3/b34-manager/contract-b34.md`及两份基础；实际DDL在`b34-manager/metadata-export-v1/manager-ddl-review.json`。B36最终接纳及旧发布入口冻结，不重跑 |
+| 应用代码基线 | 生产已更新V15/`b80bef7001d8d3ee30ee0dbcf891897e9b61b783`、前后端运行；同提交已推main及工作分支；B40-A新改动仍未提交/上线，保留既有成果 |
+| 完整 Verify | 候选b80bef7的[39141666413](https://github.com/wulala123123/library-management-system/actions/runs/39141666413)成功：后端622/前端410无失败或跳过，四轮非空容器检查通过；产物12142455983及内外包已核验 |
+| 最近维护结果 | [套装目录](docs/archive/2026-10/catalog-sets-2026-10-19.md)；此前出版资料/出版社/属性/盘点/逐册/会员及第一批成果保留 |
+| 恢复依据 | B34经理`manager-final-acceptance.json`与`recovery-current-session.json`已完成、全部发布进程终态；B40-A由下表定位，生产V15正常运行，禁止重跑B34已消费入口 |
 
 ## 下一步
 
@@ -22,7 +22,8 @@
 2. 入库、逐册动作及结构化库位已上线验收，不重复发布或旧修正；`logs/catalog-stage3/stocktake-manager/manager-final-acceptance.json`保存本批结果，执行进程已退出。
 3. B33-A和B35均已上线；B35仅MANUAL核实身份、多主题、维度和别名，SOURCE模式关闭；生产未自动采用来源值，未经核实不采用值或自动合并。
 4. B36出版补录已上线，规则和全部验收见[当次记录](docs/archive/2026-10/catalog-publication-2026-10-18.md)，专属隔离资源已清理；保留首次失败与修正证据，不再消费旧入口。
-5. B34按v2.2合同实施套装/稳定成员关系、独立身份guard、只读来源待核实及安全取消预览；随后目标完整Verify、实际DDL/API和两次最新V14新备恢复升级通过后发布。实体配套及整套收费/扣次仍待后续。
+5. B34已完整闭环，生产V15正常；v1/v2失败及v3成功证据均冻结。实体配套及整套收费/扣次仍待后续，不复用旧备或已消费发布入口。
+6. B40-A仅管理员三个GET和台账/来源页面；V16六表仅新增不回填。后端80定向、26结构化响应（25 HTTP及1实际SQL数值投影）、70旧表保值已核；前端169定向/原浏览器复用及实际响应衔接通过，容器门槛13离线/100Schema/10归属保护已核；完整CI待执行。
 
 ## 有效执行者
 
@@ -34,11 +35,11 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | --- | --- | --- | --- |
 | B33/B35来源、契约及原发布 | 已交付/验收上线，全部冻结 | 对应档案及`logs/catalog-stage3/`原目录只读 | B35最近完整CI504/287、两轮恢复和线上验收通过；不重复旧派工和修正 |
 | B36全批 | 经理接纳/已上线，原返工任务已取消 | 原`publication-*`、`b36-*`证据冻结 | 完整CI554/327、两次新备隔离升级及最终只读/浏览器通过；所有本地发布进程退出，不重跑 |
-| B34设计 / v1及接口 / v2.2 | 经理接纳，原执行者停写 | 原设计/接口冻结；经理`b34-manager/contract-b34.md`优先 | 47依据/2交付hash核对；补取消竞争、生成ID/读取时钟及首次明确拒绝的窄恢复边界；分配V15 |
-| B34后端 / v1.1 | 经理已接纳，原执行者停写 | `backend/src/`及`logs/catalog-stage3/b34-backend/`冻结 | 182项、25源码合同/72证据hash及真实HTTP已核；维护页最多4查询，写路径/V15保值；完整CI待执行 |
-| B34前端 / v1.1 | 经理已接纳，原执行者停写 | `frontend/src/`及`logs/catalog-stage3/b34-frontend/`冻结 | 83定向/类型/构建及合成浏览器通过；复用408全量，16源码/29证据hash已核；切目标竞态已修，完整CI待执行 |
-| B34发布准备 / v1 | 经理已接管并绑定候选 | 经理独占`logs/catalog-stage3/b34-release/` | 实际DDL/API、六项绑定及旧字节增量已核；CI已修旧V14断言，622后端通过，出版选书测试耗时修订后重跑完整门槛，尚不可执行 |
-| B40设计 / v1 | 当前子代理`/root/b34_backend`复用，保持技能配置 | 仅`logs/member-business-stage4/ledger-design/`可写；源码/公共文档只读 | 先核现有财务事实、台账及期初设计与依赖；不实施代码、不访问服务器或真实数据，交付后经理验收 |
+| B34全批 | 经理接纳/已上线，全批冻结 | `logs/catalog-stage3/b34-*`及对应档案只读 | 完整CI622/410、两新备隔离/生产独立GET/浏览器/最终备份及资源复核通过，`b34-manager/manager-final-acceptance.json` |
+| B40设计 / v1.1a | 经理接纳，设计及补证冻结 | `logs/member-business-stage4/ledger-design/`只读 | 正式引擎109定义/100例/13端点通过；NUMBER只作数据库投影的实际MySQL反例已经理澄清，结构Schema不变、原v1.1封存 |
+| B40-A后端 / v1 | 经理接纳，原子代理停写 | `backend/src/`及`logs/member-business-stage4/b40-read-backend/`冻结 | 18源码/5绑定/26证据hash、80定向、26响应Schema及实际V15→V16/70旧表保值已核；`manager/backend-v1-acceptance.json`及计数澄清 |
+| B40-A前端 / v1.1 | 经理接纳，原子代理停写 | `frontend/src/`及`logs/member-business-stage4/b40-read-frontend/`冻结 | 14源码/6绑定/358证据hash、169定向/类型构建、浏览器及26实际响应衔接通过；仅显式全串匹配加固，原疑虑未复现 |
+| B40-A容器门槛 / v1 | 经理接纳准备，原子代理停写 | `scripts/container-acceptance.sh`及`logs/member-business-stage4/b40-container-gate/`冻结 | 五处增量、全部原字节保持；六表非空及三GET生命周期门槛、13离线/100Schema/10归属保护已核，真实容器由完整CI执行 |
 
 B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
 
@@ -47,6 +48,8 @@ B22、查询和统一入库均已交付验收上线，证据见对应档案，�
 已确认规则维护在[会员规范](docs/specs/membership.md)、[财务规范](docs/specs/finance-reporting.md)：单次与累计上限分开、成功按订单扣一次、到期无宽限禁新借续借、续费起算、退押金条件、管理员核定会费退款及馆员资料权限。
 
 2026-10-18用户确认会费退款只影响财务台账；服务期或次数如需变化，必须另行办理并审计。阶段4尚未实施，不据此改动历史权益或金额。
+
+2026-10-19金额规则已确认，见财务规范。柜台支付方式、历史期初/逐笔登记边界的问题仍待答复；欠费权威尚未明确，只阻止押金实退等相关动作，不阻止独立台账设计与隔离验证。
 
 已确认套餐修改仅用于后续办理、现有会员保留快照；新套餐可明确选择不限归还日期；套装核实前按单册条码借还。逐套餐数值、套餐变更差额、成功办理后的撤销/换书及核实后的整套规则仍需决定。卡号暂保守精确唯一并保留历史占用，不自动重用；如要重用需明确规则。未决只阻止相关限制或办理启用，资料、搜索与展示继续。
 

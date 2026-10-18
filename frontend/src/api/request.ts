@@ -42,6 +42,7 @@ request.interceptors.response.use(
       }
 
       if (res.code === 403) {
+        window.dispatchEvent(new Event('auth-access-invalidated'))
         ElMessage.error(message || '权限不足，无法执行该操作')
         return Promise.reject(new Error(message))
       }
@@ -68,6 +69,7 @@ request.interceptors.response.use(
           handleUnauthorized(message)
           break
         case 403:
+          window.dispatchEvent(new Event('auth-access-invalidated'))
           message = data?.message || '权限不足，无法访问该资源'
           ElMessage.error(message)
           break
@@ -97,6 +99,7 @@ request.interceptors.response.use(
 )
 
 function handleUnauthorized(message?: string) {
+  window.dispatchEvent(new Event('auth-access-invalidated'))
   if (isRedirecting) return
   isRedirecting = true
 

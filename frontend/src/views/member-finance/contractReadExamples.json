@@ -1,0 +1,404 @@
+{
+  "purpose": "Exact synthetic read Envelope examples selected from frozen B40/1.1 contract",
+  "cases": [
+    {
+      "name": "finance",
+      "definition": "FinanceEnvelope",
+      "expectedValid": true,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成示例",
+        "data": {
+          "memberId": "1",
+          "memberRevision": "0",
+          "currency": "CNY",
+          "accounts": [
+            {
+              "memberId": "1",
+              "accountId": "1",
+              "fund": "MEMBER_FEE",
+              "currency": "CNY",
+              "financeRevision": "1",
+              "scopeCutoffAt": "2026-10-18T00:00:00.000000Z",
+              "openingEntryId": "10",
+              "openingState": "VERIFIED",
+              "verifiedPaid": {
+                "state": "KNOWN",
+                "amount": "100.00",
+                "reasonCode": null
+              },
+              "verifiedRefunded": {
+                "state": "KNOWN",
+                "amount": "20.00",
+                "reasonCode": null
+              },
+              "balance": {
+                "state": "KNOWN",
+                "amount": "80.00",
+                "reasonCode": null
+              },
+              "feeHeadroom": {
+                "state": "KNOWN",
+                "amount": "80.00",
+                "reasonCode": null
+              },
+              "newReceipts": "0.00",
+              "newRefunds": "0.00",
+              "newNet": "0.00",
+              "asRecordedAt": "2026-10-19T00:01:00.000000Z"
+            },
+            {
+              "memberId": "1",
+              "accountId": null,
+              "fund": "DEPOSIT",
+              "currency": "CNY",
+              "financeRevision": "0",
+              "scopeCutoffAt": null,
+              "openingEntryId": null,
+              "openingState": "UNKNOWN",
+              "verifiedPaid": {
+                "state": "UNKNOWN",
+                "amount": null,
+                "reasonCode": "OPENING_UNVERIFIED"
+              },
+              "verifiedRefunded": {
+                "state": "UNKNOWN",
+                "amount": null,
+                "reasonCode": "OPENING_UNVERIFIED"
+              },
+              "balance": {
+                "state": "UNKNOWN",
+                "amount": null,
+                "reasonCode": "OPENING_UNVERIFIED"
+              },
+              "feeHeadroom": null,
+              "newReceipts": "0.00",
+              "newRefunds": "0.00",
+              "newNet": "0.00",
+              "asRecordedAt": "2026-10-19T00:01:00.000000Z"
+            }
+          ],
+          "asRecordedAt": "2026-10-19T00:01:00.000000Z",
+          "historicalCoverage": "PARTIAL",
+          "source": "MEMBER_FINANCE_LEDGER"
+        }
+      }
+    },
+    {
+      "name": "entry_page",
+      "definition": "EntriesEnvelope",
+      "expectedValid": true,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成示例",
+        "data": {
+          "memberId": "1",
+          "fund": "MEMBER_FEE",
+          "currency": "CNY",
+          "asRecordedAt": "2026-10-19T00:01:00.000000Z",
+          "beforeId": null,
+          "nextBeforeId": null,
+          "size": 20,
+          "hasMore": false,
+          "entries": [
+            {
+              "id": "10",
+              "accountId": "1",
+              "requestId": "22222222-2222-4222-8222-222222222222",
+              "ordinal": 1,
+              "kind": "OPENING",
+              "amount": "80.00",
+              "openingReceived": "100.00",
+              "openingRefunded": "20.00",
+              "cutoffAt": "2026-10-18T00:00:00.000000Z",
+              "actualAt": null,
+              "methodCode": null,
+              "rootFactKey": "OPENING:1:2026-10-18T00:00:00.000000Z",
+              "reversesEntryId": null,
+              "replacesEntryId": null,
+              "businessRef": {
+                "type": "VERIFIED_OPENING",
+                "id": "1"
+              },
+              "policyDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "evidenceRefs": [
+                {
+                  "type": "VERIFICATION_NOTE",
+                  "reference": "SYNTHETIC-ONLY",
+                  "digest": null
+                }
+              ],
+              "reason": "合成示例依据",
+              "operatorId": "2",
+              "recordedAt": "2026-10-19T00:01:00.000000Z",
+              "asOf": "2026-10-19T00:01:00.000000Z",
+              "effectiveAtAsOf": true,
+              "reversalEntryId": null,
+              "allocations": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "source",
+      "definition": "SourceEnvelope",
+      "expectedValid": true,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成示例",
+        "data": {
+          "memberId": "1",
+          "sourceState": "MANUAL",
+          "reasonCodes": [
+            "SOURCE_UNAVAILABLE"
+          ],
+          "profile": {
+            "profilePresent": true,
+            "sourceKey": "manual:synthetic",
+            "sourceSystem": "manual",
+            "sourceArchiveId": null,
+            "legacyPaidFee": null,
+            "legacyDepositAmount": null,
+            "legacyDepositStatus": null
+          },
+          "archive": null,
+          "fields": [
+            {
+              "key": "实际缴纳费用",
+              "presence": "MISSING",
+              "jsonType": "MISSING",
+              "rawText": null,
+              "reasonCode": "SOURCE_UNAVAILABLE"
+            },
+            {
+              "key": "实际缴纳押金",
+              "presence": "MISSING",
+              "jsonType": "MISSING",
+              "rawText": null,
+              "reasonCode": "SOURCE_UNAVAILABLE"
+            },
+            {
+              "key": "缴费状态",
+              "presence": "MISSING",
+              "jsonType": "MISSING",
+              "rawText": null,
+              "reasonCode": "SOURCE_UNAVAILABLE"
+            },
+            {
+              "key": "押金缴纳状态",
+              "presence": "MISSING",
+              "jsonType": "MISSING",
+              "rawText": null,
+              "reasonCode": "SOURCE_UNAVAILABLE"
+            },
+            {
+              "key": "押金",
+              "presence": "MISSING",
+              "jsonType": "MISSING",
+              "rawText": null,
+              "reasonCode": "SOURCE_UNAVAILABLE"
+            }
+          ],
+          "proofDigest": null,
+          "asOf": "2026-10-19T00:00:00.000000Z"
+        }
+      }
+    },
+    {
+      "name": "reject_source_scalar_field_array",
+      "definition": "SourceEnvelope",
+      "expectedValid": false,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成示例",
+        "data": {
+          "memberId": "1",
+          "sourceState": "MANUAL",
+          "reasonCodes": [
+            "SOURCE_UNAVAILABLE"
+          ],
+          "profile": {
+            "profilePresent": true,
+            "sourceKey": "manual:synthetic",
+            "sourceSystem": "manual",
+            "sourceArchiveId": null,
+            "legacyPaidFee": null,
+            "legacyDepositAmount": null,
+            "legacyDepositStatus": null
+          },
+          "archive": null,
+          "fields": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "proofDigest": null,
+          "asOf": "2026-10-19T00:00:00.000000Z"
+        }
+      }
+    },
+    {
+      "name": "reject_duplicate_source_key_order",
+      "definition": "SourceEnvelope",
+      "expectedValid": false,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成示例",
+        "data": {
+          "memberId": "1",
+          "sourceState": "MANUAL",
+          "reasonCodes": [
+            "SOURCE_UNAVAILABLE"
+          ],
+          "profile": {
+            "profilePresent": true,
+            "sourceKey": "manual:synthetic",
+            "sourceSystem": "manual",
+            "sourceArchiveId": null,
+            "legacyPaidFee": null,
+            "legacyDepositAmount": null,
+            "legacyDepositStatus": null
+          },
+          "archive": null,
+          "fields": [
+            {
+              "key": "实际缴纳费用",
+              "presence": "MISSING",
+              "jsonType": "MISSING",
+              "rawText": null,
+              "reasonCode": "SOURCE_UNAVAILABLE"
+            },
+            {
+              "key": "实际缴纳费用",
+              "presence": "MISSING",
+              "jsonType": "MISSING",
+              "rawText": null,
+              "reasonCode": "SOURCE_UNAVAILABLE"
+            },
+            {
+              "key": "缴费状态",
+              "presence": "MISSING",
+              "jsonType": "MISSING",
+              "rawText": null,
+              "reasonCode": "SOURCE_UNAVAILABLE"
+            },
+            {
+              "key": "押金缴纳状态",
+              "presence": "MISSING",
+              "jsonType": "MISSING",
+              "rawText": null,
+              "reasonCode": "SOURCE_UNAVAILABLE"
+            },
+            {
+              "key": "押金",
+              "presence": "MISSING",
+              "jsonType": "MISSING",
+              "rawText": null,
+              "reasonCode": "SOURCE_UNAVAILABLE"
+            }
+          ],
+          "proofDigest": null,
+          "asOf": "2026-10-19T00:00:00.000000Z"
+        }
+      }
+    },
+    {
+      "name": "reject_wrong_fund_account_order",
+      "definition": "FinanceEnvelope",
+      "expectedValid": false,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成示例",
+        "data": {
+          "memberId": "1",
+          "memberRevision": "0",
+          "currency": "CNY",
+          "accounts": [
+            {
+              "memberId": "1",
+              "accountId": null,
+              "fund": "DEPOSIT",
+              "currency": "CNY",
+              "financeRevision": "0",
+              "scopeCutoffAt": null,
+              "openingEntryId": null,
+              "openingState": "UNKNOWN",
+              "verifiedPaid": {
+                "state": "UNKNOWN",
+                "amount": null,
+                "reasonCode": "OPENING_UNVERIFIED"
+              },
+              "verifiedRefunded": {
+                "state": "UNKNOWN",
+                "amount": null,
+                "reasonCode": "OPENING_UNVERIFIED"
+              },
+              "balance": {
+                "state": "UNKNOWN",
+                "amount": null,
+                "reasonCode": "OPENING_UNVERIFIED"
+              },
+              "feeHeadroom": null,
+              "newReceipts": "0.00",
+              "newRefunds": "0.00",
+              "newNet": "0.00",
+              "asRecordedAt": "2026-10-19T00:00:00.000000Z"
+            },
+            {
+              "memberId": "1",
+              "accountId": "1",
+              "fund": "MEMBER_FEE",
+              "currency": "CNY",
+              "financeRevision": "1",
+              "scopeCutoffAt": "2026-10-18T00:00:00.000000Z",
+              "openingEntryId": "10",
+              "openingState": "VERIFIED",
+              "verifiedPaid": {
+                "state": "KNOWN",
+                "amount": "100.00",
+                "reasonCode": null
+              },
+              "verifiedRefunded": {
+                "state": "KNOWN",
+                "amount": "20.00",
+                "reasonCode": null
+              },
+              "balance": {
+                "state": "KNOWN",
+                "amount": "80.00",
+                "reasonCode": null
+              },
+              "feeHeadroom": {
+                "state": "KNOWN",
+                "amount": "80.00",
+                "reasonCode": null
+              },
+              "newReceipts": "0.00",
+              "newRefunds": "0.00",
+              "newNet": "0.00",
+              "asRecordedAt": "2026-10-19T00:01:00.000000Z"
+            }
+          ],
+          "asRecordedAt": "2026-10-19T00:01:00.000000Z",
+          "historicalCoverage": "PARTIAL",
+          "source": "MEMBER_FINANCE_LEDGER"
+        }
+      }
+    }
+  ]
+}
