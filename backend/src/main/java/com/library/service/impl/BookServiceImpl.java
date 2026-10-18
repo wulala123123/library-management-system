@@ -124,10 +124,13 @@ public class BookServiceImpl implements BookService {
         }
         if (book.getStockTotal() > 0 || book.getStockAvailable() > 0 || copyMapper.selectCount(new LambdaQueryWrapper<com.library.entity.BookCopy>().eq(com.library.entity.BookCopy::getBookId, id)) > 0)
             throw com.library.service.IntakeCatalog.error(409, "BOOK_HAS_INVENTORY", "书目仍有库存或已登记实体册，无法删除");
+        com.library.catalogsets.CatalogSetBookHistory.deletionGuard(jdbc,id);
         com.library.catalogattributes.CatalogAttributeHistory.deletionGuard(jdbc, id);
         com.library.catalogidentity.CatalogIdentityHistory.bookDeletionGuard(jdbc, id);
+        var catalogSetBefore = com.library.catalogsets.CatalogSetBookHistory.snapshot(jdbc,id,true);
         var publicationBefore = com.library.catalogpublication.PublicationHistory.snapshot(jdbc,id,true);
         bookMapper.deleteById(id);
+        com.library.catalogsets.CatalogSetBookHistory.recordIfChanged(jdbc,id,catalogSetBefore);
         com.library.catalogpublication.PublicationHistory.legacy(jdbc,id,publicationBefore,"LEGACY_DELETE");
     }
 

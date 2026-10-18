@@ -1,0 +1,8 @@
+import { beforeEach, expect, it, vi } from 'vitest'
+const api=vi.hoisted(()=>({get:vi.fn(),post:vi.fn()}))
+vi.mock('./request',()=>api)
+import { cancelCatalogSet,confirmCatalogSet,getSetBookContexts,getSetReviews,getBookSetMemberships,previewCatalogSet } from './catalogSet'
+import {setInput,setKey,setHash} from '@/views/catalog-sets/setFixtures'
+beforeEach(()=>vi.clearAllMocks())
+it('sends independent schema1 routes and cancel reason without altering old protocols',()=>{previewCatalogSet(setInput());expect(api.post).toHaveBeenLastCalledWith('/catalog-sets/previews',setInput());confirmCatalogSet(70,setKey,setHash);expect(api.post).toHaveBeenLastCalledWith('/catalog-sets/requests/70/confirm',{schemaVersion:1,operationKey:setKey,previewDigest:setHash});cancelCatalogSet(70,setKey,setHash,'EDIT');expect(api.post).toHaveBeenLastCalledWith('/catalog-sets/requests/70/cancel',{schemaVersion:1,operationKey:setKey,previewDigest:setHash,reason:'EDIT'})})
+it('uses repeated unbracketed keys for contexts and ANY reasons; leaves leading zero strings intact',()=>{getSetBookContexts([1,2]);expect(api.get).toHaveBeenLastCalledWith('/catalog-sets/books/contexts?bookId=1&bookId=2');getSetReviews({page:1,size:20,reason:['SOURCE_CONFLICT','ASSOCIATION_INVALID'],markerState:['NULL','EMPTY'],keyword:' 00001 '});expect(api.get).toHaveBeenLastCalledWith('/catalog-set-reviews?page=1&size=20&reason=SOURCE_CONFLICT&reason=ASSOCIATION_INVALID&markerState=NULL&markerState=EMPTY&keyword=+00001+');getBookSetMemberships(1,2,20,'ALL','ALL');expect(api.get).toHaveBeenLastCalledWith('/catalog-sets/books/1/memberships?page=2&size=20&setStatus=ALL&memberStatus=ALL')})

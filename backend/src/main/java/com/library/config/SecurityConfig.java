@@ -56,7 +56,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/publishers/{id}").permitAll()
                         .requestMatchers("/error").permitAll()
                         // Publication controllers return the protocol's structured 403 for all roles.
-                        .requestMatchers("/catalog-publications/**").permitAll()
+                        .requestMatchers("/catalog-publications/**", "/catalog-sets/**", "/catalog-set-reviews/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/doc.html", "/webjars/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")

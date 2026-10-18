@@ -33,6 +33,11 @@
               <transition name="fade"><span v-if="!isCollapsed">图书管理</span></transition>
             </router-link>
 
+            <router-link v-if="isAdmin || isLibrarian" to="/catalog-sets" class="nav-item" :class="{ active: route.path === '/catalog-sets' || route.path === '/catalog-set-reviews' }">
+              <el-icon><Reading /></el-icon>
+              <transition name="fade"><span v-if="!isCollapsed">套装目录</span></transition>
+            </router-link>
+
             <router-link v-if="isAdmin || isLibrarian" to="/book-copies" class="nav-item" :class="{ active: route.path === '/book-copies' }">
               <el-icon><Notebook /></el-icon>
               <transition name="fade"><span v-if="!isCollapsed">实体册查询</span></transition>

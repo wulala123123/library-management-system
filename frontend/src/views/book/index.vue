@@ -75,6 +75,7 @@
             <el-button type="primary" link size="small" @click="openPublication(row.id)">出版资料补录</el-button>
             <el-button type="primary" link size="small" @click="openIdentity(row.id)">出版社/分类身份</el-button>
             <el-button type="primary" link size="small" @click="openAttributes(row.id)">属性</el-button>
+            <el-button type="primary" link size="small" @click="membershipBookId = row.id; membershipVisible = true">套装关系</el-button>
             <el-button v-if="user.isAdmin" type="primary" link size="small" @click="openSource(row.id)">来源核对</el-button>
             <el-button type="primary" link size="small" @click="handleIntake(row)">登记实体册</el-button>
             <el-button type="success" link size="small" @click="handleBorrow(row)">借阅</el-button>
@@ -95,6 +96,7 @@
       </div>
     </div>
 
+    <BookSetMemberships v-model:visible="membershipVisible" :book-id="membershipBookId" />
     <BookDialog v-model:visible="dialogVisible" :book-id="editBookId" @success="fetchBookList" />
     <IntakeDialog v-model:visible="intakeVisible" :book-id="intakeBook?.id" :book-title="intakeBook?.catalogTitle" @success="fetchBookList" />
     <BookAttributeDialog v-model:visible="attributeVisible" :book-id="attributeBookId" @success="fetchBookList" />
@@ -114,6 +116,7 @@ import IntakeDialog from './components/IntakeDialog.vue'
 import BookAttributeDialog from './components/BookAttributeDialog.vue'
 import CatalogIdentityDialog from './components/CatalogIdentityDialog.vue'
 import CatalogPublicationDialog from './components/CatalogPublicationDialog.vue'
+import BookSetMemberships from '@/views/catalog-sets/BookSetMemberships.vue'
 import BookSourceAdoptionDialog from './components/BookSourceAdoptionDialog.vue'
 import CatalogAttributeFilters from '@/components/catalog/CatalogAttributeFilters.vue'
 import { useUserStore } from '@/store/modules/user'
@@ -138,6 +141,7 @@ const intakeVisible = ref(false), intakeBook = ref<CatalogBook | null>(null)
 const attributeVisible = ref(false), attributeBookId = ref<number | null>(null), sourceVisible = ref(false), sourceBookId = ref<number | null>(null), attributeFilters = ref(emptyAttributeFilters())
 const identityVisible = ref(false), identityBookId = ref<number | null>(null)
 const publicationVisible = ref(false), publicationBookId = ref<number | null>(null)
+const membershipVisible = ref(false), membershipBookId = ref<number | null>(null)
 function openPublication(id: number | null) { if (!canManage.value || (id === null && !user.isAdmin)) return; publicationBookId.value = id; publicationVisible.value = true }
 function openAttributes(id: number) { attributeBookId.value = id; attributeVisible.value = true }
 function openIdentity(id: number) { identityBookId.value = id; identityVisible.value = true }

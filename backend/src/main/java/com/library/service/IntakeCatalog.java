@@ -87,6 +87,7 @@ public class IntakeCatalog {
     }
     private void updateColumns(Long id, LinkedHashMap<String, Object> values) {
         com.library.catalogpublication.PublicationHistory.lock(jdbc);
+        var catalogSetBefore = com.library.catalogsets.CatalogSetBookHistory.snapshot(jdbc,id,true);
         var publicationBefore = com.library.catalogpublication.PublicationHistory.snapshot(jdbc,id,true);
         var identityBefore = com.library.catalogidentity.CatalogIdentityHistory.book(jdbc,id);
         String oldTitle = values.containsKey("title") ? jdbc.queryForObject("SELECT title FROM book WHERE id=? AND deleted=0", String.class, id) : null;
@@ -102,6 +103,7 @@ public class IntakeCatalog {
             throw error(409, "PREVIEW_STALE", "书目已变化，请重新读取");
         if (values.containsKey("title") && attributeHistory != null) attributeHistory.title(id, oldTitle, (String) values.get("title"));
         com.library.catalogidentity.CatalogIdentityHistory.recordBook(jdbc,id,identityBefore,"LEGACY_BOOK_METADATA");
+        com.library.catalogsets.CatalogSetBookHistory.recordIfChanged(jdbc,id,catalogSetBefore);
         com.library.catalogpublication.PublicationHistory.legacy(jdbc,id,publicationBefore,"LEGACY_METADATA");
     }
     public Metadata newMetadata(JsonNode input) {

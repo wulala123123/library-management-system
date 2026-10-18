@@ -62,6 +62,342 @@ library_verify_backend "$library_release"
 python3 "$library_release/scripts/container_smoke.py" --base http://localhost:18089 --env "$library_test/install/.env" --state "$library_test/state.json"
 export LIBRARY_ENV_FILE="$library_test/install/.env"
 source "$library_release/scripts/lib.sh"; library_init
+# BEGIN B34 SETS SEED
+cat > "$library_test/container_set_acceptance.py" <<'B34_PY'
+"""B34 formal HTTP synthetic lifecycle helper, exact isolated deployments only.
+
+Seed BEFORE the original B33/B35/B36 seeds capture their own original snapshots.
+Never refresh an old snapshot. Snapshot SQL protects only B34's five new tables
+and the B34 identity guard on this helper's own books.
+"""
+import argparse
+import base64
+import copy
+import hashlib
+import hmac
+import json
+import os
+from pathlib import Path
+import re
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import uuid
+
+COLUMNS={
+ 'catalog_set':'id name normalized_name note status revision evidence_json created_at updated_at',
+ 'catalog_set_member':'id set_id book_id status revision evidence_json created_at updated_at',
+ 'catalog_set_request':'id operation_key actor_id schema_version mode operation set_id input_hash request_json preview_json preview_digest state created_at expires_at receipt_json committed_at cancelled_at cancel_reason',
+ 'catalog_set_request_book':'request_id book_id expected_book_revision expected_attribute_revision expected_book_digest expected_source_digest',
+ 'catalog_set_event':'id request_id set_id actor_id schema_version operation before_revision after_revision changed_fields_json before_json after_json evidence_json books_json reason occurred_at',
+}
+def require(v,message='B34 synthetic assertion failed'):
+    if not v:raise RuntimeError(message)
+def canonical(v):return json.dumps(v,ensure_ascii=False,sort_keys=True,separators=(',',':'))
+def hash_value(v):return hashlib.sha256(canonical(v).encode()).hexdigest()
+def exact(v,keys):require(type(v) is dict and set(v)==set(keys.split()),'Strict B34 response fields differ')
+def integer(v,zero=False,nullable=False):require(v is None and nullable or type(v) is int and (0 if zero else 1)<=v<=9007199254740991,'Strict safe integer required')
+def utc(v,nullable=False):require(v is None and nullable or type(v) is str and re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z',v),'Strict UTC seconds required')
+def digest(v):require(type(v) is str and re.fullmatch('[0-9a-f]{64}',v),'Strict digest required')
+def strict_evidence(v):
+    exact(v,'kind reference');require(v['kind'] in ('COPYRIGHT_PAGE','PUBLISHER_MATERIAL','LEGACY_RECORD','MANUAL_REVIEW') and type(v['reference']) is str)
+def strict_set(v):
+    exact(v,'setId clientRef name note status revision activeMemberCount retiredMemberCount memberCompleteness physicalAssembly')
+    integer(v['setId'],nullable=True);integer(v['revision'],zero=True)
+    for k in ('activeMemberCount','retiredMemberCount'):integer(v[k],zero=True)
+    require(v['clientRef'] is None or type(v['clientRef']) is str);require(type(v['name']) is str and (v['note'] is None or type(v['note']) is str) and v['status'] in ('ACTIVE','RETIRED') and v['memberCompleteness']==v['physicalAssembly']=='UNVERIFIED')
+def strict_member(v):
+    exact(v,'membershipId setId bookId status revision evidence');integer(v['membershipId'],nullable=True);integer(v['setId'],nullable=True);integer(v['bookId']);integer(v['revision'],zero=True);strict_evidence(v['evidence']);require(v['status'] in ('ACTIVE','RETIRED'))
+def strict_context(v):
+    exact(v,'book bookDigest source');exact(v['book'],'bookId isbn catalogTitle displayTitle revision attributeRevision deleted');b=v['book'];integer(b['bookId']);integer(b['revision'],zero=True);integer(b['attributeRevision'],zero=True);require(type(b['deleted']) is bool and all(type(b[k]) is str for k in ('isbn','catalogTitle','displayTitle')))
+    digest(v['bookDigest']);require(v['bookDigest']==hash_value(dict(schemaVersion=1,book=b)));s=v['source'];exact(s,'parserVersion sourceCount associationState markerState reasons digest readAt');integer(s['sourceCount'],zero=True);digest(s['digest']);utc(s['readAt'])
+    reasons='MEMBER_MARKER_NO_PARENT SOURCE_CONFLICT ASSOCIATION_INVALID UNMAPPED_MARKER NO_SOURCE INCOMPLETE_SOURCE_VALUE SOURCE_LIMIT_EXCEEDED'.split();require(s['parserVersion']=='huiben-book-set-v1' and s['associationState'] in ('NO_SOURCE','VALID','ASSOCIATION_INVALID') and s['markerState'] in 'NO_SOURCE CONFLICT MISSING NULL EMPTY WHITESPACE UNSET WRONG_TYPE MEMBER_MARKER UNMAPPED'.split() and s['reasons']==[r for r in reasons if r in s['reasons']])
+def strict_before_after(v,nullable_set):
+    exact(v,'set members');require(type(v['members']) is list)
+    if v['set'] is not None:strict_set(v['set'])
+    else:require(nullable_set)
+    for m in v['members']:
+        exact(m,'bookId member');integer(m['bookId'])
+        if m['member'] is not None:strict_member(m['member']);require(m['member']['bookId']==m['bookId'])
+        else:require(nullable_set)
+    require([m['bookId'] for m in v['members']]==sorted({m['bookId'] for m in v['members']}))
+def strict_impact(v):
+    exact(v,'newSets addedMembers retiredMembers restoredMembers changedMembers unchangedActiveMembers unchangedRetiredMembers copies stockTotal stockAvailable loans charges uses')
+    for x in v.values():integer(x,zero=True)
+    for k in ('copies','stockTotal','stockAvailable','loans','charges','uses'):require(v[k]==0,'B34 escaped catalog scope')
+def strict_fields(v):
+    fields='set.create set.name set.note set.status members.add members.retire members.restore'.split();require(type(v) is list and v==[f for f in fields if f in v])
+def strict_operation(v):require(v in 'CREATE UPDATE_METADATA ADD_MEMBERS RETIRE_MEMBERS RESTORE_MEMBERS RETIRE_SET RESTORE_SET'.split())
+def strict_preview(v):
+    exact(v,'schemaVersion operation mode reason createdAt expiresAt before after books applied changedFields willChange impact warnings');require(type(v['schemaVersion']) is int and v['schemaVersion']==1 and v['mode']=='MANUAL' and type(v['willChange']) is bool and type(v['reason']) is str)
+    utc(v['createdAt']);utc(v['expiresAt']);strict_before_after(v['before'],True);strict_before_after(v['after'],False);strict_fields(v['changedFields']);strict_impact(v['impact']);require(type(v['books']) is list and type(v['applied']) is dict and type(v['warnings']) is list)
+    strict_operation(v['operation'])
+    for b in v['books']:strict_context(b)
+    for w in v['warnings']:
+        exact(w,'code setIds total truncated');require(w['code'] in ('SIMILAR_NAME','COMPLETENESS_UNVERIFIED','PHYSICAL_ASSEMBLY_UNVERIFIED') and type(w['setIds']) is list and type(w['truncated']) is bool);integer(w['total'],zero=True)
+        for sid in w['setIds']:integer(sid)
+def strict_receipt(v):
+    exact(v,'schemaVersion requestId operationKey mode operation actorId confirmedAt changed eventIds before impact result previewDigest');require(type(v['schemaVersion']) is int and v['schemaVersion']==1 and type(v['changed']) is bool and v['mode']=='MANUAL' and type(v['eventIds']) is list);integer(v['requestId']);integer(v['actorId']);utc(v['confirmedAt']);digest(v['previewDigest']);strict_before_after(v['before'],True);strict_impact(v['impact'])
+    strict_operation(v['operation'])
+    for eid in v['eventIds']:integer(eid)
+    r=v['result'];exact(r,'set members createdSet');strict_set(r['set']);require(r['set']['clientRef'] is None and type(r['members']) is list)
+    for m in r['members']:strict_member(m)
+    if r['createdSet'] is not None:exact(r['createdSet'],'clientRef setId');integer(r['createdSet']['setId']);require(type(r['createdSet']['clientRef']) is str and r['createdSet']['setId']==r['set']['setId'])
+def strict_event(v):
+    exact(v,'schemaVersion eventId requestId setId operation actorId occurredAt reason beforeRevision afterRevision changedFields before after evidence books');require(type(v['schemaVersion']) is int and v['schemaVersion']==1 and type(v['books']) is list and type(v['reason']) is str)
+    strict_operation(v['operation'])
+    for key in ('eventId','requestId','setId','actorId'):integer(v[key])
+    integer(v['beforeRevision'],zero=True);integer(v['afterRevision']);require(v['afterRevision']==v['beforeRevision']+1);utc(v['occurredAt']);strict_fields(v['changedFields']);strict_before_after(v['before'],True);strict_before_after(v['after'],False);exact(v['evidence'],'set members')
+    if v['evidence']['set'] is not None:strict_evidence(v['evidence']['set'])
+    for m in v['evidence']['members']:exact(m,'bookId evidence');integer(m['bookId']);strict_evidence(m['evidence'])
+    for b in v['books']:strict_context(b)
+def guard(base,env,mode):
+    u=urllib.parse.urlsplit(base);subnet='172.30.89' if u.port==18089 else '172.30.90'
+    require(os.environ.get('LIBRARY_ACCEPTANCE')=='1','Explicit isolated acceptance flag required')
+    require(u.scheme=='http' and u.hostname in ('localhost','127.0.0.1') and u.port in (18089,18090) and not u.username and not u.password and u.path in ('','/') and not u.query and not u.fragment,'Exact localhost acceptance URL required')
+    require(env.get('FRONTEND_PORT')==str(u.port) and env.get('APP_NETWORK_SUBNET')==subnet+'.0/24' and env.get('FRONTEND_INTERNAL_IP')==subnet+'.10','Exact acceptance subnet/IP/port required')
+    require(mode in ('seed','check','snapshot-sql') and (mode!='seed' or u.port==18089),'Never seed restored deployment')
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,*args):return None
+class Client:
+    def __init__(self,base,env,actor=1,role='ADMIN',version=0):
+        self.base=base;self.env=env;self.actor=actor;self.role=role;self.version=version
+        enc=lambda b:base64.urlsafe_b64encode(b).rstrip(b'=')
+        payload=dict(sub=str(actor),role=role,version=version,iat=int(time.time()),exp=int(time.time())+3600)
+        value=enc(b'{"alg":"HS256","typ":"JWT"}')+b'.'+enc(json.dumps(payload).encode())
+        self.token=(value+b'.'+enc(hmac.new(env['JWT_SECRET'].encode(),value,hashlib.sha256).digest())).decode()
+        self.opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),NoRedirect())
+    def call(self,path,method='GET',body=None,anonymous=False):
+        require(path.startswith('/api/') and method in ('GET','POST','PUT'),'Synthetic route/method refused')
+        headers={'Content-Type':'application/json'}
+        if not anonymous:headers['Authorization']='Bearer '+self.token
+        req=urllib.request.Request(self.base+path,None if body is None else json.dumps(body,ensure_ascii=False).encode(),headers,method=method)
+        with self.opener.open(req,timeout=120) as response:
+            raw=response.read(2097153);require(response.status==200 and len(raw)<=2097152,'Oversized/unexpected synthetic HTTP response');v=json.loads(raw)
+        exact(v,'code message data');require(type(v['code']) is int and v['code']==200,'Unexpected synthetic API result');return v['data']
+    def denied(self,path,status,reason,method='GET',body=None,anonymous=False):
+        try:self.call(path,method,body,anonymous)
+        except urllib.error.HTTPError as e:
+            raw=e.read(16385);require(e.code==status and len(raw)<=16384,'Unexpected refusal HTTP');v=json.loads(raw);exact(v,'code message data')
+            require(v['code']==status and v['data']['reasonCode']==reason,'Unexpected refusal reason')
+            if path.startswith(('/api/catalog-sets','/api/catalog-set-reviews')):exact(v['data'],'schemaVersion reasonCode requestId setId bookId membershipId');require(type(v['data']['schemaVersion']) is int and v['data']['schemaVersion']==1)
+        else:raise RuntimeError('Expected B34 synthetic rejection')
+def view(v):
+    exact(v,'schemaVersion requestId operationKey mode operation state createdAt expiresAt previewDigest preview receipt cancelledAt cancelReason')
+    require(type(v['schemaVersion']) is int and v['schemaVersion']==1 and v['mode']=='MANUAL' and v['state'] in ('PREVIEWED','COMMITTED','CANCELLED'))
+    require(type(v['requestId']) is int and 1<=v['requestId']<=9007199254740991 and re.fullmatch('[0-9a-f]{64}',v['previewDigest']))
+    strict_preview(v['preview']);utc(v['createdAt']);utc(v['expiresAt']);require(v['previewDigest']==hash_value(v['preview']) and v['operation']==v['preview']['operation'],'Original preview digest/operation differs')
+    if v['state']=='COMMITTED':strict_receipt(v['receipt'])
+    else:require(v['receipt'] is None)
+    if v['state']=='CANCELLED':require(v['receipt'] is None and v['cancelReason'] in ('EDIT','ABANDON') and type(v['cancelledAt']) is str);utc(v['cancelledAt'])
+    else:require(v['cancelledAt'] is None and v['cancelReason'] is None)
+def context(c,bid):
+    v=c.call('/api/catalog-sets/books/contexts?bookId='+str(bid));exact(v,'schemaVersion records');require(v['schemaVersion']==1 and len(v['records'])==1)
+    r=v['records'][0];strict_context(r)
+    require(r['book']['bookId']==bid and r['bookDigest']==hash_value(dict(schemaVersion=1,book=r['book'])));return r
+def expected_book(c,bid):
+    r=context(c,bid);return dict(revision=r['book']['revision'],attributeRevision=r['book']['attributeRevision'],digest=r['bookDigest'],sourceDigest=r['source']['digest'])
+def getset(c,sid):
+    v=c.call('/api/catalog-sets/'+str(sid));exact(v,'schemaVersion set setDigest');strict_set(v['set']);require(v['schemaVersion']==1 and v['setDigest']==hash_value(dict(schemaVersion=1,set=v['set'])));return v
+def evidence(reference):return dict(kind='MANUAL_REVIEW',reference=reference)
+def newmember(c,bid):return dict(bookId=bid,expectedBook=expected_book(c,bid),evidence=evidence('B34合成逐边依据 '+str(bid)))
+def page(c,path):
+    records=[];p=1;size=2;total=None
+    while True:
+        v=c.call(path+('?' if '?' not in path else '&')+'page='+str(p)+'&size='+str(size));exact(v,'schemaVersion records total page size pages')
+        require(type(v['schemaVersion']) is int and v['schemaVersion']==1 and v['page']==p and v['size']==size and v['pages']==(v['total']+size-1)//size)
+        if total is None:total=v['total']
+        require(v['total']==total and len(v['records'])==max(0,min(size,total-(p-1)*size)),'Stable synthetic pagination differs')
+        for r in v['records']:
+            if '/events' in path:strict_event(r)
+            elif '/maintenance-members' in path:exact(r,'member memberDigest book');strict_member(r['member']);digest(r['memberDigest']);strict_context(r['book'])
+            elif '/members' in path and '/memberships' not in path:
+                exact(r,'membershipId setId bookId status revision effective book');exact(r['book'],'bookId isbn catalogTitle displayTitle deleted');require(type(r['effective']) is bool and type(r['book']['deleted']) is bool)
+        records+=v['records']
+        if p>v['pages']:return records
+        p+=1
+def input_for(c,operation,sid=None,**extra):
+    value=dict(schemaVersion=1,operationKey=str(uuid.uuid4()),mode='MANUAL',reason='B34隔离合成核实；不代表实际套装完整',operation=operation)
+    if operation!='CREATE':
+        s=getset(c,sid);value.update(setId=sid,expectedSet=dict(revision=s['set']['revision'],digest=s['setDigest']))
+    value.update(extra);return value
+def preview(c,body):
+    v=c.call('/api/catalog-sets/previews','POST',body);view(v);require(v['state']=='PREVIEWED' and v['receipt'] is None)
+    normalized=copy.deepcopy(body)
+    if 'members' in normalized:normalized['members'].sort(key=lambda row:row['bookId'])
+    require(v['preview']['applied']==normalized,'Preview canonical applied input differs')
+    require(c.call('/api/catalog-sets/previews','POST',body)==v and c.call('/api/catalog-sets/requests/by-key?key='+body['operationKey'])==v,'Original preview changed')
+    return dict(input=body,preview=v,actor=c.actor)
+def confirm(c,saved):
+    v=saved['preview'];body=dict(schemaVersion=1,operationKey=saved['input']['operationKey'],previewDigest=v['previewDigest']);path='/api/catalog-sets/requests/'+str(v['requestId'])+'/confirm'
+    r=c.call(path,'POST',body);strict_receipt(r);require(r['schemaVersion']==1 and r['actorId']==c.actor and c.call(path,'POST',body)==r,'Original receipt replay differs')
+    for key in ('copies','stockTotal','stockAvailable','loans','charges','uses'):require(r['impact'][key]==0,'B34 escaped catalog scope')
+    committed=c.call('/api/catalog-sets/requests/'+str(v['requestId']));view(committed);require(committed['state']=='COMMITTED' and committed['receipt']==r and committed['preview']==v['preview'] and c.call('/api/catalog-sets/requests/by-key?key='+body['operationKey'])==committed)
+    saved.update(receipt=r,committed=committed,confirmation=body);return r
+def cancel(c,saved,reason):
+    v=saved['preview'];body=dict(schemaVersion=1,operationKey=saved['input']['operationKey'],previewDigest=v['previewDigest'],reason=reason);path='/api/catalog-sets/requests/'+str(v['requestId'])+'/cancel'
+    r=c.call(path,'POST',body);view(r);require(r['state']=='CANCELLED' and c.call(path,'POST',body)==r and c.call('/api/catalog-sets/previews','POST',saved['input'])==r,'Cancelled original key resurrected')
+    c.denied(path,409,'IDEMPOTENCY_KEY_REUSED','POST',{**body,'reason':'ABANDON' if reason=='EDIT' else 'EDIT'})
+    c.denied('/api/catalog-sets/requests/'+str(v['requestId'])+'/confirm',409,'PREVIEW_CANCELLED','POST',{k:body[k] for k in ('schemaVersion','operationKey','previewDigest')})
+    saved.update(cancelled=r,cancellation=body);return r
+def intake(c,marker):
+    categories=c.call('/api/categories');category=next(r['id'] for r in categories if r.get('status')==1)
+    key=str(uuid.uuid4());body=dict(idempotencyKey=key,source=dict(type='MANUAL',purchaseOrderId=None),reason='B34合成入库',lines=[dict(lineKey=str(uuid.uuid4()),target=dict(bookId=None,newBook=dict(title=marker+str(i),isbn=marker+str(i),categoryId=category),purchaseItemId=None),copies=[dict(input='SCANNED',barcode='000'+marker+str(i),location=None)]) for i in range(4)])
+    p=c.call('/api/inventory-intakes/previews','POST',body);r=c.call('/api/inventory-intakes/'+str(p['intakeId'])+'/confirm','POST',dict(idempotencyKey=key,previewDigest=p['previewDigest']))
+    ids=[r['bookId'] for r in r['books']];require(len(ids)==4 and len(set(ids))==4);return ids
+def create(c,name,ids):return preview(c,input_for(c,'CREATE',clientRef=uuid.uuid4().hex,name=name,note='合成📚\n目录依据\t原文',evidence=evidence('B34合成集合依据'),members=[newmember(c,bid) for bid in ids]))
+def old_fields(c,bid):return dict(book=c.call('/api/books/'+str(bid)+'/metadata'),attribute=c.call('/api/catalog-books/'+str(bid)+'/attributes'),identity=c.call('/api/catalog-identities/books/'+str(bid)),publication=c.call('/api/catalog-publications/books/'+str(bid)))
+def permission_matrix(c,state):
+    actors={k:Client(c.base,c.env,**v) for k,v in state['actors'].items()};sid=state['setIds'][0];owner=state['operations'][0]
+    safe=['/api/catalog-sets','/api/catalog-sets/'+str(sid),'/api/catalog-sets/'+str(sid)+'/members','/api/catalog-sets/books/'+str(state['ids'][0])+'/memberships']
+    private=['/api/catalog-set-reviews','/api/catalog-set-reviews/sources?caseKey=SET_SOURCE_BOOK:'+str(state['ids'][0]),'/api/catalog-sets/books/contexts?bookId='+str(state['ids'][0]),'/api/catalog-sets/'+str(sid)+'/maintenance-members','/api/catalog-sets/'+str(sid)+'/events','/api/catalog-sets/requests/'+str(owner['preview']['requestId']),'/api/catalog-sets/requests/by-key?key='+owner['input']['operationKey']]
+    for path in safe:
+        actors['librarian'].call(path);actors['otherAdmin'].call(path)
+    for path in safe+private:
+        c.denied(path,403,'CATALOG_SET_ROLE_REQUIRED',anonymous=True);actors['reader'].denied(path,403,'CATALOG_SET_ROLE_REQUIRED')
+    for path in private:actors['librarian'].denied(path,403,'CATALOG_SET_ROLE_REQUIRED')
+    for path in private[-2:]:actors['otherAdmin'].denied(path,403,'OWNER_REQUIRED')
+    require(page(actors['otherAdmin'],'/api/catalog-sets/'+str(sid)+'/events')==[],'Other admin received owner events')
+    body=copy.deepcopy(owner['input']);body['operationKey']=str(uuid.uuid4())
+    for actor in ('reader','librarian'):actors[actor].denied('/api/catalog-sets/previews',403,'CATALOG_SET_ROLE_REQUIRED','POST',body)
+    if 'revoked' in state:
+        actor=actors['downgraded'];saved=state['revoked']
+        for path in ('/api/catalog-sets/requests/'+str(saved['preview']['requestId']),'/api/catalog-sets/requests/by-key?key='+saved['input']['operationKey'],'/api/catalog-sets/'+str(saved['receipt']['result']['set']['setId'])+'/events'):
+            actor.denied(path,403,'CATALOG_SET_ROLE_REQUIRED')
+def b36_preview(c,ids):
+    rows=[]
+    for bid in ids:
+        b=c.call('/api/catalog-publications/books/'+str(bid))['book']
+        rows.append(dict(bookId=bid,expectedRevision=b['revision'],expectedMetadataDigest=b['metadataDigest'],changes=dict(publishDate=None,pages=dict(action='SET',value=0),description=dict(action='SET',value='B34前置B36原操作者合成回执')),evidence=evidence('B36原操作者隔离合成依据')))
+    body=dict(operationKey=str(uuid.uuid4()),mode='MANUAL',reason='B34旧B36持久化覆盖',entries=rows);v=c.call('/api/catalog-publications/previews','POST',body)
+    receipt=c.call('/api/catalog-publications/'+str(v['requestId'])+'/confirm','POST',dict(operationKey=body['operationKey'],previewDigest=v['previewDigest']))
+    committed=c.call('/api/catalog-publications/'+str(v['requestId']));require(committed['receipt']==receipt)
+    return dict(input=body,preview=v,receipt=receipt,committed=committed)
+def b36_check(c,state):
+    for name,saved in state['b36'].items():
+        account=state['actors']['librarian' if name=='single' else 'downgraded'];actor=Client(c.base,c.env,**account)
+        paths=['/api/catalog-publications/'+str(saved['preview']['requestId']),'/api/catalog-publications/requests/by-key?key='+saved['input']['operationKey']]
+        for path in paths:
+            if name=='single':require(actor.call(path)==saved['committed'],'Original Librarian B36 receipt changed')
+            else:actor.denied(path,403,'CATALOG_PUBLICATION_ROLE_REQUIRED')
+        for entry in saved['input']['entries']:
+            bid=entry['bookId'];v=actor.call('/api/catalog-publications/books/'+str(bid)+'/events?page=1&size=1');require(v['total']>=1 and len(v['records'])==1 and v['records'][0]['actorId']==actor.actor,'Original B36 owner events lost')
+            empty=actor.call('/api/catalog-publications/books/'+str(bid)+'/events?page='+str(v['pages']+1)+'&size=1');require(empty['records']==[] and empty['total']==v['total'],'B36 own event pagination differs')
+def source_pages(c,state):
+    rows=page(c,'/api/catalog-set-reviews?scope=ALL&bookDeleted=ALL&keyword='+state['marker'])
+    require({r['book']['bookId'] for r in rows}==set(state['ids']),'Synthetic source paging omitted owned books')
+    for r in rows:
+        exact(r,'caseKey caseKind book source relationshipState activeSetCount historicalMembershipCount catalogMembershipState sourceResolution physicalAssembly')
+        require(r['sourceResolution']=='UNRESOLVED' and r['physicalAssembly']=='UNVERIFIED' and r['source']['sourceCount']==0 and r['source']['markerState']=='NO_SOURCE' and r['source']['reasons']==['NO_SOURCE'],'Manual links incorrectly resolve source evidence')
+        v=c.call('/api/catalog-set-reviews/sources?caseKey='+r['caseKey']+'&page=2&size=2');exact(v,'schemaVersion caseKey records total page size pages evidenceDigest')
+        require(v['schemaVersion']==1 and v['records']==[] and v['total']==v['pages']==0 and v['evidenceDigest']==r['source']['digest'],'Source detail empty page/digest differs')
+        r['source'].pop('readAt')
+    return rows
+def seed(c):
+    marker='B34'+uuid.uuid4().hex[:15];ids=intake(c,marker);operations=[];cancelled=[]
+    state=dict(schemaVersion=1,synthetic=True,ids=ids,marker=marker,operations=operations,cancelled=cancelled,actors={})
+    for key,role in [('otherAdmin','ADMIN'),('librarian','LIBRARIAN'),('reader','READER'),('downgraded','ADMIN')]:
+        user=c.call('/api/users','POST',dict(username='b34_'+uuid.uuid4().hex[:12],password=uuid.uuid4().hex,realName='合成验收',role=role,status=1))
+        state['actors'][key]=dict(actor=user['id'],role=role,version=0)
+    # Identity A -> B -> A is legal, creates old B33/B36 events, and MUST happen
+    # before those old modules capture their first immutable snapshots.
+    stale=create(c,marker+'过时预览',[ids[0]]);before=context(c,ids[0])
+    original=c.call('/api/books/'+str(ids[0])+'/metadata')['book']
+    for field,temp in [('isbn','X'+original['isbn'][1:]),('title',original['title']+'临时')]:
+        for value in (temp,original[field]):
+            m=c.call('/api/books/'+str(ids[0])+'/metadata');c.call('/api/books/'+str(ids[0])+'/metadata','PUT',dict(expectedMetadataDigest=m['metadataDigest'],changes={field:value}))
+    require(context(c,ids[0])['book']['revision']==before['book']['revision']+4,'Identity ABA guard failed')
+    c.denied('/api/catalog-sets/requests/'+str(stale['preview']['requestId'])+'/confirm',409,'BOOK_IDENTITY_CHANGED','POST',dict(schemaVersion=1,operationKey=stale['input']['operationKey'],previewDigest=stale['preview']['previewDigest']))
+    cancel(c,stale,'EDIT');cancelled.append(stale)
+    librarian=Client(c.base,c.env,**state['actors']['librarian']);downgraded=Client(c.base,c.env,**state['actors']['downgraded'])
+    state['b36']=dict(single=b36_preview(librarian,[ids[0]]),batch=b36_preview(downgraded,ids[1:3]))
+    revoked=create(downgraded,marker+'角色撤销',[]);confirm(downgraded,revoked);state['revoked']=revoked
+    user=c.call('/api/users/'+str(downgraded.actor));c.call('/api/users','PUT',dict(id=user['id'],username=user['username'],realName=user['realName'],role='LIBRARIAN',status=1))
+    state['actors']['downgraded'].update(role='LIBRARIAN',version=1);b36_check(c,state)
+    original={str(bid):old_fields(c,bid) for bid in ids}
+    empty=create(c,marker+'空集合',[]);empty_id=confirm(c,empty)['result']['set']['setId'];operations.append(empty)
+    first=create(c,marker+'第一套',ids[:2]);sid=confirm(c,first)['result']['set']['setId'];operations.append(first)
+    require(c.call('/api/catalog-sets/requests/'+str(first['preview']['requestId'])+'/cancel','POST',dict(schemaVersion=1,operationKey=first['input']['operationKey'],previewDigest=first['preview']['previewDigest'],reason='EDIT'))==first['committed'],'Post-commit cancel must return original committed view')
+    other=create(c,marker+'第二套',[ids[0]]);other_id=confirm(c,other)['result']['set']['setId'];operations.append(other)
+    add=preview(c,input_for(c,'ADD_MEMBERS',sid,members=[newmember(c,ids[2])]));confirm(c,add);operations.append(add)
+    def edge_action(op,bid):
+        row=next(r for r in page(c,'/api/catalog-sets/'+str(sid)+'/maintenance-members?status=ALL') if r['member']['bookId']==bid)
+        m=row['member'];member=dict(membershipId=m['membershipId'],bookId=bid,expectedMember=dict(revision=m['revision'],digest=row['memberDigest']),expectedBook=expected_book(c,bid),evidence=evidence('B34合成'+op+'逐边依据'))
+        saved=preview(c,input_for(c,op,sid,members=[member]));result=confirm(c,saved);operations.append(saved);return result['result']['members'][0]
+    retired=edge_action('RETIRE_MEMBERS',ids[0]);restored=edge_action('RESTORE_MEMBERS',ids[0]);require(restored['membershipId']==retired['membershipId'] and restored['revision']==retired['revision']+1,'Restore changed stable membership id')
+    edge_action('RETIRE_MEMBERS',ids[1])
+    for op in ('RETIRE_SET','RESTORE_SET'):
+        s=preview(c,input_for(c,op,sid,evidence=evidence('B34合成整体状态依据')));confirm(c,s);operations.append(s)
+    retire_empty=preview(c,input_for(c,'RETIRE_SET',empty_id,evidence=evidence('B34合成空集合退役')));confirm(c,retire_empty);operations.append(retire_empty)
+    current=getset(c,sid)['set'];noop=preview(c,input_for(c,'UPDATE_METADATA',sid,changes=dict(name=dict(action='SET',value=current['name']),note=dict(action='KEEP')),evidence=evidence('B34合成无变化依据')))
+    r=confirm(c,noop);require(not r['changed'] and r['eventIds']==[] and r['result']['set']['revision']==current['revision'],'No-change advanced entity/event');operations.append(noop)
+    edit=create(c,marker+'取消后编辑',[ids[3]]);cancel(c,edit,'ABANDON');cancelled.append(edit)
+    pending=create(c,marker+'持久未提交',[ids[3]])
+    state.update(setIds=[sid,other_id,empty_id],pending=pending)
+    permission_matrix(c,state)
+    # Current roles, safe responses and frozen owner receipts survive lifecycle.
+    for bid in ids:require(old_fields(c,bid)==original[str(bid)],'B34 changed publication/identity/stock/B33 fields')
+    state.update(original=original,contexts={str(bid):context(c,bid) for bid in ids},sets={str(x):getset(c,x) for x in state['setIds']},members={str(x):page(c,'/api/catalog-sets/'+str(x)+'/members?status=ALL') for x in state['setIds']},events={str(x):page(c,'/api/catalog-sets/'+str(x)+'/events') for x in state['setIds']},sources=source_pages(c,state))
+    require(any(context(c,bid)['book']['revision']>0 for bid in ids));return state
+def check(c,state):
+    require(state['schemaVersion']==1 and state['synthetic'] is True)
+    permission_matrix(c,state)
+    b36_check(c,state);require(source_pages(c,state)==state['sources'],'Read-only source cases changed after lifecycle')
+    for bid in state['ids']:
+        current=context(c,bid);saved=copy.deepcopy(state['contexts'][str(bid)])
+        current['source'].pop('readAt');saved['source'].pop('readAt');require(current==saved and old_fields(c,bid)==state['original'][str(bid)],'Owned identity/context or old business changed')
+    for sid in state['setIds']:
+        require(getset(c,sid)==state['sets'][str(sid)] and page(c,'/api/catalog-sets/'+str(sid)+'/members?status=ALL')==state['members'][str(sid)] and page(c,'/api/catalog-sets/'+str(sid)+'/events')==state['events'][str(sid)],'Original set/member/event projection changed')
+    for saved in state['operations']+state['cancelled']+[state['pending']]:
+        expected=saved.get('committed',saved.get('cancelled',saved['preview']));v=c.call('/api/catalog-sets/requests/'+str(saved['preview']['requestId']));view(v)
+        require(v==expected and c.call('/api/catalog-sets/requests/by-key?key='+saved['input']['operationKey'])==expected,'Original preview/receipt/cancel changed')
+def snapshot_sql(state):
+    for table,columns in COLUMNS.items():
+        cells=','.join('IF(`'+v+'` IS NULL,NULL,HEX(CAST(`'+v+'` AS BINARY)))' for v in columns.split());order='request_id,book_id' if table=='catalog_set_request_book' else 'id'
+        print("SELECT '"+table+"',SHA2(CAST(JSON_ARRAY("+cells+") AS CHAR),256) FROM `"+table+'` ORDER BY '+order+';')
+    cells=','.join('IF(`'+v+'` IS NULL,NULL,HEX(CAST(`'+v+'` AS BINARY)))' for v in ('id','catalog_set_book_revision'))
+    print("SELECT 'book-set-guard',SHA2(CAST(JSON_ARRAY("+cells+") AS CHAR),256) FROM book WHERE id IN ("+','.join(str(int(v)) for v in sorted(state['ids']))+') ORDER BY id;')
+def main(argv=None):
+    p=argparse.ArgumentParser();p.add_argument('--base',required=True);p.add_argument('--env',required=True);p.add_argument('--state',required=True);p.add_argument('--mode',choices=('seed','check','snapshot-sql'),required=True);a=p.parse_args(argv)
+    env=dict(line.split('=',1) for line in Path(a.env).read_text().splitlines() if line and not line.startswith('#') and '=' in line);guard(a.base,env,a.mode);path=Path(a.state)
+    if a.mode=='seed':
+        require(not path.exists() and not path.is_symlink(),'Never overwrite original fixture state');state=seed(Client(a.base,env));path.write_text(json.dumps(state,ensure_ascii=False,indent=2)+'\n',encoding='utf-8');print('B34 synthetic HTTP business and original snapshots captured')
+    else:
+        state=json.loads(path.read_bytes())
+        if a.mode=='snapshot-sql':snapshot_sql(state)
+        else:check(Client(a.base,env),state);print('B34 five-table original JSON, owner receipts, states, guards and pages preserved')
+    return 0
+if __name__=='__main__':raise SystemExit(main())
+B34_PY
+library_set_acceptance() {
+    LIBRARY_ACCEPTANCE=1 python3 "$library_test/container_set_acceptance.py" --base "$1" --env "$2" --state "$library_test/set-state.json" --mode "$3"
+}
+library_set_snapshot() {
+    local library_set_project="$1" library_set_tag="$2" library_set_mysql
+    [[ "$library_set_project" == library || "$library_set_project" == library-recovery ]]
+    library_set_mysql="$(docker ps -q --filter "label=com.docker.compose.project=$library_set_project" --filter label=com.docker.compose.service=mysql)"
+    [[ -n "$library_set_mysql" && "$library_set_mysql" != *$'\n'* ]]
+    [[ "$(docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' "$library_set_mysql")" == "$library_set_project" ]]
+    [[ "$(docker inspect --format '{{ index .Config.Labels "com.docker.compose.service" }}' "$library_set_mysql")" == mysql ]]
+    docker exec -i "$library_set_mysql" sh -c 'MYSQL_PWD="$MYSQL_MIGRATION_PASSWORD" exec mysql -u library_migrator --default-character-set=utf8mb4 --batch --raw --skip-column-names "$MYSQL_DATABASE"' < "$library_test/set-persistence.sql" > "$library_test/set-$library_set_tag.tsv"
+    if [[ "$library_set_tag" != before ]]; then
+        cmp --silent "$library_test/set-before.tsv" "$library_test/set-$library_set_tag.tsv"
+    fi
+}
+library_set_acceptance http://localhost:18089 "$library_test/install/.env" seed
+library_set_acceptance http://localhost:18089 "$library_test/install/.env" snapshot-sql > "$library_test/set-persistence.sql"
+library_set_snapshot library before
+python3 - "$library_test/set-before.tsv" <<'B34_NONEMPTY_PY'
+import re,sys
+from pathlib import Path
+rows=[line.split('\t') for line in Path(sys.argv[1]).read_text().splitlines()]
+assert rows and all(len(row)==2 and re.fullmatch('[0-9a-f]{64}',row[1]) for row in rows)
+required=set('catalog_set catalog_set_member catalog_set_request catalog_set_request_book catalog_set_event book-set-guard'.split())
+assert {row[0] for row in rows}==required,'Every B34 table and owned technical guard must be nonempty'
+print('B34 five nonempty tables, original previews/receipts/cancel, versions and owned guards captured')
+B34_NONEMPTY_PY
+# END B34 SETS SEED
 # BEGIN B33-A ATTRIBUTES SEED (independent synthetic module acceptance)
 cat > "$library_test/catalog_attributes_acceptance.py" <<'B33A_PY'
 """Embedded verbatim in container-acceptance.sh; synthetic isolated fixtures only."""
@@ -700,6 +1036,10 @@ library_identity_snapshot library recreate
 library_publication_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_publication_snapshot library recreate
 # END B36 PUBLICATION RECREATE
+# BEGIN B34 SETS RECREATE
+library_set_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_set_snapshot library recreate
+# END B34 SETS RECREATE
 echo 'Container recreate preserved data and files'
 python3 "$library_repo/scripts/package_release.py" acceptance-update
 # Reproduce a release whose JAR changes by one byte while keeping its size and
@@ -739,6 +1079,10 @@ library_identity_snapshot library update
 library_publication_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_publication_snapshot library update
 # END B36 PUBLICATION UPDATE
+# BEGIN B34 SETS UPDATE
+library_set_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_set_snapshot library update
+# END B34 SETS UPDATE
 echo 'Application update preserved data and files'
 python3 "$library_repo/scripts/package_release.py" acceptance-broken
 python3 - "$library_repo/dist/library-management-system-acceptance-broken.zip" <<'PY'
@@ -767,6 +1111,10 @@ library_identity_snapshot library failed_update
 library_publication_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_publication_snapshot library failed_update
 # END B36 PUBLICATION FAILED_UPDATE
+# BEGIN B34 SETS FAILED_UPDATE
+library_set_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_set_snapshot library failed_update
+# END B34 SETS FAILED_UPDATE
 echo 'Failed-start rollback restored previous application and data'
 APP_VERSION="$(basename "$library_release")" bash "$library_release/scripts/backup.sh" "$library_test/backup"
 sed -e 's/18089/18090/g' -e 's/172.30.89/172.30.90/g' "$library_test/install/.env" > "$library_test/recovery/.env"
@@ -785,4 +1133,8 @@ library_identity_snapshot library-recovery restore
 library_publication_acceptance http://localhost:18090 "$library_test/recovery/.env" check
 library_publication_snapshot library-recovery restore
 # END B36 PUBLICATION RESTORE
+# BEGIN B34 SETS RESTORE
+library_set_acceptance http://localhost:18090 "$library_test/recovery/.env" check
+library_set_snapshot library-recovery restore
+# END B34 SETS RESTORE
 echo 'First install, recreate, update, failed-start rollback, backup and isolated restore passed'

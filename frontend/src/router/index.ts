@@ -55,6 +55,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '图书管理', icon: 'Reading', roles: ['ADMIN', 'LIBRARIAN'] },
       },
       {
+        path: 'catalog-sets',
+        name: 'CatalogSets',
+        component: () => import('@/views/catalog-sets/index.vue'),
+        meta: { title: '套装目录', roles: ['ADMIN', 'LIBRARIAN'] },
+      },
+      {
+        path: 'catalog-set-reviews',
+        name: 'CatalogSetReviews',
+        component: () => import('@/views/catalog-sets/reviews.vue'),
+        meta: { title: '套装来源待核实', roles: ['ADMIN'] },
+      },
+      {
         path: 'book-copies',
         name: 'BookCopyQuery',
         component: () => import('@/views/book-copy/index.vue'),

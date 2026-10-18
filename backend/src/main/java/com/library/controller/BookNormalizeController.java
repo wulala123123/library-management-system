@@ -61,6 +61,7 @@ public class BookNormalizeController {
         Book book = bookMapper.lockById(id);
         if (book == null) return Result.error(404, "图书不存在");
         var identityBefore = com.library.catalogidentity.CatalogIdentityHistory.book(jdbc,id);
+        var catalogSetBefore = com.library.catalogsets.CatalogSetBookHistory.snapshot(jdbc,id,true);
         var publicationBefore = com.library.catalogpublication.PublicationHistory.snapshot(jdbc,id,true);
 
         BookNormalizeLog logEntry = new BookNormalizeLog();
@@ -85,6 +86,7 @@ public class BookNormalizeController {
         bookMapper.updateById(book);
         com.library.catalogattributes.CatalogAttributeHistory.recordLegacyTitleChange(jdbc, id, logEntry.getOldTitle(), book.getTitle(), "LEGACY_BOOK_NORMALIZE");
         com.library.catalogidentity.CatalogIdentityHistory.recordBook(jdbc,id,identityBefore,"LEGACY_BOOK_NORMALIZE");
+        com.library.catalogsets.CatalogSetBookHistory.recordIfChanged(jdbc,id,catalogSetBefore);
         com.library.catalogpublication.PublicationHistory.legacy(jdbc,id,publicationBefore,"LEGACY_NORMALIZE");
         normalizeLogMapper.insert(logEntry);
 
@@ -107,6 +109,7 @@ public class BookNormalizeController {
             Book book = bookMapper.lockById(req.getId());
             if (book == null) continue;
             var identityBefore = com.library.catalogidentity.CatalogIdentityHistory.book(jdbc,req.getId());
+            var catalogSetBefore = com.library.catalogsets.CatalogSetBookHistory.snapshot(jdbc,req.getId(),true);
             var publicationBefore = com.library.catalogpublication.PublicationHistory.snapshot(jdbc,req.getId(),true);
 
             BookNormalizeLog logEntry = new BookNormalizeLog();
@@ -131,6 +134,7 @@ public class BookNormalizeController {
             bookMapper.updateById(book);
             com.library.catalogattributes.CatalogAttributeHistory.recordLegacyTitleChange(jdbc, book.getId(), logEntry.getOldTitle(), book.getTitle(), "LEGACY_BOOK_NORMALIZE");
             com.library.catalogidentity.CatalogIdentityHistory.recordBook(jdbc,book.getId(),identityBefore,"LEGACY_BOOK_NORMALIZE_BATCH");
+            com.library.catalogsets.CatalogSetBookHistory.recordIfChanged(jdbc,book.getId(),catalogSetBefore);
             com.library.catalogpublication.PublicationHistory.legacy(jdbc,book.getId(),publicationBefore,"LEGACY_NORMALIZE_BATCH");
             normalizeLogMapper.insert(logEntry);
             count++;
