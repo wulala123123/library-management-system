@@ -51,6 +51,10 @@ public class Book {
     @JsonIgnore
     private Long catalogIdentityRevision;
 
+    /** B36 technical snapshot version; omitted from every legacy JSON representation. */
+    @JsonIgnore
+    private Long publicationRevision;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

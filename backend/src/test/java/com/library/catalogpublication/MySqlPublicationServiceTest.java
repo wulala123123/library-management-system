@@ -1,0 +1,20 @@
+package com.library.catalogpublication;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.*;
+import org.springframework.transaction.support.TransactionTemplate;
+import java.util.*;
+import java.util.concurrent.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+@EnabledIfEnvironmentVariable(named="MYSQL_TEST_URL",matches=".+")
+@SpringBootTest(properties={"spring.flyway.enabled=true","spring.sql.init.mode=never","bootstrap.admin.username=admin","bootstrap.admin.password=B36SyntheticAdministrator123","mybatis-plus.configuration.log-impl=org.apache.ibatis.logging.nologging.NoLoggingImpl"})
+public class MySqlPublicationServiceTest extends PublicationServiceTest {
+    @DynamicPropertySource static void mysql(DynamicPropertyRegistry r){String url=System.getenv("MYSQL_TEST_URL");if(url==null||!url.matches("jdbc:mysql://[^/]+/library_repair_tests(?:\\?.*)?"))throw new IllegalStateException("Disposable schema only");r.add("spring.datasource.url",()->url);r.add("spring.datasource.driver-class-name",()->"com.mysql.cj.jdbc.Driver");r.add("spring.datasource.username",()->System.getenv().getOrDefault("MYSQL_TEST_USER","root"));r.add("spring.datasource.password",()->System.getenv("MYSQL_TEST_PASSWORD"));}
+    @Test void legacyWriterAndConfirmationUseSameMutexAndBusyIsRecoverable()throws Exception{long b=book();JsonNode p=preview(b,set("pages",0));CountDownLatch held=new CountDownLatch(1),release=new CountDownLatch(1);ExecutorService pool=Executors.newSingleThreadExecutor();try{Future<?> writer=pool.submit(()->{authenticate();try{new TransactionTemplate(transactions).execute(s->{metadata(b,"pages",7);held.countDown();try{assertTrue(release.await(15,TimeUnit.SECONDS));}catch(InterruptedException e){throw new RuntimeException(e);}return null;});}finally{clear();}});assertTrue(held.await(5,TimeUnit.SECONDS));reason("CATALOG_BUSY",()->confirm(p));assertEquals("PREVIEWED",service.getRequest(p.path("requestId").asLong(),admin).path("state").asText());release.countDown();writer.get(10,TimeUnit.SECONDS);reason("PUBLICATION_CHANGED",()->confirm(p));}finally{release.countDown();pool.shutdownNow();assertTrue(pool.awaitTermination(10,TimeUnit.SECONDS));}}
+    @Test void competingPublicationRequestsCommitOnlyOne()throws Exception{long b=book();JsonNode a=preview(b,set("pages",0)),c=preview(b,set("pages",1));ExecutorService pool=Executors.newFixedThreadPool(2);try{Future<String> x=pool.submit(()->outcome(a)),y=pool.submit(()->outcome(c));List<String> results=List.of(x.get(20,TimeUnit.SECONDS),y.get(20,TimeUnit.SECONDS));assertEquals(1,results.stream().filter("COMMITTED"::equals).count());assertEquals(1,results.stream().filter("PUBLICATION_CHANGED"::equals).count());assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM catalog_publication_event WHERE book_id=?",Integer.class,b));}finally{pool.shutdownNow();assertTrue(pool.awaitTermination(5,TimeUnit.SECONDS));}}
+    @Test void busyPreviewCanRecoverUsingOriginalKey()throws Exception{long b=book();var n=input(entry(b,set("pages",0)));CountDownLatch held=new CountDownLatch(1),release=new CountDownLatch(1);ExecutorService pool=Executors.newSingleThreadExecutor();try{Future<?> locker=pool.submit(()->new TransactionTemplate(transactions).execute(s->{PublicationHistory.lock(jdbc);held.countDown();try{release.await(15,TimeUnit.SECONDS);}catch(InterruptedException e){throw new RuntimeException(e);}return null;}));assertTrue(held.await(5,TimeUnit.SECONDS));reason("CATALOG_BUSY",()->service.preview(n,admin));release.countDown();locker.get(10,TimeUnit.SECONDS);JsonNode p=service.preview(n,admin);assertEquals(p,service.getByKey(n.path("operationKey").asText(),admin));confirm(p);}finally{release.countDown();pool.shutdownNow();assertTrue(pool.awaitTermination(5,TimeUnit.SECONDS));}}
+    private String outcome(JsonNode p){try{confirm(p);return "COMMITTED";}catch(PublicationSupport.Failure e){return e.code;}}
+}

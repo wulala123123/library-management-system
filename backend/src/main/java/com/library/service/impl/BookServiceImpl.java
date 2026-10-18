@@ -126,7 +126,9 @@ public class BookServiceImpl implements BookService {
             throw com.library.service.IntakeCatalog.error(409, "BOOK_HAS_INVENTORY", "书目仍有库存或已登记实体册，无法删除");
         com.library.catalogattributes.CatalogAttributeHistory.deletionGuard(jdbc, id);
         com.library.catalogidentity.CatalogIdentityHistory.bookDeletionGuard(jdbc, id);
+        var publicationBefore = com.library.catalogpublication.PublicationHistory.snapshot(jdbc,id,true);
         bookMapper.deleteById(id);
+        com.library.catalogpublication.PublicationHistory.legacy(jdbc,id,publicationBefore,"LEGACY_DELETE");
     }
 
     @Override

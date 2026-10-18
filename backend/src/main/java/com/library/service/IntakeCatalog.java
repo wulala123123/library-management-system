@@ -86,6 +86,8 @@ public class IntakeCatalog {
         updateColumns(id, values);
     }
     private void updateColumns(Long id, LinkedHashMap<String, Object> values) {
+        com.library.catalogpublication.PublicationHistory.lock(jdbc);
+        var publicationBefore = com.library.catalogpublication.PublicationHistory.snapshot(jdbc,id,true);
         var identityBefore = com.library.catalogidentity.CatalogIdentityHistory.book(jdbc,id);
         String oldTitle = values.containsKey("title") ? jdbc.queryForObject("SELECT title FROM book WHERE id=? AND deleted=0", String.class, id) : null;
         if (values.containsKey("isbn")) {
@@ -100,6 +102,7 @@ public class IntakeCatalog {
             throw error(409, "PREVIEW_STALE", "书目已变化，请重新读取");
         if (values.containsKey("title") && attributeHistory != null) attributeHistory.title(id, oldTitle, (String) values.get("title"));
         com.library.catalogidentity.CatalogIdentityHistory.recordBook(jdbc,id,identityBefore,"LEGACY_BOOK_METADATA");
+        com.library.catalogpublication.PublicationHistory.legacy(jdbc,id,publicationBefore,"LEGACY_METADATA");
     }
     public Metadata newMetadata(JsonNode input) {
         LinkedHashMap<String, Object> values = parse(input, true);
@@ -145,7 +148,8 @@ public class IntakeCatalog {
                 if (!node.isTextual()) invalid();
                 String s = node.textValue();
                 int max = switch (key) { case "isbn" -> 20; case "coverImage" -> 500; case "description" -> 2000; case "location" -> 100; default -> 200; };
-                text(s, max, key.equals("isbn") || key.equals("title"));
+                if (key.equals("description")) com.library.catalogpublication.PublicationSupport.text(node, max, true, true);
+                else text(s, max, key.equals("isbn") || key.equals("title"));
                 if (key.equals("isbn") && !s.matches("[a-zA-Z0-9-]+")) invalid();
                 if (key.equals("publishDate")) {
                     if (!s.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")) invalid();

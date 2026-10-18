@@ -35,7 +35,7 @@ public class BookRequest {
     @DecimalMax(value = "99999.99", message = "价格超出范围")
     private BigDecimal price;
 
-    @Min(value = 1, message = "页数必须大于0")
+    @Min(value = 0, message = "页数不能为负数")
     @Max(value = 99999, message = "页数超出范围")
     private Integer pages;
 
@@ -43,8 +43,13 @@ public class BookRequest {
     @Pattern(regexp = "^(https?://[\\w\\-.]+(:\\d+)?(/.*)?|/uploads/[^\\s]+)?$", message = "封面URL格式不正确")
     private String coverImage;
 
-    @Size(max = 2000, message = "简介长度不超过2000个字符")
     private String description;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @AssertTrue(message = "简介长度不超过2000个码点")
+    public boolean isDescriptionLengthValid() {
+        return description == null || description.codePointCount(0, description.length()) <= 2000;
+    }
 
     @Size(max = 100, message = "馆藏位置不超过100个字符")
     @Pattern(regexp = "^[\\p{L}\\d\\-A-Z区层架]*$", message = "馆藏位置包含非法字符")

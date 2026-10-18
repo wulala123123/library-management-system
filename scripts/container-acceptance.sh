@@ -510,6 +510,174 @@ assert {row[0] for row in rows}==required,'Every B35 table and owned technical r
 print('B35 all nine tables contain synthetic business; original JSON byte hashes captured')
 B35_NONEMPTY_PY
 # END B35 IDENTITY SEED
+# BEGIN B36 PUBLICATION SEED
+cat > "$library_test/catalog_publication_acceptance.py" <<'B36_PY'
+"""B36 synthetic HTTP lifecycle helper. Never connects to production.
+
+snapshot-sql emits SELECTs only; no business SQL is executed by this helper.
+"""
+import argparse
+import base64
+import copy
+import hashlib
+import hmac
+import json
+import os
+from pathlib import Path
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import uuid
+
+COLUMNS={
+ 'catalog_publication_request':'id operation_key actor_id mode input_hash schema_version request_json preview_json preview_digest state created_at expires_at receipt_json committed_at',
+ 'catalog_publication_event':'id book_id request_id kind before_revision after_revision schema_version changed_fields_json before_json after_json evidence_json actor_id occurred_at reason',
+}
+def guard(base,env,mode):
+    u=urllib.parse.urlsplit(base)
+    assert os.environ.get('LIBRARY_ACCEPTANCE')=='1','Explicit acceptance flag required'
+    assert u.scheme=='http' and u.hostname in ('localhost','127.0.0.1') and u.port in (18089,18090) and not u.username and not u.password and u.path in ('','/') and not u.query and not u.fragment,'Exact localhost acceptance URL required'
+    subnet='172.30.89' if u.port==18089 else '172.30.90'
+    assert env.get('FRONTEND_PORT')==str(u.port) and env.get('APP_NETWORK_SUBNET')==subnet+'.0/24' and env.get('FRONTEND_INTERNAL_IP')==subnet+'.10','Exact acceptance subnet/IP/port required'
+    assert mode in ('seed','check','snapshot-sql') and (mode!='seed' or u.port==18089),'Never seed restored deployment'
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,*args):return None
+
+class Client:
+    def __init__(self,base,env):
+        self.base=base;enc=lambda x:base64.urlsafe_b64encode(x).rstrip(b'=')
+        payload=dict(sub='1',role='ADMIN',version=0,iat=int(time.time()),exp=int(time.time())+3600)
+        value=enc(b'{"alg":"HS256","typ":"JWT"}')+b'.'+enc(json.dumps(payload).encode())
+        self.token=(value+b'.'+enc(hmac.new(env['JWT_SECRET'].encode(),value,hashlib.sha256).digest())).decode()
+        self.opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),NoRedirect())
+    def call(self,path,method='GET',body=None):
+        assert path.startswith('/api/') and method in ('GET','POST','PUT')
+        request=urllib.request.Request(self.base+path,None if body is None else json.dumps(body,ensure_ascii=False).encode(),{'Authorization':'Bearer '+self.token,'Content-Type':'application/json'},method=method)
+        with self.opener.open(request,timeout=120) as response:
+            raw=response.read(2097153);assert response.status==200 and len(raw)<=2097152
+            value=json.loads(raw)
+        assert set(value)=={'code','message','data'} and value['code']==200
+        return value['data']
+    def denied(self,path,body,status,reason):
+        try:self.call(path,'POST',body)
+        except urllib.error.HTTPError as error:
+            raw=error.read(16385);assert error.code==status and len(raw)<=16384
+            value=json.loads(raw);assert value['code']==status and value['data']['reasonCode']==reason
+        else:raise AssertionError('Expected publication refusal')
+
+def book(c,id):return c.call('/api/catalog-publications/books/'+str(id))['book']
+def body(c,entries):
+    rows=[]
+    for id,changes,reference in entries:
+        current=book(c,id);rows.append(dict(bookId=id,expectedRevision=current['revision'],expectedMetadataDigest=current['metadataDigest'],changes={k:changes.get(k) for k in ('publishDate','pages','description')},evidence=dict(kind='MANUAL_REVIEW',reference=reference)))
+    return dict(operationKey=str(uuid.uuid4()),mode='MANUAL',reason='B36隔离合成验收',entries=rows)
+def preview(c,input):
+    value=c.call('/api/catalog-publications/previews','POST',input)
+    assert value['state']=='PREVIEWED' and value['receipt'] is None
+    assert [v['bookId'] for v in value['preview']['books']]==sorted(v['bookId'] for v in input['entries'])
+    assert c.call('/api/catalog-publications/previews','POST',input)==value
+    assert c.call('/api/catalog-publications/requests/by-key?key='+input['operationKey'])==value
+    return dict(input=input,preview=value)
+def confirm(c,saved):
+    value=saved['preview'];confirmation=dict(operationKey=saved['input']['operationKey'],previewDigest=value['previewDigest']);path='/api/catalog-publications/'+str(value['requestId'])+'/confirm'
+    result=c.call(path,'POST',confirmation);assert c.call(path,'POST',confirmation)==result
+    committed=c.call('/api/catalog-publications/'+str(value['requestId']));assert committed['receipt']==result and committed['preview']==value['preview'] and committed['state']=='COMMITTED'
+    assert c.call('/api/catalog-publications/requests/by-key?key='+saved['input']['operationKey'])==committed
+    saved.update(confirmation=confirmation,receipt=result,committed=committed);return result
+def unrelated(c,id):
+    metadata=c.call('/api/books/'+str(id)+'/metadata')['book']
+    for key in ('publishDate','pages','description','updateTime'):metadata.pop(key,None)
+    return dict(metadata=metadata,attribute=c.call('/api/catalog-books/'+str(id)+'/attributes'),identity=c.call('/api/catalog-identities/books/'+str(id)))
+def setv(value):return dict(action='SET',value=value)
+def clear():return dict(action='CLEAR')
+def intake(c,marker):
+    key=str(uuid.uuid4());input=dict(idempotencyKey=key,source=dict(type='MANUAL',purchaseOrderId=None),reason='B36合成书目',lines=[dict(lineKey=str(uuid.uuid4()),target=dict(bookId=None,newBook=dict(title=marker+str(i),isbn=marker+str(i)),purchaseItemId=None),copies=[dict(input='SCANNED',barcode='000'+marker+str(i),location=None)]) for i in range(3)])
+    p=c.call('/api/inventory-intakes/previews','POST',input);r=c.call('/api/inventory-intakes/'+str(p['intakeId'])+'/confirm','POST',dict(idempotencyKey=key,previewDigest=p['previewDigest']))
+    ids=[v['bookId'] for v in r['books']];assert len(ids)==3 and len(set(ids))==3;return ids
+def seed(c):
+    ids=intake(c,'B36'+uuid.uuid4().hex[:16]);original={str(id):unrelated(c,id) for id in ids};saved=[]
+    # Each entry has explicit human supplied reference; NULL, empty and 0 differ.
+    single=preview(c,body(c,[(ids[0],dict(publishDate=setv('2024-02-29'),pages=setv(0),description=setv('合成版权页📚\n第二行\t原文')),'合成版权页；人工填写的依据')]))
+    r=confirm(c,single);assert r['books'][0]['changed'];saved.append(single)
+    cleared=preview(c,body(c,[(ids[0],{k:clear() for k in ('publishDate','pages','description')},'合成未知资料，明确清空')]))
+    r=confirm(c,cleared);assert all(r['books'][0]['publication'][k] is None for k in ('publishDate','pages','description'));saved.append(cleared)
+    zero=preview(c,body(c,[(ids[0],dict(pages=setv(0),description=setv('')),'合成已知0页与显式空简介')]))
+    confirm(c,zero);saved.append(zero)
+    noop=preview(c,body(c,[(ids[0],dict(pages=setv(0),description=setv('')),'合成显式重复原值')]))
+    r=confirm(c,noop);assert not r['books'][0]['changed'] and r['books'][0]['eventId'] is None and r['books'][0]['beforeRevision']==r['books'][0]['afterRevision'];saved.append(noop)
+    batch=preview(c,body(c,[(ids[2],dict(publishDate=setv('2023-12-31'),description=setv('')),'合成书目三依据'),(ids[1],dict(pages=setv(0),description=setv('批量📚\n原文\t保留')),'合成书目二依据')]))
+    assert len(confirm(c,batch)['books'])==2;saved.append(batch)
+    stale=preview(c,body(c,[(ids[0],dict(pages=setv(7)),'合成失效预览')]))
+    # Exercise the deployed metadata writer A -> B -> A, keeping text bytes.
+    before=book(c,ids[0])
+    for pages in (8,0):
+        metadata=c.call('/api/books/'+str(ids[0])+'/metadata')
+        c.call('/api/books/'+str(ids[0])+'/metadata','PUT',dict(expectedMetadataDigest=metadata['metadataDigest'],changes=dict(pages=pages)))
+    after=book(c,ids[0]);assert after['pages']==0 and after['description']=='' and after['revision']==before['revision']+2
+    c.denied('/api/catalog-publications/'+str(stale['preview']['requestId'])+'/confirm',dict(operationKey=stale['input']['operationKey'],previewDigest=stale['preview']['previewDigest']),409,'PUBLICATION_CHANGED')
+    assert c.call('/api/catalog-publications/requests/by-key?key='+stale['input']['operationKey'])==stale['preview']
+    # A committed receipt remains its original object after later changes.
+    for s in saved:assert c.call('/api/catalog-publications/requests/by-key?key='+s['input']['operationKey'])==s['committed']
+    for id in ids:assert unrelated(c,id)==original[str(id)],'Publication changed old B33/B35, stock or metadata'
+    state=dict(schemaVersion=1,synthetic=True,ids=ids,operations=saved,stale=stale,books={str(id):book(c,id) for id in ids},unrelated=original,events={str(id):c.call('/api/catalog-publications/books/'+str(id)+'/events?page=1&size=100') for id in ids})
+    assert all(state['events'][str(id)]['records'] for id in ids)
+    return state
+def check(c,state):
+    assert state['schemaVersion']==1 and state['synthetic'] is True
+    for id in state['ids']:
+        assert book(c,id)==state['books'][str(id)] and unrelated(c,id)==state['unrelated'][str(id)]
+        assert c.call('/api/catalog-publications/books/'+str(id)+'/events?page=1&size=100')==state['events'][str(id)]
+    for operation in state['operations']:
+        assert c.call('/api/catalog-publications/'+str(operation['preview']['requestId']))==operation['committed']
+        assert c.call('/api/catalog-publications/requests/by-key?key='+operation['input']['operationKey'])==operation['committed']
+    assert c.call('/api/catalog-publications/requests/by-key?key='+state['stale']['input']['operationKey'])==state['stale']['preview']
+def snapshot_sql(state):
+    for table,columns in COLUMNS.items():
+        cells=','.join('IF(`'+v+'` IS NULL,NULL,HEX(CAST(`'+v+'` AS BINARY)))' for v in columns.split())
+        print("SELECT '"+table+"',SHA2(CAST(JSON_ARRAY("+cells+") AS CHAR),256) FROM `"+table+'` ORDER BY id;')
+    columns='id publish_date pages description publication_revision'.split();cells=','.join('IF(`'+v+'` IS NULL,NULL,HEX(CAST(`'+v+'` AS BINARY)))' for v in columns)
+    print("SELECT 'book-publication',SHA2(CAST(JSON_ARRAY("+cells+") AS CHAR),256) FROM book WHERE id IN ("+','.join(str(int(v)) for v in sorted(state['ids']))+') ORDER BY id;')
+def main(argv=None):
+    p=argparse.ArgumentParser();p.add_argument('--base',required=True);p.add_argument('--env',required=True);p.add_argument('--state',required=True);p.add_argument('--mode',choices=('seed','check','snapshot-sql'),required=True);a=p.parse_args(argv)
+    env=dict(line.split('=',1) for line in Path(a.env).read_text().splitlines() if line and not line.startswith('#') and '=' in line);guard(a.base,env,a.mode);path=Path(a.state)
+    if a.mode=='seed':
+        assert not path.exists() and not path.is_symlink();state=seed(Client(a.base,env));path.write_text(json.dumps(state,ensure_ascii=False,indent=2)+'\n',encoding='utf-8');print('B36 nonempty synthetic HTTP fixture seeded')
+    else:
+        state=json.loads(path.read_text(encoding='utf-8'))
+        if a.mode=='snapshot-sql':snapshot_sql(state)
+        else:check(Client(a.base,env),state);print('B36 original receipts, fields, revisions, evidence and events preserved')
+    return 0
+if __name__=='__main__':raise SystemExit(main())
+B36_PY
+library_publication_acceptance() {
+    LIBRARY_ACCEPTANCE=1 python3 "$library_test/catalog_publication_acceptance.py" --base "$1" --env "$2" --state "$library_test/publication-state.json" --mode "$3"
+}
+library_publication_snapshot() {
+    local library_publication_project="$1" library_publication_tag="$2" library_publication_mysql
+    [[ "$library_publication_project" == library || "$library_publication_project" == library-recovery ]]
+    library_publication_mysql="$(docker ps -q --filter "label=com.docker.compose.project=$library_publication_project" --filter label=com.docker.compose.service=mysql)"
+    [[ -n "$library_publication_mysql" && "$library_publication_mysql" != *$'\n'* ]]
+    [[ "$(docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' "$library_publication_mysql")" == "$library_publication_project" ]]
+    docker exec -i "$library_publication_mysql" sh -c 'MYSQL_PWD="$MYSQL_MIGRATION_PASSWORD" exec mysql -u library_migrator --default-character-set=utf8mb4 --batch --raw --skip-column-names "$MYSQL_DATABASE"' < "$library_test/publication-persistence.sql" > "$library_test/publication-$library_publication_tag.tsv"
+    if [[ "$library_publication_tag" != before ]]; then
+        cmp --silent "$library_test/publication-before.tsv" "$library_test/publication-$library_publication_tag.tsv"
+    fi
+}
+library_publication_acceptance http://localhost:18089 "$library_test/install/.env" seed
+library_publication_acceptance http://localhost:18089 "$library_test/install/.env" snapshot-sql > "$library_test/publication-persistence.sql"
+library_publication_snapshot library before
+python3 - "$library_test/publication-before.tsv" <<'B36_NONEMPTY_PY'
+import re,sys
+from pathlib import Path
+rows=[line.split('\t') for line in Path(sys.argv[1]).read_text().splitlines()]
+assert rows and all(len(row)==2 and re.fullmatch('[0-9a-f]{64}',row[1]) for row in rows)
+required=set('catalog_publication_request catalog_publication_event book-publication'.split())
+assert {row[0] for row in rows}==required,'Every B36 table and owned technical revision must be nonempty'
+print('B36 both tables contain synthetic business; original JSON byte hashes captured')
+B36_NONEMPTY_PY
+# END B36 PUBLICATION SEED
 "${library_dc[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysql -u library_app -D "$MYSQL_DATABASE" -e "SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1"'
 if "${library_dc[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysql -u library_app -D "$MYSQL_DATABASE" -e "CREATE TABLE acceptance_ddl_probe (id INT)"' >/dev/null 2>&1; then
     echo 'Application account unexpectedly has schema-write privileges' >&2; exit 1
@@ -526,6 +694,10 @@ library_attributes_acceptance http://localhost:18089 "$library_test/install/.env
 library_identity_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_identity_snapshot library recreate
 # END B35 IDENTITY RECREATE
+# BEGIN B36 PUBLICATION RECREATE
+library_publication_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_publication_snapshot library recreate
+# END B36 PUBLICATION RECREATE
 echo 'Container recreate preserved data and files'
 python3 "$library_repo/scripts/package_release.py" acceptance-update
 # Reproduce a release whose JAR changes by one byte while keeping its size and
@@ -561,6 +733,10 @@ library_attributes_acceptance http://localhost:18089 "$library_test/install/.env
 library_identity_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_identity_snapshot library update
 # END B35 IDENTITY UPDATE
+# BEGIN B36 PUBLICATION UPDATE
+library_publication_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_publication_snapshot library update
+# END B36 PUBLICATION UPDATE
 echo 'Application update preserved data and files'
 python3 "$library_repo/scripts/package_release.py" acceptance-broken
 python3 - "$library_repo/dist/library-management-system-acceptance-broken.zip" <<'PY'
@@ -585,6 +761,10 @@ library_attributes_acceptance http://localhost:18089 "$library_test/install/.env
 library_identity_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_identity_snapshot library failed_update
 # END B35 IDENTITY FAILED_UPDATE
+# BEGIN B36 PUBLICATION FAILED_UPDATE
+library_publication_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_publication_snapshot library failed_update
+# END B36 PUBLICATION FAILED_UPDATE
 echo 'Failed-start rollback restored previous application and data'
 APP_VERSION="$(basename "$library_release")" bash "$library_release/scripts/backup.sh" "$library_test/backup"
 sed -e 's/18089/18090/g' -e 's/172.30.89/172.30.90/g' "$library_test/install/.env" > "$library_test/recovery/.env"
@@ -599,4 +779,8 @@ library_attributes_acceptance http://localhost:18090 "$library_test/recovery/.en
 library_identity_acceptance http://localhost:18090 "$library_test/recovery/.env" check
 library_identity_snapshot library-recovery restore
 # END B35 IDENTITY RESTORE
+# BEGIN B36 PUBLICATION RESTORE
+library_publication_acceptance http://localhost:18090 "$library_test/recovery/.env" check
+library_publication_snapshot library-recovery restore
+# END B36 PUBLICATION RESTORE
 echo 'First install, recreate, update, failed-start rollback, backup and isolated restore passed'

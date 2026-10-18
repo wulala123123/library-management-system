@@ -890,3 +890,59 @@ CREATE TABLE IF NOT EXISTS catalog_identity_event (
  KEY idx_catalog_identity_event_book(book_id,id),
  KEY idx_catalog_identity_event_entity(entity_kind,entity_id,id)
 );
+ALTER TABLE book ADD COLUMN IF NOT EXISTS publication_revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE book ADD CONSTRAINT IF NOT EXISTS ck_book_publication_revision CHECK(publication_revision>=0);
+
+CREATE TABLE IF NOT EXISTS catalog_publication_request (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ operation_key VARBINARY(36) NOT NULL,
+ actor_id BIGINT NOT NULL,
+ mode VARCHAR(8) NOT NULL,
+ input_hash CHAR(64) NOT NULL,
+ schema_version INT NOT NULL DEFAULT 1,
+ request_json LONGTEXT NOT NULL,
+ preview_json LONGTEXT NOT NULL,
+ preview_digest CHAR(64) NOT NULL,
+ state VARCHAR(12) NOT NULL,
+ created_at DATETIME NOT NULL,
+ expires_at DATETIME NOT NULL,
+ receipt_json LONGTEXT NULL,
+ committed_at DATETIME NULL,
+ UNIQUE KEY uk_catalog_publication_key(operation_key),
+ KEY idx_catalog_publication_actor(actor_id,id),
+ CONSTRAINT ck_publication_mode CHECK(mode='MANUAL'),
+ CONSTRAINT ck_publication_schema CHECK(schema_version=1),
+ CONSTRAINT ck_publication_input CHECK(JSON_VALID(request_json)),
+ CONSTRAINT ck_publication_preview CHECK(JSON_VALID(preview_json)),
+ CONSTRAINT ck_publication_receipt CHECK(receipt_json IS NULL OR JSON_VALID(receipt_json)),
+ CONSTRAINT ck_publication_state CHECK((state='PREVIEWED' AND receipt_json IS NULL AND committed_at IS NULL) OR (state='COMMITTED' AND receipt_json IS NOT NULL AND committed_at IS NOT NULL))
+);
+
+CREATE TABLE IF NOT EXISTS catalog_publication_event (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ book_id BIGINT NOT NULL,
+ request_id BIGINT NULL,
+ kind VARCHAR(32) NOT NULL,
+ before_revision BIGINT NOT NULL,
+ after_revision BIGINT NOT NULL,
+ schema_version INT NOT NULL DEFAULT 1,
+ changed_fields_json LONGTEXT NOT NULL,
+ before_json LONGTEXT NOT NULL,
+ after_json LONGTEXT NOT NULL,
+ evidence_json LONGTEXT NULL,
+ actor_id BIGINT NOT NULL,
+ occurred_at DATETIME NOT NULL,
+ reason VARCHAR(500) NOT NULL,
+ UNIQUE KEY uk_publication_event_revision(book_id,after_revision),
+ KEY idx_publication_event_actor(book_id,actor_id,id),
+ KEY idx_publication_event_request(request_id,id),
+ CONSTRAINT fk_publication_event_book FOREIGN KEY(book_id) REFERENCES book(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT fk_publication_event_request FOREIGN KEY(request_id) REFERENCES catalog_publication_request(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+ CONSTRAINT ck_publication_event_revision CHECK(before_revision>=0 AND after_revision=before_revision+1),
+ CONSTRAINT ck_publication_event_schema CHECK(schema_version=1),
+ CONSTRAINT ck_publication_event_kind CHECK((kind='MANUAL' AND request_id IS NOT NULL AND evidence_json IS NOT NULL) OR (kind IN ('LEGACY_METADATA','LEGACY_NORMALIZE','LEGACY_NORMALIZE_BATCH','LEGACY_DELETE') AND request_id IS NULL AND evidence_json IS NULL)),
+ CONSTRAINT ck_publication_event_fields CHECK(JSON_VALID(changed_fields_json)),
+ CONSTRAINT ck_publication_event_before CHECK(JSON_VALID(before_json)),
+ CONSTRAINT ck_publication_event_after CHECK(JSON_VALID(after_json)),
+ CONSTRAINT ck_publication_event_evidence CHECK(evidence_json IS NULL OR JSON_VALID(evidence_json))
+);

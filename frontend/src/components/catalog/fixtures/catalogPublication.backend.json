@@ -1,0 +1,310 @@
+{
+  "synthetic" : true,
+  "transport" : "Spring MVC real controller/filter/service/database",
+  "read" : {
+    "code" : 200,
+    "message" : "操作成功",
+    "data" : {
+      "schemaVersion" : 1,
+      "book" : {
+        "bookId" : 119,
+        "isbn" : "0ddc723ff2814735bcfe",
+        "catalogTitle" : "合成出版书目📚7e39ba4c-432f-4fce-9132-bd68dba92c6e",
+        "publishDate" : null,
+        "pages" : null,
+        "description" : null,
+        "revision" : 0,
+        "displayTitle" : "合成出版书目📚7e39ba4c-432f-4fce-9132-bd68dba92c6e",
+        "metadataDigest" : "67ca02f390c3cb292d889113ca67b890b81c0471d20d402180a3942d0cd400d3"
+      }
+    }
+  },
+  "previewInput" : {
+    "operationKey" : "48e967f2-3953-42ce-82be-a3dfa371ff12",
+    "mode" : "MANUAL",
+    "reason" : "馆员/管理员填写的依据，合成验证",
+    "entries" : [ {
+      "bookId" : 120,
+      "expectedRevision" : 0,
+      "expectedMetadataDigest" : "5e869ba019f7e93ea55c9bfed2f70b1e938775e6c18929ce874da4a984580373",
+      "changes" : {
+        "publishDate" : null,
+        "pages" : null,
+        "description" : {
+          "action" : "SET",
+          "value" : ""
+        }
+      },
+      "evidence" : {
+        "kind" : "COPYRIGHT_PAGE",
+        "reference" : "合成版权页，人工查阅填写"
+      }
+    }, {
+      "bookId" : 119,
+      "expectedRevision" : 0,
+      "expectedMetadataDigest" : "67ca02f390c3cb292d889113ca67b890b81c0471d20d402180a3942d0cd400d3",
+      "changes" : {
+        "publishDate" : {
+          "action" : "SET",
+          "value" : "2024-02-29"
+        },
+        "pages" : {
+          "action" : "SET",
+          "value" : 0
+        },
+        "description" : {
+          "action" : "SET",
+          "value" : "合成简介\n第二行\t📚"
+        }
+      },
+      "evidence" : {
+        "kind" : "COPYRIGHT_PAGE",
+        "reference" : "合成版权页，人工查阅填写"
+      }
+    } ]
+  },
+  "preview" : {
+    "code" : 200,
+    "message" : "操作成功",
+    "data" : {
+      "requestId" : 20,
+      "operationKey" : "48e967f2-3953-42ce-82be-a3dfa371ff12",
+      "mode" : "MANUAL",
+      "state" : "PREVIEWED",
+      "previewDigest" : "01ac34b8e4b2455c3b877e63c9bcc2d00f6d3d4f33d220d5c665a54a531d8e2f",
+      "expiresAt" : "2026-10-18T04:37:50Z",
+      "preview" : {
+        "schemaVersion" : 1,
+        "mode" : "MANUAL",
+        "reason" : "馆员/管理员填写的依据，合成验证",
+        "createdAt" : "2026-10-18T04:22:50Z",
+        "expiresAt" : "2026-10-18T04:37:50Z",
+        "books" : [ {
+          "bookId" : 119,
+          "before" : {
+            "bookId" : 119,
+            "isbn" : "0ddc723ff2814735bcfe",
+            "catalogTitle" : "合成出版书目📚7e39ba4c-432f-4fce-9132-bd68dba92c6e",
+            "publishDate" : null,
+            "pages" : null,
+            "description" : null,
+            "revision" : 0,
+            "displayTitle" : "合成出版书目📚7e39ba4c-432f-4fce-9132-bd68dba92c6e",
+            "metadataDigest" : "67ca02f390c3cb292d889113ca67b890b81c0471d20d402180a3942d0cd400d3"
+          },
+          "after" : {
+            "bookId" : 119,
+            "isbn" : "0ddc723ff2814735bcfe",
+            "catalogTitle" : "合成出版书目📚7e39ba4c-432f-4fce-9132-bd68dba92c6e",
+            "publishDate" : "2024-02-29",
+            "pages" : 0,
+            "description" : "合成简介\n第二行\t📚",
+            "revision" : 1,
+            "displayTitle" : "合成出版书目📚7e39ba4c-432f-4fce-9132-bd68dba92c6e",
+            "metadataDigest" : "8795bda42735669a65d66a5bcbc112f20502b85844fd2d850c0f5f9e8b5c0aae"
+          },
+          "changes" : {
+            "description" : {
+              "action" : "SET",
+              "value" : "合成简介\n第二行\t📚"
+            },
+            "pages" : {
+              "action" : "SET",
+              "value" : 0
+            },
+            "publishDate" : {
+              "action" : "SET",
+              "value" : "2024-02-29"
+            }
+          },
+          "evidence" : {
+            "kind" : "COPYRIGHT_PAGE",
+            "reference" : "合成版权页，人工查阅填写"
+          },
+          "changedFields" : [ "publishDate", "pages", "description" ],
+          "willChange" : true
+        }, {
+          "bookId" : 120,
+          "before" : {
+            "bookId" : 120,
+            "isbn" : "f879561d31604d3fad5a",
+            "catalogTitle" : "合成出版书目📚64eebebd-7738-41ee-b83c-ed8c9e589a2e",
+            "publishDate" : null,
+            "pages" : null,
+            "description" : null,
+            "revision" : 0,
+            "displayTitle" : "合成出版书目📚64eebebd-7738-41ee-b83c-ed8c9e589a2e",
+            "metadataDigest" : "5e869ba019f7e93ea55c9bfed2f70b1e938775e6c18929ce874da4a984580373"
+          },
+          "after" : {
+            "bookId" : 120,
+            "isbn" : "f879561d31604d3fad5a",
+            "catalogTitle" : "合成出版书目📚64eebebd-7738-41ee-b83c-ed8c9e589a2e",
+            "publishDate" : null,
+            "pages" : null,
+            "description" : "",
+            "revision" : 1,
+            "displayTitle" : "合成出版书目📚64eebebd-7738-41ee-b83c-ed8c9e589a2e",
+            "metadataDigest" : "f7c8e646c2519ac5060a29e837ba3581750cd2c5e50fc3d0a887ae3967c3b632"
+          },
+          "changes" : {
+            "description" : {
+              "action" : "SET",
+              "value" : ""
+            },
+            "pages" : null,
+            "publishDate" : null
+          },
+          "evidence" : {
+            "kind" : "COPYRIGHT_PAGE",
+            "reference" : "合成版权页，人工查阅填写"
+          },
+          "changedFields" : [ "description" ],
+          "willChange" : true
+        } ]
+      },
+      "receipt" : null
+    }
+  },
+  "confirmInput" : {
+    "operationKey" : "48e967f2-3953-42ce-82be-a3dfa371ff12",
+    "previewDigest" : "01ac34b8e4b2455c3b877e63c9bcc2d00f6d3d4f33d220d5c665a54a531d8e2f"
+  },
+  "receipt" : {
+    "code" : 200,
+    "message" : "操作成功",
+    "data" : {
+      "schemaVersion" : 1,
+      "requestId" : 20,
+      "operationKey" : "48e967f2-3953-42ce-82be-a3dfa371ff12",
+      "mode" : "MANUAL",
+      "actorId" : 821001,
+      "confirmedAt" : "2026-10-18T04:22:50Z",
+      "books" : [ {
+        "bookId" : 119,
+        "changed" : true,
+        "beforeRevision" : 0,
+        "afterRevision" : 1,
+        "eventId" : 123,
+        "publication" : {
+          "bookId" : 119,
+          "isbn" : "0ddc723ff2814735bcfe",
+          "catalogTitle" : "合成出版书目📚7e39ba4c-432f-4fce-9132-bd68dba92c6e",
+          "publishDate" : "2024-02-29",
+          "pages" : 0,
+          "description" : "合成简介\n第二行\t📚",
+          "revision" : 1,
+          "displayTitle" : "合成出版书目📚7e39ba4c-432f-4fce-9132-bd68dba92c6e",
+          "metadataDigest" : "8795bda42735669a65d66a5bcbc112f20502b85844fd2d850c0f5f9e8b5c0aae"
+        },
+        "applied" : {
+          "description" : {
+            "action" : "SET",
+            "value" : "合成简介\n第二行\t📚"
+          },
+          "pages" : {
+            "action" : "SET",
+            "value" : 0
+          },
+          "publishDate" : {
+            "action" : "SET",
+            "value" : "2024-02-29"
+          }
+        },
+        "evidence" : {
+          "kind" : "COPYRIGHT_PAGE",
+          "reference" : "合成版权页，人工查阅填写"
+        }
+      }, {
+        "bookId" : 120,
+        "changed" : true,
+        "beforeRevision" : 0,
+        "afterRevision" : 1,
+        "eventId" : 124,
+        "publication" : {
+          "bookId" : 120,
+          "isbn" : "f879561d31604d3fad5a",
+          "catalogTitle" : "合成出版书目📚64eebebd-7738-41ee-b83c-ed8c9e589a2e",
+          "publishDate" : null,
+          "pages" : null,
+          "description" : "",
+          "revision" : 1,
+          "displayTitle" : "合成出版书目📚64eebebd-7738-41ee-b83c-ed8c9e589a2e",
+          "metadataDigest" : "f7c8e646c2519ac5060a29e837ba3581750cd2c5e50fc3d0a887ae3967c3b632"
+        },
+        "applied" : {
+          "description" : {
+            "action" : "SET",
+            "value" : ""
+          },
+          "pages" : null,
+          "publishDate" : null
+        },
+        "evidence" : {
+          "kind" : "COPYRIGHT_PAGE",
+          "reference" : "合成版权页，人工查阅填写"
+        }
+      } ]
+    }
+  },
+  "events" : {
+    "code" : 200,
+    "message" : "操作成功",
+    "data" : {
+      "records" : [ {
+        "eventId" : 123,
+        "schemaVersion" : 1,
+        "bookId" : 119,
+        "requestId" : 20,
+        "kind" : "MANUAL",
+        "beforeRevision" : 0,
+        "afterRevision" : 1,
+        "changedFields" : [ "publishDate", "pages", "description" ],
+        "before" : {
+          "schemaVersion" : 1,
+          "bookId" : 119,
+          "isbn" : "0ddc723ff2814735bcfe",
+          "catalogTitle" : "合成出版书目📚7e39ba4c-432f-4fce-9132-bd68dba92c6e",
+          "publishDate" : null,
+          "pages" : null,
+          "description" : null,
+          "revision" : 0,
+          "deleted" : 0
+        },
+        "after" : {
+          "schemaVersion" : 1,
+          "bookId" : 119,
+          "isbn" : "0ddc723ff2814735bcfe",
+          "catalogTitle" : "合成出版书目📚7e39ba4c-432f-4fce-9132-bd68dba92c6e",
+          "publishDate" : "2024-02-29",
+          "pages" : 0,
+          "description" : "合成简介\n第二行\t📚",
+          "revision" : 1,
+          "deleted" : 0
+        },
+        "evidence" : {
+          "kind" : "COPYRIGHT_PAGE",
+          "reference" : "合成版权页，人工查阅填写"
+        },
+        "actorId" : 821001,
+        "occurredAt" : "2026-10-18T12:22:50Z",
+        "reason" : "馆员/管理员填写的依据，合成验证"
+      } ],
+      "total" : 1,
+      "page" : 1,
+      "size" : 20,
+      "pages" : 1
+    }
+  },
+  "otherActorEvents" : {
+    "code" : 200,
+    "message" : "操作成功",
+    "data" : {
+      "records" : [ ],
+      "total" : 0,
+      "page" : 1,
+      "size" : 20,
+      "pages" : 0
+    }
+  }
+}

@@ -23,7 +23,7 @@ const digest = 'a'.repeat(64)
 const book = { id: 10, isbn: '9781234567890', title: '已有图书', categoryId: 7, stockTotal: 5, location: 'A区-3层-01架' }
 async function dialog(bookId: number | null = null, realIntake = false) {
   const wrapper = mount(BookDialog, { props: { visible: false, bookId }, attachTo: document.body,
-    global: { plugins: [ElementPlus], stubs: { teleport: true, transition: false, ElSelect: select, ElOption: option, BookAttributeDialog: true, ...(realIntake ? {} : { IntakeDialog: intake }) } } })
+    global: { plugins: [ElementPlus], stubs: { teleport: true, transition: false, ElSelect: select, ElOption: option, BookAttributeDialog: true, CatalogPublicationDialog: true, ...(realIntake ? {} : { IntakeDialog: intake }) } } })
   wrappers.push(wrapper); await wrapper.setProps({ visible: true }); await flushPromises(); return wrapper
 }
 async function required(wrapper: ReturnType<typeof mount>) {
@@ -173,4 +173,40 @@ it('saving independent attributes keeps unsaved registration metadata input for 
   wrapper.findComponent({ name: 'BookAttributeDialog' }).vm.$emit('success'); await flushPromises()
   expect((wrapper.get('input[placeholder="请输入书名"]').element as HTMLInputElement).value).toBe('尚未保存的登记名')
   expect(wrapper.text()).toContain('登记资料表单的未保存输入仍保留'); expect(api.update).not.toHaveBeenCalled()
+})
+
+it('new-book publication step uses the completed book ID and never restarts intake after failure/reopen', async () => {
+  const wrapper = await dialog(); await required(wrapper); await submit(wrapper); await wrapper.get('[data-test="receipt"]').trigger('click'); await flushPromises()
+  wrapper.findComponent(intake).vm.$emit('update:visible', false); await flushPromises()
+  await wrapper.findAll('button').find(button => button.text().trim() === '出版资料补录')!.trigger('click'); await flushPromises()
+  const publication = wrapper.findComponent({ name: 'CatalogPublicationDialog' }); expect(publication.props('bookId')).toBe(10); expect(publication.props('intakeCompleted')).toBe(true)
+  publication.vm.$emit('update:visible', false); await flushPromises(); await wrapper.findAll('button').find(button => button.text().trim() === '出版资料补录')!.trigger('click'); await flushPromises()
+  expect(wrapper.text()).toContain('第二步失败不重复入库'); expect(wrapper.find('[data-test="new-intake"]').exists()).toBe(false); expect(api.preview).not.toHaveBeenCalled(); expect(api.update).not.toHaveBeenCalled()
+})
+
+it('refreshes saved publication fields in the old metadata form while retaining other unsaved inputs', async () => {
+  const wrapper = await dialog(10); await wrapper.get('input[placeholder="请输入书名"]').setValue('未保存的登记名')
+  api.detail.mockResolvedValue({ book: { ...book, publishDate: '2024-02-29', pages: 0, description: '' }, metadataDigest: 'c'.repeat(64) })
+  wrapper.findComponent({ name: 'CatalogPublicationDialog' }).vm.$emit('success'); await flushPromises()
+  expect((wrapper.get('input[placeholder="请输入书名"]').element as HTMLInputElement).value).toBe('未保存的登记名')
+  await submit(wrapper); expect(api.update).toHaveBeenCalledWith(10, 'c'.repeat(64), { title: '未保存的登记名' })
+})
+it('blocks metadata submission while the publication refresh response is pending, then saves with the verified new digest', async () => {
+  const wrapper = await dialog(10); await wrapper.get('input[placeholder="请输入书名"]').setValue('未保存的登记名')
+  let finish!: (value: object) => void; api.detail.mockReturnValueOnce(new Promise(resolve => { finish = resolve }))
+  wrapper.findComponent({ name: 'CatalogPublicationDialog' }).vm.$emit('success'); await flushPromises()
+  const save = wrapper.findAll('button').find(button => button.text().trim() === '保存书目资料')!
+  expect(save.attributes('disabled')).toBeDefined(); await submit(wrapper); expect(api.update).not.toHaveBeenCalled()
+  finish({ book: { ...book, publishDate: '2024-02-29', pages: 0, description: '' }, metadataDigest: 'c'.repeat(64) }); await flushPromises()
+  expect(wrapper.text()).not.toContain('其他登记资料已在别处变化')
+  expect(wrapper.findAll('button').find(button => button.text().trim() === '保存书目资料')!.attributes('disabled')).toBeUndefined(); await submit(wrapper); expect(api.update).toHaveBeenCalledWith(10, 'c'.repeat(64), { title: '未保存的登记名' })
+})
+it('keeps local author edits and blocks saving when another actor changed nonpublication metadata during the independent step', async () => {
+  api.detail.mockResolvedValueOnce({ book: { ...book, author: '原作者' }, metadataDigest: digest })
+  const wrapper = await dialog(10); await wrapper.get('input[placeholder="请输入作者"]').setValue('本地未保存作者'); await wrapper.get('input[placeholder="请输入书名"]').setValue('本地未保存书名')
+  api.detail.mockResolvedValueOnce({ book: { ...book, author: '另一馆员更新的作者', pages: 0, description: '' }, metadataDigest: 'c'.repeat(64) })
+  wrapper.findComponent({ name: 'CatalogPublicationDialog' }).vm.$emit('success'); await flushPromises()
+  expect(wrapper.text()).toContain('其他登记资料已在别处变化'); expect(wrapper.text()).toContain('禁止保存'); expect(wrapper.text()).toContain('重新读取并核对')
+  expect((wrapper.get('input[placeholder="请输入作者"]').element as HTMLInputElement).value).toBe('本地未保存作者'); expect((wrapper.get('input[placeholder="请输入书名"]').element as HTMLInputElement).value).toBe('本地未保存书名')
+  expect(wrapper.findAll('button').find(button => button.text().trim() === '保存书目资料')!.attributes('disabled')).toBeDefined(); await submit(wrapper); expect(api.update).not.toHaveBeenCalled()
 })
