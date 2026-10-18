@@ -593,7 +593,9 @@ def unrelated(c,id):
 def setv(value):return dict(action='SET',value=value)
 def clear():return dict(action='CLEAR')
 def intake(c,marker):
-    key=str(uuid.uuid4());input=dict(idempotencyKey=key,source=dict(type='MANUAL',purchaseOrderId=None),reason='B36合成书目',lines=[dict(lineKey=str(uuid.uuid4()),target=dict(bookId=None,newBook=dict(title=marker+str(i),isbn=marker+str(i)),purchaseItemId=None),copies=[dict(input='SCANNED',barcode='000'+marker+str(i),location=None)]) for i in range(3)])
+    categories=c.call('/api/categories');assert categories and all(type(row['id']) is int and row['id']>0 for row in categories)
+    category_id=next(row['id'] for row in categories if row.get('status')==1)
+    key=str(uuid.uuid4());input=dict(idempotencyKey=key,source=dict(type='MANUAL',purchaseOrderId=None),reason='B36合成书目',lines=[dict(lineKey=str(uuid.uuid4()),target=dict(bookId=None,newBook=dict(title=marker+str(i),isbn=marker+str(i),categoryId=category_id),purchaseItemId=None),copies=[dict(input='SCANNED',barcode='000'+marker+str(i),location=None)]) for i in range(3)])
     p=c.call('/api/inventory-intakes/previews','POST',input);r=c.call('/api/inventory-intakes/'+str(p['intakeId'])+'/confirm','POST',dict(idempotencyKey=key,previewDigest=p['previewDigest']))
     ids=[v['bookId'] for v in r['books']];assert len(ids)==3 and len(set(ids))==3;return ids
 def seed(c):

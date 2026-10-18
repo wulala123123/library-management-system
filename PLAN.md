@@ -8,7 +8,7 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | 2026-10-18用户要求继续；先推进B36出版日期/页数/简介的有依据补录，同时完成B34套装书目关系设计 |
-| 工作项状态 | B36后端v1及前端v1.1已经理验收，实际V13/V14 DDL已独立审定；五段容器验收增量已合入，候选完整Verify待执行。发布工具匿名权限核对定向返工。B34设计及规则已确认；生产仍0ed85b7/V13 |
+| 工作项状态 | B36实现/定向/实际DDL已验收；首次完整Verify39100050408在新合成入库漏分类处失败，已修测试helper并通过21项离线保护，准备修正提交完整Verify。B34设计及规则已确认；生产仍0ed85b7/V13 |
 | 阶段定义 | [阶段 3](docs/plans/member-business-alignment/stages/03-catalog.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
 | 应用代码基线 | 已验收生产 `0ed85b7c05de85b280fa423ec7239af325a36a64`，V1–V13；已推main及工作分支，保留全部既有文档/技能和业务成果 |
@@ -36,7 +36,7 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | B36后端 / v1 | 经理接纳，执行者停写 | `backend/src/`冻结；`logs/catalog-stage3/b36-backend/` | 119项通过、22源码及9报告hash核对，真实HTTP/迁移/重启恢复通过；33083释放 |
 | B36前端 / v1.1 | 经理接纳，执行者停写 | `frontend/src/`冻结；`logs/catalog-stage3/b36-frontend/` | 17源码hash及经理36项补测通过；依据单行/简介多行、刷新禁提交及并发保护通过；原浏览器证据保留、5180释放 |
 | B34设计 / v1 | 经理接纳，执行者停写 | `logs/catalog-stage3/b34-design/`冻结 | 42份依据及3输出hash核对通过；原693书目标记只作待核实；用户后续已确认允许多套关系且逐条留据 |
-| B36发布准备 / v1.1 | `/root/b36_release_prepare`定向返工 | 仅`logs/catalog-stage3/publication-release/` | 经理独立19离线检查通过，补新API匿名结构化403核对；六项绑定/最终完整CI/两次最新新备仍待执行 |
+| B36发布准备 / v1.2 | 经理接手，原返工未启动且已取消 | 经理独占`logs/catalog-stage3/publication-release/` | 21离线检查通过，匿名403/正式入库分类及旧公共字节保护已修；最终CI候选需重新绑定，原失败候选证据保留 |
 
 B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
 
