@@ -59,7 +59,8 @@ it('retains local inputs after an explicit conflict and refreshes the version be
 it('stops at 100 explicit choices and never converts search results into selection', async () => {
   api.books.mockResolvedValue({ records: Array.from({ length: 101 }, (_, index) => catalogBook(index + 1)), total: 101 })
   const wrapper = page({ batch: true }); await flushPromises(); const buttons = wrapper.findAll('button').filter(item => item.text() === '选择书目'); expect(buttons).toHaveLength(101)
-  for (const button of buttons.slice(0, 100)) { await button.trigger('click'); await flushPromises() }
+  // Attempt every explicit click while reads are pending; batch DOM updates and exercise the pending cap.
+  await Promise.all(buttons.map(button => button.trigger('click'))); await flushPromises()
   expect(wrapper.text()).toContain('已明确选择 100 种书目'); expect(buttons[100]!.attributes('disabled')).toBeDefined(); expect(api.book).toHaveBeenCalledTimes(100)
 })
 it.each(['\n', '\t'])('rejects pasted %j in either single-line field with an explicit error before sending', async control => {
