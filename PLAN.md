@@ -7,14 +7,14 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | B40-A管理员只读台账：接纳前端v1.1与容器门槛，整体验收后目标完整Verify及独立发布 |
-| 工作项状态 | 阶段3/B34已验收上线并归档；B40-A前后端及容器门槛准备已经理接纳，前后端实际响应衔接通过；准备目标提交完整Verify，财务写流程未开放 |
+| 下一工作项 | B40-A来源查询修复已验收，形成新候选完整CI；未升级生产先经严格完整保值恢复原V15，再按新门槛发布 |
+| 工作项状态 | 接续原对话：v5隔离V16的reviews第2266项409失败，原证据冻结；生产未升级，V15恢复只读核查中；来源修复及恢复工具已交付，经理验收并准备新候选 |
 | 阶段定义 | [阶段 4](docs/plans/member-business-alignment/stages/04-payments.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
-| 应用代码基线 | 生产已更新V15/`b80bef7001d8d3ee30ee0dbcf891897e9b61b783`、前后端运行；同提交已推main及工作分支；B40-A新改动仍未提交/上线，保留既有成果 |
-| 完整 Verify | 候选b80bef7的[39141666413](https://github.com/wulala123123/library-management-system/actions/runs/39141666413)成功：后端622/前端410无失败或跳过，四轮非空容器检查通过；产物12142455983及内外包已核验 |
+| 应用代码基线 | 生产V15/`b80bef7001d8d3ee30ee0dbcf891897e9b61b783`已冻结；B40-A原候选`046b6fa035a99405d5a2999665ad516dd328fdb7`未上线，来源查询修复另行形成新候选 |
+| 完整 Verify | B40-A [39150892060](https://github.com/wulala123123/library-management-system/actions/runs/39150892060)成功651/579；五轮非空财务及旧容器门槛通过，原产物12145362574和校验文件已核 |
 | 最近维护结果 | [套装目录](docs/archive/2026-10/catalog-sets-2026-10-19.md)；此前出版资料/出版社/属性/盘点/逐册/会员及第一批成果保留 |
-| 恢复依据 | B34经理`manager-final-acceptance.json`与`recovery-current-session.json`已完成、全部发布进程终态；B40-A由下表定位，生产V15正常运行，禁止重跑B34已消费入口 |
+| 恢复依据 | B34已完成闭环；B40-A由下表及`manager/recovery-current-session.json`定位，原v5 rehearse进程终态、前后端冻结，不重跑已消费入口 |
 
 ## 下一步
 
@@ -23,7 +23,7 @@
 3. B33-A和B35均已上线；B35仅MANUAL核实身份、多主题、维度和别名，SOURCE模式关闭；生产未自动采用来源值，未经核实不采用值或自动合并。
 4. B36出版补录已上线，规则和全部验收见[当次记录](docs/archive/2026-10/catalog-publication-2026-10-18.md)，专属隔离资源已清理；保留首次失败与修正证据，不再消费旧入口。
 5. B34已完整闭环，生产V15正常；v1/v2失败及v3成功证据均冻结。实体配套及整套收费/扣次仍待后续，不复用旧备或已消费发布入口。
-6. B40-A仅管理员三个GET和台账/来源页面；V16六表仅新增不回填。后端80定向、26结构化响应（25 HTTP及1实际SQL数值投影）、70旧表保值已核；前端169定向/原浏览器复用及实际响应衔接通过，容器门槛13离线/100Schema/10归属保护已核；完整CI待执行。
+6. B40-A仅管理员三个GET和台账/来源页面；V16六表仅新增不回填。实现/实际响应及完整CI已通过；经理另核36结构证据、79340原单元格、19类元数据及719旧列保持，绑定最终CI JAR、DDL/API/源码清单；尚未上线。
 
 ## 有效执行者
 
@@ -39,7 +39,20 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | B40设计 / v1.1a | 经理接纳，设计及补证冻结 | `logs/member-business-stage4/ledger-design/`只读 | 正式引擎109定义/100例/13端点通过；NUMBER只作数据库投影的实际MySQL反例已经理澄清，结构Schema不变、原v1.1封存 |
 | B40-A后端 / v1 | 经理接纳，原子代理停写 | `backend/src/`及`logs/member-business-stage4/b40-read-backend/`冻结 | 18源码/5绑定/26证据hash、80定向、26响应Schema及实际V15→V16/70旧表保值已核；`manager/backend-v1-acceptance.json`及计数澄清 |
 | B40-A前端 / v1.1 | 经理接纳，原子代理停写 | `frontend/src/`及`logs/member-business-stage4/b40-read-frontend/`冻结 | 14源码/6绑定/358证据hash、169定向/类型构建、浏览器及26实际响应衔接通过；仅显式全串匹配加固，原疑虑未复现 |
-| B40-A容器门槛 / v1 | 经理接纳准备，原子代理停写 | `scripts/container-acceptance.sh`及`logs/member-business-stage4/b40-container-gate/`冻结 | 五处增量、全部原字节保持；六表非空及三GET生命周期门槛、13离线/100Schema/10归属保护已核，真实容器由完整CI执行 |
+| B40-A容器门槛 / v1 | 经理接纳，原子代理停写 | `scripts/container-acceptance.sh`及`logs/member-business-stage4/b40-container-gate/`冻结 | 五处增量及旧字节保持；定向和完整CI五轮真实非空生命周期通过 |
+| B40-A实际metadata / v1 | 经理接纳，原交付冻结 | `logs/member-business-stage4/b40-metadata-export/`只读 | MySQL8.0.44实际70→76表/719→805列，仅六表86列29CHECK17FK；最终六绑定为`manager/final-input-bindings-v1.2.json`，仅私有合同措辞修准，应用未变 |
+| B40-A发布设计 / v1 | 经理接纳，原交付冻结 | `logs/member-business-stage4/ledger-release-preparation/`只读 | 30离线/35引用及最终六绑定/原CI包通过；仅设计与拒绝骨架，不可发布 |
+| B40-A发布编排 / v5 | 失败终态，全部冻结 | `logs/member-business-stage4/b40-runtime-release-v5/`只读 | 实际合成已通过；第一新备V15的2316项B34冻结与旧链通过，V16第2266项reviews返回CATALOG_BUSY失败；`manager/failure-v5-dc936e802c2b45bfa38d600648a3e0d0/`保存原响应 |
+| B40-A验收复用评估 / v1 | 经理接纳，原代理停写 | `logs/member-business-stage4/b40-validation-reuse-review/`只读 | 六文件/30输入核对；缺少跨备等价及运行条件证明，沿用v5完整门槛、不重跑已通过CI；`manager/validation-reuse-review-acceptance.json` |
+| B40-A来源查询修复 / v1 | 经理接纳，执行者及验收代理已停写 | 原修复与`b40-source-query-review/`只读 | 已核3源码/测试、34证据和5输入；语义/15秒超时/原断言保持；合成单次计时不能证明原409根因，新CI及两新备必须覆盖第2266项完整GET |
+| B40-A升级前恢复 / v1 | 原执行者已交付停写；`/root/recovery_acceptance`审查，经理执行 | 原交付只读；新`b40-preupgrade-recovery-review/`，经理私有证据 | 接纳窄政策及工具，绑定实际原生产/终态/备份，只读完整核对通过后一次恢复准确V15；不回灌、不改库、不消费v5入口 |
+| B40-A新发布编排 / v6 | `/root/release_v6_prepare` | 仅`logs/member-business-stage4/b40-runtime-release-v6/` | 复用原门槛、准备新命名空间及新候选绑定；尚无执行批准，不连接服务器 |
+| B40-A生产只读诊断 | `/root/b34_backend`沿用配置 | 仅`logs/member-business-stage4/b40-live-v15-diagnosis/`；原oracle冻结 | 已接纳4文件/16输入及独立988/27页核对，原200正确、非来源预算；v1.1补齐PIPE并经Linux定向核验；实际一次原GET返回200/37条及新前后RR保持，原409保留、后179项未测；`manager/live-v15-single-case-actual-acceptance.json` |
+| B40-A旧B34 oracle / v1.2 | 经理接纳，原代理停写 | `logs/member-business-stage4/b40-runtime-b34-v2/`只读，原v1.1冻结 | 19检查91反例、10交付/17只读输入及单函数差异已核；有效馆员safe成功/缺失404，private/owner拒绝保持；`manager/b34-oracle-v1.2-acceptance.json`，待v4实际 |
+| B40-A实际导出 / v1.2 | 经理，已冻结 | `logs/member-business-stage4/b40-runtime-export/`只读 | 19类/70表原列hash及下一主键值保留，12定向通过，旧版本原字节封存；实际隔离接入待补 |
+| B40-A旧B34 oracle / v1.1 | 经理接纳，原代理停写 | `logs/member-business-stage4/b40-runtime-b34/`只读 | 22证据/15测试81反例及原v1字节封存通过；全部现有账号入GET、缺角色明确报告；`manager/b34-oracle-v1.1-acceptance.json` |
+| B40-A财务 oracle / v1 | 经理接纳准备，原代理停写 | `logs/member-business-stage4/b40-runtime-finance/`只读 | 334证据/33定向/26原实际响应通过；精确cp313引擎包已核，实际Linux/SQL/HTTP待集成；`manager/finance-oracle-v1-acceptance.json` |
+| B40-A合成接入 / v1 | 经理接纳，原代理停写 | `logs/member-business-stage4/b40-runtime-synthetic/`只读 | 10证据/10定向49反例通过，准确两原包重新提取已核；实际全新合成库执行待编排，不重跑完整CI或在真实恢复库造样例 |
 
 B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
 
@@ -49,7 +62,7 @@ B22、查询和统一入库均已交付验收上线，证据见对应档案，�
 
 2026-10-18用户确认会费退款只影响财务台账；服务期或次数如需变化，必须另行办理并审计。阶段4尚未实施，不据此改动历史权益或金额。
 
-2026-10-19金额规则已确认，见财务规范。柜台支付方式、历史期初/逐笔登记边界的问题仍待答复；欠费权威尚未明确，只阻止押金实退等相关动作，不阻止独立台账设计与隔离验证。
+2026-10-19金额及支付规则已确认，见财务规范：柜台仅现金、微信；暂不开放期初登记，继续只读核对。原对话已有答复，不重复询问。欠费权威尚未明确，只阻止押金实退等相关动作，不阻止独立只读台账与隔离验证。
 
 已确认套餐修改仅用于后续办理、现有会员保留快照；新套餐可明确选择不限归还日期；套装核实前按单册条码借还。逐套餐数值、套餐变更差额、成功办理后的撤销/换书及核实后的整套规则仍需决定。卡号暂保守精确唯一并保留历史占用，不自动重用；如要重用需明确规则。未决只阻止相关限制或办理启用，资料、搜索与展示继续。
 
