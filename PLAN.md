@@ -7,12 +7,12 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | 验收B40-A新候选完整CI与产物，绑定v6编排后完成新合成及两新备隔离验收，再发布 |
-| 工作项状态 | 原V15服务已严格恢复并验收，生产未升级；v5第2266项失败保留；来源查询修复已提交，新候选完整CI运行中，v6本地准备通过待产物绑定 |
+| 下一工作项 | 修正专项编排与原种子固定地址的兼容，验收全新v7合成及两新备隔离恢复升级后发布 |
+| 工作项状态 | 原V15正常、生产未升级；新候选完整CI/产物已验收；v6合成在V15原种子固定端口/子网guard被拒，已独立验空且原服务保持，v7准备中，原失败均保留 |
 | 阶段定义 | [阶段 4](docs/plans/member-business-alignment/stages/04-payments.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
 | 应用代码基线 | 生产V15/`b80bef7001d8d3ee30ee0dbcf891897e9b61b783`正常；B40-A原候选`046b6fa`冻结未上线，新候选`2a8fdc7abf14e2e181045c79a0ac0179f69e1d71`待验收 |
-| 完整 Verify | 新候选[39185737165](https://github.com/wulala123123/library-management-system/actions/runs/39185737165)运行中；原候选39150892060成功651/579及原产物保留，不替代新CI |
+| 完整 Verify | 新候选[39185737165](https://github.com/wulala123123/library-management-system/actions/runs/39185737165)成功711/579，新两组回归各30且无跳过；五轮非空财务及全部旧容器门槛通过，准确产物12157804436已核 |
 | 最近维护结果 | [套装目录](docs/archive/2026-10/catalog-sets-2026-10-19.md)；此前出版资料/出版社/属性/盘点/逐册/会员及第一批成果保留 |
 | 恢复依据 | B40-A由下表及`manager/recovery-current-session.json`定位；`manager/preupgrade-v15-final-acceptance.json`记录原服务恢复，v5及恢复入口已消费，不重跑 |
 
@@ -46,7 +46,8 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | B40-A验收复用评估 / v1 | 经理接纳，原代理停写 | `logs/member-business-stage4/b40-validation-reuse-review/`只读 | 六文件/30输入核对；缺少跨备等价及运行条件证明，沿用v5完整门槛、不重跑已通过CI；`manager/validation-reuse-review-acceptance.json` |
 | B40-A来源查询修复 / v1 | 经理接纳，执行者及验收代理已停写 | 原修复与`b40-source-query-review/`只读 | 已核3源码/测试、34证据和5输入；语义/15秒超时/原断言保持；合成单次计时不能证明原409根因，新CI及两新备必须覆盖第2266项完整GET |
 | B40-A升级前恢复 / v1 | 经理已验收完成，全部冻结 | 原交付、`b40-preupgrade-recovery-review/`及服务器专用operator只读 | 16离线/10封版检查及实际完整保值通过；准确原容器一次启动后再核70表/19类/next-ID、字节和公网资源，三服务健康，未迁移/回灌；`manager/preupgrade-v15-final-acceptance.json` |
-| B40-A新发布编排 / v6 | `/root/release_v6_prepare` | 仅`logs/member-business-stage4/b40-runtime-release-v6/` | 原60及新增10离线检查、27候选无关输入/17原源码/12依赖通过；待新CI产物准确绑定和经理验收，无服务器动作 |
+| B40-A新发布编排 / v6 | 合成失败终态，全批冻结 | `b40-runtime-release-v6/`只读，原入口不重跑 | 59文件上传通过；V15原种子guard要求固定18089及.89地址，v6的新地址被拒，尚未执行原B34种子；独立核三项目验空、生产原ID/配置/健康及其他服务保持，`manager/runtime-v6-failure-independent-empty.json` |
+| B40-A新发布编排 / v7 | `/root/release_v6_prepare`沿用配置 | 仅`logs/member-business-stage4/b40-runtime-release-v7/` | 保留原guard/种子/断言，新增实际加载精确CI两原guard的正反检查；新WORK/project/卷/env/数据库，固定18089/.89地址须现场验空后使用；同一已验CI候选，完整新合成及两新备门槛保持，无服务器动作 |
 | B40-A生产只读诊断 | `/root/b34_backend`沿用配置 | 仅`logs/member-business-stage4/b40-live-v15-diagnosis/`；原oracle冻结 | 已接纳4文件/16输入及独立988/27页核对，原200正确、非来源预算；v1.1补齐PIPE并经Linux定向核验；实际一次原GET返回200/37条及新前后RR保持，原409保留、后179项未测；`manager/live-v15-single-case-actual-acceptance.json` |
 | B40-A旧B34 oracle / v1.2 | 经理接纳，原代理停写 | `logs/member-business-stage4/b40-runtime-b34-v2/`只读，原v1.1冻结 | 19检查91反例、10交付/17只读输入及单函数差异已核；有效馆员safe成功/缺失404，private/owner拒绝保持；`manager/b34-oracle-v1.2-acceptance.json`，待v4实际 |
 | B40-A实际导出 / v1.2 | 经理，已冻结 | `logs/member-business-stage4/b40-runtime-export/`只读 | 19类/70表原列hash及下一主键值保留，12定向通过，旧版本原字节封存；实际隔离接入待补 |
