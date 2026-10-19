@@ -7,8 +7,8 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | 审查历史完整V15响应作为兼容expected的严格等价政策，再准备全新发布入口 |
-| 工作项状态 | v7原V15基线第2264项409失败保持；原V15已按全新入口严格恢复，三服务/公网94静态/浏览器正常，未升级V16；新政策尚未接纳 |
+| 下一工作项 | 验收全新v8历史V15 expected连接协议和工具，再执行新图合成及两新备完整候选验收 |
+| 工作项状态 | 原V15健康、v7失败冻结；仅复用历史V15 expected的政策方向已接纳，34输入/13交付与历史2316完整响应和前后保值已核；新v8工具准备中，尚未批准执行 |
 | 阶段定义 | [阶段 4](docs/plans/member-business-alignment/stages/04-payments.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
 | 应用代码基线 | 生产V15/`b80bef7001d8d3ee30ee0dbcf891897e9b61b783`正常；B40-A原候选`046b6fa`冻结未上线，新候选`2a8fdc7abf14e2e181045c79a0ac0179f69e1d71`待验收 |
@@ -49,7 +49,8 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | B40-A新发布编排 / v6 | 合成失败终态，全批冻结 | `b40-runtime-release-v6/`只读，原入口不重跑 | 59文件上传通过；V15原种子guard要求固定18089及.89地址，v6的新地址被拒，尚未执行原B34种子；独立核三项目验空、生产原ID/配置/健康及其他服务保持，`manager/runtime-v6-failure-independent-empty.json` |
 | B40-A新发布编排 / v7 | 第一新备失败终态，原入口冻结 | 原准备/绑定/运行证据只读 | 新合成已验收；原V15基线第2264项reviews返回409/CATALOG_BUSY，未生成frozen或升级V16；三个项目独立验空，`manager/v7-failure-probe-1b4613f8747f49799985b1170db546c5/`及`manager/collected-v7-d21c3b45b29b4a239979e7e0a47ba771/` |
 | B40-A v7升级前恢复 | 经理已接纳完成，原代理停写 | `b40-preupgrade-recovery-v7/`及新operator全部冻结 | 16准确离线/21范围/10封版及实际完整check通过；一次原容器启动后核70/19/next-ID/env/uploads/其他服务、94公网静态和浏览器，`manager/preupgrade-v7-final-acceptance.json`；原v1/v7恢复均不可重跑 |
-| B40-A旧V15基线等价评估 | `/root/release_v6_prepare`沿用配置 | 仅新`b40-v15-baseline-equivalence-review/` | 只审历史完整V15响应作为expected的条件；两新备/完整保值及候选全部GET保持，尚未接纳新政策或准备发布入口 |
+| B40-A旧V15基线等价评估 | 经理接纳政策方向，原审查冻结 | `b40-v15-baseline-equivalence-review/`只读 | H完整2316请求/响应/时钟及前后70/19/全部next-ID、R7完整10SQL/计划等价已核；每份未来新备须另取资格证据，`manager/v15-historical-expected-policy-direction-acceptance.json` |
+| B40-A新发布编排 / v8 | `/root/release_v6_prepare`沿用配置 | 仅新`b40-runtime-release-v8/`；经理独占公共文档和服务器 | 准备显式历史H→当前新备恢复→候选/生产协议；本轮V15 B34 HTTP=0须明报，候选两轮/生产完整GET保持；新图合成、工具及执行尚未验收 |
 | B40-A生产只读诊断 | `/root/b34_backend`沿用配置 | 仅`logs/member-business-stage4/b40-live-v15-diagnosis/`；原oracle冻结 | 已接纳4文件/16输入及独立988/27页核对，原200正确、非来源预算；v1.1补齐PIPE并经Linux定向核验；实际一次原GET返回200/37条及新前后RR保持，原409保留、后179项未测；`manager/live-v15-single-case-actual-acceptance.json` |
 | B40-A旧B34 oracle / v1.2 | 经理接纳，原代理停写 | `logs/member-business-stage4/b40-runtime-b34-v2/`只读，原v1.1冻结 | 19检查91反例、10交付/17只读输入及单函数差异已核；有效馆员safe成功/缺失404，private/owner拒绝保持；`manager/b34-oracle-v1.2-acceptance.json`，待v4实际 |
 | B40-A实际导出 / v1.2 | 经理，已冻结 | `logs/member-business-stage4/b40-runtime-export/`只读 | 19类/70表原列hash及下一主键值保留，12定向通过，旧版本原字节封存；实际隔离接入待补 |
