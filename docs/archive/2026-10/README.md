@@ -24,6 +24,7 @@
 - [出版社与多主题身份](catalog-identities-2026-10-17.md)
 - [出版资料补录](catalog-publication-2026-10-18.md)
 - [套装目录与成员书目](catalog-sets-2026-10-19.md)
+- [未升级生产的 V15 服务恢复](preupgrade-service-recovery-2026-10-19.md)
 
 ## 候选包来源
 
