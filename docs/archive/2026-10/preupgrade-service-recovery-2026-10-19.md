@@ -28,3 +28,13 @@ B40-A 原候选 `046b6fa035a99405d5a2999665ad516dd328fdb7` 的第一次新备隔
 - 独立公网 GET：`manager/preupgrade-v15-public-get-acceptance.json`；浏览器原套装目录正常、管理员登录状态保留，未办理业务。
 
 上述相对证据目录均位于私有 `logs/member-business-stage4/`。原始捕获、环境、备份和任何真实资料不随本公开档案进入 Git 或发布包。
+
+## 后续 v7 原服务恢复
+
+同日新候选 `2a8fdc7abf14e2e181045c79a0ac0179f69e1d71` 的 v7 演练，在原 V15 基线 reviews 第 2264 项收到 `409/CATALOG_BUSY`。这次尚未完成 V15 全量冻结，也未进入隔离 V16 升级、最终停写、第二新备或生产候选安装。原 v7 演练保持失败；3,941 份收证文件、3,939 个完整 HTTP 摘要已核，只有该项状态不符，三组专属资源独立验空。
+
+原 v1 恢复入口没有重跑。经理接纳新 v7 专用恢复工具、16 项准确离线检查、21 项范围及 10 项封版检查后，先完成现场全量只读 check，再另存绑定该回执的准确一次性批准。原前后端只执行一次 `up --no-deps --no-build --no-recreate`，保留原容器 ID、镜像、配置和 MySQL。
+
+启动前后完整核对 70 张旧表原值、19 类元数据、全部 next-ID、备份、环境、上传和其他服务。启动后的 JAR、全部静态及 HTTP 字节通过；独立公网复核 94 个静态文件与原 V15 包逐字一致，三服务健康。浏览器原套装目录正常，管理员登录保留，未办理业务。生产仍为原 `b80bef7`/V15，没有回灌、迁移或容器重建。
+
+本次私有总回执为 `manager/preupgrade-v7-final-acceptance.json`；实际完整回执位于 `manager/preupgrade-v7-collect-def8e18dcb2149eb8643c2ae5035ae16/recovery-complete.json`。独立公网和浏览器证据分别由 `manager/preupgrade-v7-independent-acceptance.json`、`manager/preupgrade-v7-browser-acceptance.json` 定位。新 v7 恢复入口已消费，后续不得重跑；新发布仍须另行满足候选验收门槛。
