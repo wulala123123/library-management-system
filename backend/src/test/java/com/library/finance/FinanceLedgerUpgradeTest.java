@@ -38,7 +38,7 @@ public class FinanceLedgerUpgradeTest {
         j.update("INSERT INTO catalog_set(id,name,normalized_name,status,revision,evidence_json,created_at,updated_at) VALUES (894001,'合成V15套装','合成v15套装','ACTIVE',1,'{\"reference\":\"合成旧依据\"}','2026-01-01','2026-01-01')");
         var tables=j.queryForList("SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() ORDER BY table_name",String.class);assertEquals(70,tables.size());
         Map<String,Object> before=new TreeMap<>();for(String table:tables)before.put(table,rows(j,table));
-        var flyway=Flyway.configure().dataSource(ds).locations("classpath:db/migration").load();assertEquals(1,flyway.migrate().migrationsExecuted);assertEquals(0,flyway.migrate().migrationsExecuted);
+        var flyway=Flyway.configure().dataSource(ds).locations("classpath:db/migration").target("16").load();assertEquals(1,flyway.migrate().migrationsExecuted);assertEquals(0,flyway.migrate().migrationsExecuted);
         Map<String,Object> preservation=new TreeMap<>();
         for(String table:tables) {
             var original=(List<?>)before.get(table);var after=rows(j,table);

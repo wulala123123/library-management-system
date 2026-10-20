@@ -57,6 +57,8 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         // B40 checks current database administrator before decoding query values.
                         .requestMatchers(HttpMethod.GET, "/members/{memberId}/finance", "/members/{memberId}/finance/source", "/members/{memberId}/finance/entries").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/member-finance/operations/active", "/member-finance/operations/by-key/{key}", "/member-finance/requests/{requestId}").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/member-finance/operations", "/member-finance/operations/by-key/{key}/claim", "/member-finance/operations/by-key/{key}/draft", "/member-finance/operations/by-key/{key}/preview", "/member-finance/operations/by-key/{key}/confirm", "/member-finance/operations/by-key/{key}/cancel", "/member-finance/operations/by-key/{key}/resolve").permitAll()
                         // Publication controllers return the protocol's structured 403 for all roles.
                         .requestMatchers("/catalog-publications/**", "/catalog-sets/**", "/catalog-set-reviews/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/doc.html", "/webjars/**").permitAll()

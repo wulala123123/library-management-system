@@ -38,9 +38,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (user != null && Integer.valueOf(1).equals(user.getStatus())
                         && version != null && version.equals(user.getTokenVersion())
                         && List.of("ADMIN", "LIBRARIAN", "READER").contains(user.getRole())) {
-                    SecurityContextHolder.getContext().setAuthentication(
-                            new UsernamePasswordAuthenticationToken(userId, null,
-                                    List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()))));
+                    var authentication=new UsernamePasswordAuthenticationToken(userId, null,
+                            List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole())));
+                    if(com.library.finance.FinanceSupport.isFinancePath(request))
+                        authentication.setDetails(new com.library.finance.FinanceSupport.TokenVersion(version,jwtTokenProvider.getExpirationFromToken(token)));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
                 SecurityContextHolder.clearContext();

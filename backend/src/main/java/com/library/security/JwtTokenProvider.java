@@ -73,6 +73,11 @@ public class JwtTokenProvider {
         Number version = parseToken(token).get("version", Number.class);
         return version == null ? null : version.longValue();
     }
+    /** Trusted signed expiration for the financial transaction's post-lock recheck. */
+    public java.time.Instant getExpirationFromToken(String token) {
+        Date expiration=parseToken(token).getExpiration();
+        return expiration==null?null:expiration.toInstant();
+    }
 
     public boolean validateToken(String token) {
         try {

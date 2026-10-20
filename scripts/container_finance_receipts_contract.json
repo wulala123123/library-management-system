@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "syntheticAcceptanceOnly": true,
+  "baseSha256": "2bd8b8070e809b59929ce970b3c2bed3590d62f5e895d58d9f2a969132e19961",
+  "effectiveSha256": "d98bb9a1be36fe841d617f2ffc723ceba92b16fafe4274089c5a600600b3afed",
+  "patch": [
+    {
+      "op": "test",
+      "path": "/$id",
+      "value": "urn:library:b40:protocol:1.1"
+    },
+    {
+      "op": "test",
+      "path": "/$defs/RecoveryRecord/additionalProperties",
+      "value": false
+    },
+    {
+      "op": "test",
+      "path": "/$defs/RecoveryRecord/required",
+      "value": [
+        "schemaVersion",
+        "actorId",
+        "operationKey",
+        "memberId",
+        "stage",
+        "draftHash",
+        "previewDigest",
+        "requestId",
+        "lastEditor",
+        "confirmIntent",
+        "cancelIntent",
+        "updatedAt"
+      ]
+    },
+    {
+      "op": "add",
+      "path": "/$defs/RecoveryRecord/properties/factKey",
+      "value": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Uuid"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    {
+      "op": "add",
+      "path": "/$defs/RecoveryRecord/required/-",
+      "value": "factKey"
+    }
+  ]
+}

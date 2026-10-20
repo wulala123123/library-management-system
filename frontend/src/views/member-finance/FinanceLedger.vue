@@ -1,7 +1,7 @@
 <template>
   <section v-if="reader.canRead.value" class="finance-ledger">
     <header class="ledger-heading"><div><h2>会员 #{{ memberId }} 财务台账</h2><p>会费与押金分别核对 · 人民币元</p></div><div class="actions"><el-button @click="emit('close')">返回会员档案</el-button><el-button :disabled="reader.financeLoading.value" @click="reader.refresh">刷新台账</el-button></div></header>
-    <el-alert title="当前提供台账及来源核对，收款、退款和期初登记办理尚未开放。未知金额不等于零；历史曾缴金额不代表当前余额。" type="info" :closable="false" />
+    <el-alert title="当前提供台账及来源核对；退款和期初登记办理尚未开放。当天已收款登记须经服务器政策及预览核验。未知金额不等于零；历史曾缴金额不代表当前余额。" type="info" :closable="false" />
     <el-alert v-if="reader.financeError.value" :title="reader.financeError.value" type="error" :closable="false" />
     <p v-if="!memberId || !validMemberId" role="alert">会员编号无效，请返回档案重新打开。</p>
     <p v-else-if="reader.financeLoading.value && !reader.finance.value" role="status">正在读取财务台账…</p>
@@ -18,6 +18,7 @@
           <p class="meta">账户编号 {{ account.accountId ?? '尚无台账账户' }} · 财务修订 {{ account.financeRevision }}<span v-if="account.openingEntryId"> · 期初条目 #{{ account.openingEntryId }}</span></p>
         </article>
       </div>
+      <ReceiptComposer :member-id="memberId" :identity="identity" :summary="reader.finance.value" :active="active" @settled="reader.refresh" />
       <section class="source-section">
         <h3>原来源对照</h3><p>旧业务表金额与原档案字段均为待核实的来源事实。旧导入保存的 0.00 不能证明明确零期初；“押金”原字段语义待核实，不据文本推算已退金额。</p>
         <p v-if="reader.sourceLoading.value" role="status">正在读取原来源…</p>
@@ -61,10 +62,11 @@
 import { computed, nextTick, ref, toRef, watch } from 'vue'
 import { useUserStore } from '@/store/modules/user'
 import { financeId } from '@/api/memberFinance'
+import ReceiptComposer from './ReceiptComposer.vue'
 import { useFinanceReadSession } from './financeReadSession'
 import { financeAmountText, financeEntryState, financeFundLabels, financeKindLabels, financeOptionalText, financeSourceText, sourceReasonText, sourceStateLabels, sourceTypeLabels, businessTypeLabels, evidenceTypeLabels } from './financeDisplay'
 const props=withDefaults(defineProps<{memberId:string|null;active?:boolean}>(),{active:true}),emit=defineEmits<{(e:'close'):void}>()
-const user=useUserStore(),identity=computed(()=>({id:user.userInfo?.id===undefined?null:String(user.userInfo.id),role:user.userInfo?.role??null,token:user.token||''}))
+const user=useUserStore(),identity=computed(()=>({id:typeof user.userInfo?.id==='number'&&Number.isSafeInteger(user.userInfo.id)&&financeId(String(user.userInfo.id))?String(user.userInfo.id):null,role:user.userInfo?.role??null,token:user.token||''}))
 const reader=useFinanceReadSession(toRef(props,'memberId'),identity,toRef(props,'active')),validMemberId=computed(()=>financeId(props.memberId))
 const accessNotice=ref<HTMLElement|null>(null)
 watch(reader.canRead,canRead=>{if(!canRead)nextTick(()=>accessNotice.value?.focus())})

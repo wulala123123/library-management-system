@@ -1,0 +1,881 @@
+{
+  "purpose": "Synthetic original contract examples only; no actual HTTP evidence",
+  "cases": [
+    {
+      "name": "previewed_operation",
+      "definition": "OperationEnvelope",
+      "expectedValid": true,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成示例",
+        "data": {
+          "operationId": "33333333-3333-4333-8333-333333333333",
+          "operationKey": "44444444-4444-4444-8444-444444444444",
+          "memberId": "1",
+          "actorId": "2",
+          "editor": {
+            "editorId": "11111111-1111-4111-8111-111111111111",
+            "epoch": "1"
+          },
+          "state": "PREVIEWED",
+          "draftHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "input": {
+            "memberId": "1",
+            "memberRevision": "0",
+            "financeRevision": "0",
+            "fund": "MEMBER_FEE",
+            "currency": "CNY",
+            "reason": "合成示例依据",
+            "evidenceRefs": [
+              {
+                "type": "VERIFICATION_NOTE",
+                "reference": "SYNTHETIC-ONLY",
+                "digest": null
+              }
+            ],
+            "action": "OPENING",
+            "payload": {
+              "receivedTotal": "100.00",
+              "refundedTotal": "20.00",
+              "cutoffAt": "2026-10-18T00:00:00.000000Z",
+              "sourceProofDigest": null
+            }
+          },
+          "request": {
+            "requestId": "22222222-2222-4222-8222-222222222222",
+            "operationId": "33333333-3333-4333-8333-333333333333",
+            "operationKey": "44444444-4444-4444-8444-444444444444",
+            "memberId": "1",
+            "accountId": "1",
+            "fund": "MEMBER_FEE",
+            "currency": "CNY",
+            "action": "OPENING",
+            "state": "PREVIEWED",
+            "input": {
+              "memberId": "1",
+              "memberRevision": "0",
+              "financeRevision": "0",
+              "fund": "MEMBER_FEE",
+              "currency": "CNY",
+              "reason": "合成示例依据",
+              "evidenceRefs": [
+                {
+                  "type": "VERIFICATION_NOTE",
+                  "reference": "SYNTHETIC-ONLY",
+                  "digest": null
+                }
+              ],
+              "action": "OPENING",
+              "payload": {
+                "receivedTotal": "100.00",
+                "refundedTotal": "20.00",
+                "cutoffAt": "2026-10-18T00:00:00.000000Z",
+                "sourceProofDigest": null
+              }
+            },
+            "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "previewDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "preview": {
+              "previewDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "identity": {
+                "memberId": "1",
+                "realName": "合成会员",
+                "cardNo": null,
+                "accountStatus": 1,
+                "memberRevision": "0",
+                "role": "READER",
+                "deleted": false
+              },
+              "policy": {
+                "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "currency": "CNY",
+                "scale": 2,
+                "rounding": "REJECT_EXTRA_SCALE",
+                "businessAmountLimit": null,
+                "paymentMethodsState": "UNCONFIRMED",
+                "paymentMethodCodes": [],
+                "datePolicyState": "UNCONFIRMED",
+                "cutoffAt": null,
+                "financialTimeZone": null,
+                "backdateRuleRef": null,
+                "debtPolicyState": "UNCONFIRMED",
+                "debtPolicyVersion": null,
+                "enabledActions": []
+              },
+              "sourceProofDigest": null,
+              "impact": {
+                "before": {
+                  "memberId": "1",
+                  "accountId": "1",
+                  "fund": "MEMBER_FEE",
+                  "currency": "CNY",
+                  "financeRevision": "0",
+                  "scopeCutoffAt": null,
+                  "openingEntryId": null,
+                  "openingState": "UNKNOWN",
+                  "verifiedPaid": {
+                    "state": "UNKNOWN",
+                    "amount": null,
+                    "reasonCode": "OPENING_UNVERIFIED"
+                  },
+                  "verifiedRefunded": {
+                    "state": "UNKNOWN",
+                    "amount": null,
+                    "reasonCode": "OPENING_UNVERIFIED"
+                  },
+                  "balance": {
+                    "state": "UNKNOWN",
+                    "amount": null,
+                    "reasonCode": "OPENING_UNVERIFIED"
+                  },
+                  "feeHeadroom": {
+                    "state": "UNKNOWN",
+                    "amount": null,
+                    "reasonCode": "OPENING_UNVERIFIED"
+                  },
+                  "newReceipts": "0.00",
+                  "newRefunds": "0.00",
+                  "newNet": "0.00",
+                  "asRecordedAt": "2026-10-19T00:00:00.000000Z"
+                },
+                "after": {
+                  "memberId": "1",
+                  "fund": "MEMBER_FEE",
+                  "currency": "CNY",
+                  "financeRevision": "1",
+                  "scopeCutoffAt": "2026-10-18T00:00:00.000000Z",
+                  "openingState": "VERIFIED",
+                  "verifiedPaid": {
+                    "state": "KNOWN",
+                    "amount": "100.00",
+                    "reasonCode": null
+                  },
+                  "verifiedRefunded": {
+                    "state": "KNOWN",
+                    "amount": "20.00",
+                    "reasonCode": null
+                  },
+                  "balance": {
+                    "state": "KNOWN",
+                    "amount": "80.00",
+                    "reasonCode": null
+                  },
+                  "feeHeadroom": {
+                    "state": "KNOWN",
+                    "amount": "80.00",
+                    "reasonCode": null
+                  },
+                  "newReceipts": "0.00",
+                  "newRefunds": "0.00",
+                  "newNet": "0.00",
+                  "calculatedAt": "2026-10-19T00:00:00.000000Z"
+                },
+                "entries": [
+                  {
+                    "ordinal": 1,
+                    "kind": "OPENING",
+                    "amount": "80.00",
+                    "openingReceived": "100.00",
+                    "openingRefunded": "20.00",
+                    "cutoffAt": "2026-10-18T00:00:00.000000Z",
+                    "actualAt": null,
+                    "methodCode": null,
+                    "reversesEntryId": null,
+                    "replacesEntryId": null,
+                    "allocations": []
+                  }
+                ],
+                "lotChanges": [],
+                "cashExecution": "NONE",
+                "entitlementEffect": "NONE"
+              },
+              "eligibility": {
+                "applicability": "NOT_APPLICABLE",
+                "unreturnedCount": null,
+                "anomalyCount": null,
+                "debtState": "NOT_APPLICABLE",
+                "debtPolicyVersion": null,
+                "debtGuardVersion": null,
+                "coveredSources": [],
+                "asOf": null,
+                "items": []
+              },
+              "canConfirm": false,
+              "blocks": [
+                {
+                  "code": "DATE_POLICY_UNCONFIRMED",
+                  "path": "/payload/cutoffAt",
+                  "message": "历史日期规则待确认"
+                }
+              ]
+            },
+            "createdAt": "2026-10-19T00:00:00.000000Z",
+            "expiresAt": "2026-10-19T00:10:00.000000Z",
+            "result": null
+          },
+          "cancel": null,
+          "result": null,
+          "createdAt": "2026-10-19T00:00:00.000000Z",
+          "draftExpiresAt": "2026-10-20T00:00:00.000000Z",
+          "updatedAt": "2026-10-19T00:00:00.000000Z",
+          "serverNow": "2026-10-19T00:01:00.000000Z"
+        }
+      }
+    },
+    {
+      "name": "draft_ready_operation",
+      "definition": "OperationEnvelope",
+      "expectedValid": true,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成示例",
+        "data": {
+          "operationId": "33333333-3333-4333-8333-333333333333",
+          "operationKey": "44444444-4444-4444-8444-444444444444",
+          "memberId": "1",
+          "actorId": "2",
+          "editor": {
+            "editorId": "11111111-1111-4111-8111-111111111111",
+            "epoch": "1"
+          },
+          "state": "DRAFT_READY",
+          "draftHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "input": {
+            "memberId": "1",
+            "memberRevision": "0",
+            "financeRevision": "0",
+            "fund": "MEMBER_FEE",
+            "currency": "CNY",
+            "reason": "合成示例依据",
+            "evidenceRefs": [
+              {
+                "type": "VERIFICATION_NOTE",
+                "reference": "SYNTHETIC-ONLY",
+                "digest": null
+              }
+            ],
+            "action": "OPENING",
+            "payload": {
+              "receivedTotal": "100.00",
+              "refundedTotal": "20.00",
+              "cutoffAt": "2026-10-18T00:00:00.000000Z",
+              "sourceProofDigest": null
+            }
+          },
+          "request": null,
+          "cancel": null,
+          "result": null,
+          "createdAt": "2026-10-19T00:00:00.000000Z",
+          "draftExpiresAt": "2026-10-20T00:00:00.000000Z",
+          "updatedAt": "2026-10-19T00:00:00.000000Z",
+          "serverNow": "2026-10-19T00:01:00.000000Z"
+        }
+      }
+    },
+    {
+      "name": "reserved_operation",
+      "definition": "OperationEnvelope",
+      "expectedValid": true,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成示例",
+        "data": {
+          "operationId": "33333333-3333-4333-8333-333333333333",
+          "operationKey": "44444444-4444-4444-8444-444444444444",
+          "memberId": "1",
+          "actorId": "2",
+          "editor": {
+            "editorId": "11111111-1111-4111-8111-111111111111",
+            "epoch": "1"
+          },
+          "state": "RESERVED",
+          "draftHash": null,
+          "input": null,
+          "request": null,
+          "cancel": null,
+          "result": null,
+          "createdAt": "2026-10-19T00:00:00.000000Z",
+          "draftExpiresAt": "2026-10-20T00:00:00.000000Z",
+          "updatedAt": "2026-10-19T00:00:00.000000Z",
+          "serverNow": "2026-10-19T00:01:00.000000Z"
+        }
+      }
+    },
+    {
+      "name": "receipt_future_shape",
+      "definition": "Receipt",
+      "expectedValid": true,
+      "note": "FUTURE STRUCTURE ONLY: a receipt shape; does not assert D02/D03 approved or imply this blocked preview can commit",
+      "value": {
+        "requestId": "22222222-2222-4222-8222-222222222222",
+        "operationKey": "44444444-4444-4444-8444-444444444444",
+        "memberId": "1",
+        "accountId": "1",
+        "fund": "MEMBER_FEE",
+        "currency": "CNY",
+        "action": "OPENING",
+        "confirmedAt": "2026-10-19T00:01:00.000000Z",
+        "beforeRevision": "0",
+        "afterRevision": "1",
+        "entriesAtCommit": [
+          {
+            "id": "10",
+            "accountId": "1",
+            "requestId": "22222222-2222-4222-8222-222222222222",
+            "ordinal": 1,
+            "kind": "OPENING",
+            "amount": "80.00",
+            "openingReceived": "100.00",
+            "openingRefunded": "20.00",
+            "cutoffAt": "2026-10-18T00:00:00.000000Z",
+            "actualAt": null,
+            "methodCode": null,
+            "rootFactKey": "OPENING:1:2026-10-18T00:00:00.000000Z",
+            "reversesEntryId": null,
+            "replacesEntryId": null,
+            "businessRef": {
+              "type": "VERIFIED_OPENING",
+              "id": "1"
+            },
+            "policyDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "evidenceRefs": [
+              {
+                "type": "VERIFICATION_NOTE",
+                "reference": "SYNTHETIC-ONLY",
+                "digest": null
+              }
+            ],
+            "reason": "合成示例依据",
+            "operatorId": "2",
+            "recordedAt": "2026-10-19T00:01:00.000000Z",
+            "asOf": "2026-10-19T00:01:00.000000Z",
+            "effectiveAtAsOf": true,
+            "reversalEntryId": null,
+            "allocations": []
+          }
+        ],
+        "audit": {
+          "id": "20",
+          "requestId": "22222222-2222-4222-8222-222222222222",
+          "accountId": "1",
+          "operatorId": "2",
+          "action": "OPENING",
+          "beforeRevision": "0",
+          "afterRevision": "1",
+          "before": {
+            "memberId": "1",
+            "accountId": "1",
+            "fund": "MEMBER_FEE",
+            "currency": "CNY",
+            "financeRevision": "0",
+            "scopeCutoffAt": null,
+            "openingEntryId": null,
+            "openingState": "UNKNOWN",
+            "verifiedPaid": {
+              "state": "UNKNOWN",
+              "amount": null,
+              "reasonCode": "OPENING_UNVERIFIED"
+            },
+            "verifiedRefunded": {
+              "state": "UNKNOWN",
+              "amount": null,
+              "reasonCode": "OPENING_UNVERIFIED"
+            },
+            "balance": {
+              "state": "UNKNOWN",
+              "amount": null,
+              "reasonCode": "OPENING_UNVERIFIED"
+            },
+            "feeHeadroom": {
+              "state": "UNKNOWN",
+              "amount": null,
+              "reasonCode": "OPENING_UNVERIFIED"
+            },
+            "newReceipts": "0.00",
+            "newRefunds": "0.00",
+            "newNet": "0.00",
+            "asRecordedAt": "2026-10-19T00:00:00.000000Z"
+          },
+          "after": {
+            "memberId": "1",
+            "accountId": "1",
+            "fund": "MEMBER_FEE",
+            "currency": "CNY",
+            "financeRevision": "1",
+            "scopeCutoffAt": "2026-10-18T00:00:00.000000Z",
+            "openingEntryId": "10",
+            "openingState": "VERIFIED",
+            "verifiedPaid": {
+              "state": "KNOWN",
+              "amount": "100.00",
+              "reasonCode": null
+            },
+            "verifiedRefunded": {
+              "state": "KNOWN",
+              "amount": "20.00",
+              "reasonCode": null
+            },
+            "balance": {
+              "state": "KNOWN",
+              "amount": "80.00",
+              "reasonCode": null
+            },
+            "feeHeadroom": {
+              "state": "KNOWN",
+              "amount": "80.00",
+              "reasonCode": null
+            },
+            "newReceipts": "0.00",
+            "newRefunds": "0.00",
+            "newNet": "0.00",
+            "asRecordedAt": "2026-10-19T00:01:00.000000Z"
+          },
+          "reason": "合成示例依据",
+          "recordedAt": "2026-10-19T00:01:00.000000Z"
+        },
+        "impact": {
+          "before": {
+            "memberId": "1",
+            "accountId": "1",
+            "fund": "MEMBER_FEE",
+            "currency": "CNY",
+            "financeRevision": "0",
+            "scopeCutoffAt": null,
+            "openingEntryId": null,
+            "openingState": "UNKNOWN",
+            "verifiedPaid": {
+              "state": "UNKNOWN",
+              "amount": null,
+              "reasonCode": "OPENING_UNVERIFIED"
+            },
+            "verifiedRefunded": {
+              "state": "UNKNOWN",
+              "amount": null,
+              "reasonCode": "OPENING_UNVERIFIED"
+            },
+            "balance": {
+              "state": "UNKNOWN",
+              "amount": null,
+              "reasonCode": "OPENING_UNVERIFIED"
+            },
+            "feeHeadroom": {
+              "state": "UNKNOWN",
+              "amount": null,
+              "reasonCode": "OPENING_UNVERIFIED"
+            },
+            "newReceipts": "0.00",
+            "newRefunds": "0.00",
+            "newNet": "0.00",
+            "asRecordedAt": "2026-10-19T00:00:00.000000Z"
+          },
+          "after": {
+            "memberId": "1",
+            "fund": "MEMBER_FEE",
+            "currency": "CNY",
+            "financeRevision": "1",
+            "scopeCutoffAt": "2026-10-18T00:00:00.000000Z",
+            "openingState": "VERIFIED",
+            "verifiedPaid": {
+              "state": "KNOWN",
+              "amount": "100.00",
+              "reasonCode": null
+            },
+            "verifiedRefunded": {
+              "state": "KNOWN",
+              "amount": "20.00",
+              "reasonCode": null
+            },
+            "balance": {
+              "state": "KNOWN",
+              "amount": "80.00",
+              "reasonCode": null
+            },
+            "feeHeadroom": {
+              "state": "KNOWN",
+              "amount": "80.00",
+              "reasonCode": null
+            },
+            "newReceipts": "0.00",
+            "newRefunds": "0.00",
+            "newNet": "0.00",
+            "calculatedAt": "2026-10-19T00:00:00.000000Z"
+          },
+          "entries": [
+            {
+              "ordinal": 1,
+              "kind": "OPENING",
+              "amount": "80.00",
+              "openingReceived": "100.00",
+              "openingRefunded": "20.00",
+              "cutoffAt": "2026-10-18T00:00:00.000000Z",
+              "actualAt": null,
+              "methodCode": null,
+              "reversesEntryId": null,
+              "replacesEntryId": null,
+              "allocations": []
+            }
+          ],
+          "lotChanges": [],
+          "cashExecution": "NONE",
+          "entitlementEffect": "NONE"
+        },
+        "previewDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "policyDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entitlementEffect": "NONE"
+      }
+    },
+    {
+      "name": "cancel_tombstone",
+      "definition": "CancelEnvelope",
+      "expectedValid": true,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成示例",
+        "data": {
+          "operationKey": "44444444-4444-4444-8444-444444444444",
+          "memberId": "1",
+          "cancelKey": "22222222-2222-4222-8222-222222222222",
+          "cancelHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "previewDigest": null,
+          "reason": "RESTART_AFTER_UNKNOWN",
+          "outcome": "CANCELLED",
+          "state": "CANCELLED",
+          "resolvedAt": "2026-10-19T00:01:00.000000Z",
+          "requestId": null,
+          "receipt": null
+        }
+      }
+    },
+    {
+      "name": "cancel_commit_won",
+      "definition": "CancelEnvelope",
+      "expectedValid": true,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成示例",
+        "data": {
+          "operationKey": "44444444-4444-4444-8444-444444444444",
+          "memberId": "1",
+          "cancelKey": "22222222-2222-4222-8222-222222222222",
+          "cancelHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "previewDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "reason": "RESTART_AFTER_UNKNOWN",
+          "outcome": "ALREADY_COMMITTED",
+          "state": "COMMITTED",
+          "resolvedAt": "2026-10-19T00:01:00.000000Z",
+          "requestId": "22222222-2222-4222-8222-222222222222",
+          "receipt": {
+            "requestId": "22222222-2222-4222-8222-222222222222",
+            "operationKey": "44444444-4444-4444-8444-444444444444",
+            "memberId": "1",
+            "accountId": "1",
+            "fund": "MEMBER_FEE",
+            "currency": "CNY",
+            "action": "OPENING",
+            "confirmedAt": "2026-10-19T00:01:00.000000Z",
+            "beforeRevision": "0",
+            "afterRevision": "1",
+            "entriesAtCommit": [
+              {
+                "id": "10",
+                "accountId": "1",
+                "requestId": "22222222-2222-4222-8222-222222222222",
+                "ordinal": 1,
+                "kind": "OPENING",
+                "amount": "80.00",
+                "openingReceived": "100.00",
+                "openingRefunded": "20.00",
+                "cutoffAt": "2026-10-18T00:00:00.000000Z",
+                "actualAt": null,
+                "methodCode": null,
+                "rootFactKey": "OPENING:1:2026-10-18T00:00:00.000000Z",
+                "reversesEntryId": null,
+                "replacesEntryId": null,
+                "businessRef": {
+                  "type": "VERIFIED_OPENING",
+                  "id": "1"
+                },
+                "policyDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "evidenceRefs": [
+                  {
+                    "type": "VERIFICATION_NOTE",
+                    "reference": "SYNTHETIC-ONLY",
+                    "digest": null
+                  }
+                ],
+                "reason": "合成示例依据",
+                "operatorId": "2",
+                "recordedAt": "2026-10-19T00:01:00.000000Z",
+                "asOf": "2026-10-19T00:01:00.000000Z",
+                "effectiveAtAsOf": true,
+                "reversalEntryId": null,
+                "allocations": []
+              }
+            ],
+            "audit": {
+              "id": "20",
+              "requestId": "22222222-2222-4222-8222-222222222222",
+              "accountId": "1",
+              "operatorId": "2",
+              "action": "OPENING",
+              "beforeRevision": "0",
+              "afterRevision": "1",
+              "before": {
+                "memberId": "1",
+                "accountId": "1",
+                "fund": "MEMBER_FEE",
+                "currency": "CNY",
+                "financeRevision": "0",
+                "scopeCutoffAt": null,
+                "openingEntryId": null,
+                "openingState": "UNKNOWN",
+                "verifiedPaid": {
+                  "state": "UNKNOWN",
+                  "amount": null,
+                  "reasonCode": "OPENING_UNVERIFIED"
+                },
+                "verifiedRefunded": {
+                  "state": "UNKNOWN",
+                  "amount": null,
+                  "reasonCode": "OPENING_UNVERIFIED"
+                },
+                "balance": {
+                  "state": "UNKNOWN",
+                  "amount": null,
+                  "reasonCode": "OPENING_UNVERIFIED"
+                },
+                "feeHeadroom": {
+                  "state": "UNKNOWN",
+                  "amount": null,
+                  "reasonCode": "OPENING_UNVERIFIED"
+                },
+                "newReceipts": "0.00",
+                "newRefunds": "0.00",
+                "newNet": "0.00",
+                "asRecordedAt": "2026-10-19T00:00:00.000000Z"
+              },
+              "after": {
+                "memberId": "1",
+                "accountId": "1",
+                "fund": "MEMBER_FEE",
+                "currency": "CNY",
+                "financeRevision": "1",
+                "scopeCutoffAt": "2026-10-18T00:00:00.000000Z",
+                "openingEntryId": "10",
+                "openingState": "VERIFIED",
+                "verifiedPaid": {
+                  "state": "KNOWN",
+                  "amount": "100.00",
+                  "reasonCode": null
+                },
+                "verifiedRefunded": {
+                  "state": "KNOWN",
+                  "amount": "20.00",
+                  "reasonCode": null
+                },
+                "balance": {
+                  "state": "KNOWN",
+                  "amount": "80.00",
+                  "reasonCode": null
+                },
+                "feeHeadroom": {
+                  "state": "KNOWN",
+                  "amount": "80.00",
+                  "reasonCode": null
+                },
+                "newReceipts": "0.00",
+                "newRefunds": "0.00",
+                "newNet": "0.00",
+                "asRecordedAt": "2026-10-19T00:01:00.000000Z"
+              },
+              "reason": "合成示例依据",
+              "recordedAt": "2026-10-19T00:01:00.000000Z"
+            },
+            "impact": {
+              "before": {
+                "memberId": "1",
+                "accountId": "1",
+                "fund": "MEMBER_FEE",
+                "currency": "CNY",
+                "financeRevision": "0",
+                "scopeCutoffAt": null,
+                "openingEntryId": null,
+                "openingState": "UNKNOWN",
+                "verifiedPaid": {
+                  "state": "UNKNOWN",
+                  "amount": null,
+                  "reasonCode": "OPENING_UNVERIFIED"
+                },
+                "verifiedRefunded": {
+                  "state": "UNKNOWN",
+                  "amount": null,
+                  "reasonCode": "OPENING_UNVERIFIED"
+                },
+                "balance": {
+                  "state": "UNKNOWN",
+                  "amount": null,
+                  "reasonCode": "OPENING_UNVERIFIED"
+                },
+                "feeHeadroom": {
+                  "state": "UNKNOWN",
+                  "amount": null,
+                  "reasonCode": "OPENING_UNVERIFIED"
+                },
+                "newReceipts": "0.00",
+                "newRefunds": "0.00",
+                "newNet": "0.00",
+                "asRecordedAt": "2026-10-19T00:00:00.000000Z"
+              },
+              "after": {
+                "memberId": "1",
+                "fund": "MEMBER_FEE",
+                "currency": "CNY",
+                "financeRevision": "1",
+                "scopeCutoffAt": "2026-10-18T00:00:00.000000Z",
+                "openingState": "VERIFIED",
+                "verifiedPaid": {
+                  "state": "KNOWN",
+                  "amount": "100.00",
+                  "reasonCode": null
+                },
+                "verifiedRefunded": {
+                  "state": "KNOWN",
+                  "amount": "20.00",
+                  "reasonCode": null
+                },
+                "balance": {
+                  "state": "KNOWN",
+                  "amount": "80.00",
+                  "reasonCode": null
+                },
+                "feeHeadroom": {
+                  "state": "KNOWN",
+                  "amount": "80.00",
+                  "reasonCode": null
+                },
+                "newReceipts": "0.00",
+                "newRefunds": "0.00",
+                "newNet": "0.00",
+                "calculatedAt": "2026-10-19T00:00:00.000000Z"
+              },
+              "entries": [
+                {
+                  "ordinal": 1,
+                  "kind": "OPENING",
+                  "amount": "80.00",
+                  "openingReceived": "100.00",
+                  "openingRefunded": "20.00",
+                  "cutoffAt": "2026-10-18T00:00:00.000000Z",
+                  "actualAt": null,
+                  "methodCode": null,
+                  "reversesEntryId": null,
+                  "replacesEntryId": null,
+                  "allocations": []
+                }
+              ],
+              "lotChanges": [],
+              "cashExecution": "NONE",
+              "entitlementEffect": "NONE"
+            },
+            "previewDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "policyDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "entitlementEffect": "NONE"
+          }
+        }
+      }
+    },
+    {
+      "name": "recovery_metadata_only",
+      "definition": "RecoveryRecord",
+      "expectedValid": true,
+      "note": "Structural example only; no real data or business policy approval",
+      "value": {
+        "schemaVersion": 1,
+        "actorId": "2",
+        "operationKey": "44444444-4444-4444-8444-444444444444",
+        "memberId": "1",
+        "stage": "CANCELLING",
+        "draftHash": null,
+        "previewDigest": null,
+        "requestId": null,
+        "lastEditor": {
+          "editorId": "11111111-1111-4111-8111-111111111111",
+          "epoch": "1"
+        },
+        "confirmIntent": null,
+        "cancelIntent": {
+          "schemaVersion": 1,
+          "operationKey": "44444444-4444-4444-8444-444444444444",
+          "memberId": "1",
+          "editor": {
+            "editorId": "11111111-1111-4111-8111-111111111111",
+            "epoch": "0"
+          },
+          "cancelKey": "22222222-2222-4222-8222-222222222222",
+          "previewDigest": null,
+          "reason": "RESTART_AFTER_UNKNOWN"
+        },
+        "updatedAt": "2026-10-19T00:00:00.000000Z"
+      }
+    },
+    {
+      "name": "cancelled_missing_operation_shape",
+      "definition": "OperationEnvelope",
+      "expectedValid": true,
+      "note": "Synthetic structural invariant fixture only",
+      "value": {
+        "schemaVersion": 1,
+        "code": 200,
+        "message": "合成",
+        "data": {
+          "operationId": "33333333-3333-4333-8333-333333333333",
+          "operationKey": "44444444-4444-4444-8444-444444444444",
+          "memberId": "1",
+          "actorId": "2",
+          "editor": {
+            "editorId": "11111111-1111-4111-8111-111111111111",
+            "epoch": "1"
+          },
+          "state": "CANCELLED",
+          "draftHash": null,
+          "input": null,
+          "request": null,
+          "cancel": {
+            "operationKey": "44444444-4444-4444-8444-444444444444",
+            "memberId": "1",
+            "cancelKey": "22222222-2222-4222-8222-222222222222",
+            "cancelHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "previewDigest": null,
+            "reason": "RESTART_AFTER_UNKNOWN",
+            "outcome": "CANCELLED",
+            "state": "CANCELLED",
+            "resolvedAt": "2026-10-19T00:01:00.000000Z",
+            "requestId": null,
+            "receipt": null
+          },
+          "result": {
+            "state": "CANCELLED",
+            "resolvedAt": "2026-10-19T00:01:00.000000Z",
+            "reasonCode": "CANCELLED",
+            "receipt": null
+          },
+          "createdAt": "2026-10-19T00:00:00.000000Z",
+          "draftExpiresAt": "2026-10-20T00:00:00.000000Z",
+          "updatedAt": "2026-10-19T00:00:00.000000Z",
+          "serverNow": "2026-10-19T00:01:00.000000Z"
+        }
+      }
+    }
+  ]
+}

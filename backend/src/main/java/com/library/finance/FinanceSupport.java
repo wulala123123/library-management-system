@@ -22,7 +22,11 @@ public final class FinanceSupport {
     static final BigDecimal ZERO = new BigDecimal("0.00");
     public static final class Failure extends RuntimeException {
         final int status; final String code;
+        JsonNode operation;JsonNode fieldErrors;String safeMessage;
         Failure(int status, String code) { super(code); this.status=status; this.code=code; }
+        Failure withOperation(JsonNode value) { operation=value;return this; }
+        Failure field(String path,String code) {fieldErrors=JSON.valueToTree(List.of(obj("path",path,"code",code)));return this;}
+        Failure message(String value) {safeMessage=value;return this;}
     }
     static Failure failure(int status, String code) { return new Failure(status,code); }
     static ObjectNode obj(Object... pairs) {
@@ -48,7 +52,7 @@ public final class FinanceSupport {
         try { return value.setScale(2,RoundingMode.UNNECESSARY).toPlainString(); }
         catch(ArithmeticException e) { throw failure(500,"INTERNAL_ERROR"); }
     }
-    /** Strict CNY storage parser for future commands; this release exposes no write route. */
+    /** No JSON numbers, floating point or implicit rounding at the financial boundary. */
     public static BigDecimal parseMoney(JsonNode value) {
         if(value==null||!value.isTextual()) throw failure(400,"INVALID_INPUT");
         String s=value.textValue();
@@ -71,11 +75,35 @@ public final class FinanceSupport {
                 obj("errorCode",code,"operationKey",null,"requestId",null,"state",null,
                     "certainty",status>=500?"UNKNOWN":"NO_FINANCIAL_WRITE","recovery","NONE","retryable",false,"fieldErrors",List.of(),"operation",null));
     }
+    static ObjectNode error(Failure e) {
+        ObjectNode out=error(e.status,e.code);
+        if(e.safeMessage!=null&&e.status!=401&&e.status!=403)out.put("message",e.safeMessage);
+        if(e.fieldErrors!=null&&e.status!=401&&e.status!=403)((ObjectNode)out.get("data")).set("fieldErrors",e.fieldErrors);
+        if(e.operation!=null&&e.status!=401&&e.status!=403) {
+            ObjectNode data=(ObjectNode)out.get("data");JsonNode op=e.operation;
+            data.set("operation",op);data.set("operationKey",op.get("operationKey"));data.set("state",op.get("state"));
+            data.set("requestId",op.path("request").path("requestId").isMissingNode()?JSON.nullNode():op.path("request").get("requestId"));
+            boolean terminal=Set.of("COMMITTED","CANCELLED","EXPIRED","REJECTED").contains(op.path("state").asText());
+            data.put("certainty",terminal?"SAVED_TERMINAL":"NO_FINANCIAL_WRITE");data.put("recovery",terminal?"REVIEW_TERMINAL":"READ_KEY");
+        }
+        if(e.status>=500) {((ObjectNode)out.get("data")).put("recovery","READ_KEY");((ObjectNode)out.get("data")).put("retryable",true);}
+        return out;
+    }
     public static boolean isReadPath(HttpServletRequest r) {
         String uri=r.getRequestURI(),context=r.getContextPath();
         return "GET".equals(r.getMethod())&&uri!=null&&context!=null&&uri.startsWith(context)
                 &&uri.substring(context.length()).matches("/members/[^/]+/finance(?:/(?:source|entries))?");
     }
+    /** Exact method/route membership; never bypass the global filter for a whole prefix. */
+    public static boolean isFinancePath(HttpServletRequest r) {
+        if(isReadPath(r))return true;
+        String uri=r.getRequestURI(),context=r.getContextPath();
+        if(uri==null||context==null||!uri.startsWith(context))return false;
+        String p=uri.substring(context.length());
+        return "GET".equals(r.getMethod())&&p.matches("/member-finance/(?:operations/(?:active|by-key/[^/]+)|requests/[^/]+)")
+                ||"POST".equals(r.getMethod())&&p.matches("/member-finance/operations(?:/by-key/[^/]+/(?:claim|draft|preview|confirm|cancel|resolve))?");
+    }
+    public record TokenVersion(long value,Instant expiresAt) {}
     public static void securityError(HttpServletResponse response,int status,String code)throws IOException {
         response.setStatus(status); response.setContentType("application/json;charset=UTF-8");
         JSON.writeValue(response.getWriter(),error(status,code));

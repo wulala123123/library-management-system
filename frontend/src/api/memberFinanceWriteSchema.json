@@ -1,0 +1,5665 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:library:b40:protocol:1.1",
+  "title": "B40 v1.1 protocol: sole structural contract",
+  "description": "All wire roots carry schemaVersion=1; nested objects do not. Every object is closed and all listed properties required. JSON duplicate keys must be rejected before schema validation. Domain and concurrency invariants in contract-draft.md also apply.",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/ReserveBody"
+    },
+    {
+      "$ref": "#/$defs/ClaimBody"
+    },
+    {
+      "$ref": "#/$defs/DraftBody"
+    },
+    {
+      "$ref": "#/$defs/PreviewBody"
+    },
+    {
+      "$ref": "#/$defs/ConfirmBody"
+    },
+    {
+      "$ref": "#/$defs/CancelBody"
+    },
+    {
+      "$ref": "#/$defs/ResolveBody"
+    },
+    {
+      "$ref": "#/$defs/OperationEnvelope"
+    },
+    {
+      "$ref": "#/$defs/ActiveEnvelope"
+    },
+    {
+      "$ref": "#/$defs/RequestEnvelope"
+    },
+    {
+      "$ref": "#/$defs/CancelEnvelope"
+    },
+    {
+      "$ref": "#/$defs/FinanceEnvelope"
+    },
+    {
+      "$ref": "#/$defs/EntriesEnvelope"
+    },
+    {
+      "$ref": "#/$defs/SourceEnvelope"
+    },
+    {
+      "$ref": "#/$defs/ErrorEnvelope"
+    }
+  ],
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,18}$"
+    },
+    "Revision": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,18})$"
+    },
+    "Uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "Key": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{32,128}$"
+    },
+    "Hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Time": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[1-9][0-9]{3}-[0-9]{2}-[0-9]{2}T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]{1,6})?(Z|[+-](?:0[0-9]|1[0-3]):[0-5][0-9]|[+-]14:00)$",
+      "maxLength": 32,
+      "description": "RFC3339 profile: no leap seconds; explicit Z or offset at most 14:00; calendar date must be valid."
+    },
+    "Utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[1-9][0-9]{3}-[0-9]{2}-[0-9]{2}T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{6}Z$"
+    },
+    "MoneyInput": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,2})?$",
+      "maxLength": 18,
+      "description": "CNY yuan, at most two fractional digits. 15 integer digits is storage representability, not a business amount limit."
+    },
+    "PositiveMoneyInput": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/MoneyInput"
+        },
+        {
+          "not": {
+            "enum": [
+              "0",
+              "0.0",
+              "0.00"
+            ]
+          }
+        }
+      ]
+    },
+    "Money": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,64})\\.[0-9]{2}$",
+      "maxLength": 68
+    },
+    "SignedMoney": {
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]{0,64})\\.[0-9]{2}$",
+      "maxLength": 69,
+      "not": {
+        "const": "-0.00"
+      }
+    },
+    "Fund": {
+      "enum": [
+        "MEMBER_FEE",
+        "DEPOSIT"
+      ]
+    },
+    "Action": {
+      "enum": [
+        "OPENING",
+        "RECEIPT",
+        "REFUND",
+        "CORRECT"
+      ]
+    },
+    "Kind": {
+      "enum": [
+        "OPENING",
+        "RECEIPT",
+        "REFUND",
+        "REVERSAL"
+      ]
+    },
+    "State": {
+      "enum": [
+        "RESERVED",
+        "DRAFT_READY",
+        "PREVIEWED",
+        "COMMITTED",
+        "CANCELLED",
+        "EXPIRED",
+        "REJECTED"
+      ]
+    },
+    "RequestState": {
+      "enum": [
+        "PREVIEWED",
+        "COMMITTED",
+        "CANCELLED",
+        "EXPIRED",
+        "REJECTED"
+      ]
+    },
+    "Code": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+    },
+    "Reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "pattern": "^\\S(?:[\\s\\S]*\\S)?$"
+    },
+    "Editor": {
+      "type": "object",
+      "properties": {
+        "editorId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "epoch": {
+          "$ref": "#/$defs/Epoch"
+        }
+      },
+      "required": [
+        "editorId",
+        "epoch"
+      ],
+      "additionalProperties": false
+    },
+    "Evidence": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "LEGACY_ARCHIVE",
+            "COUNTER_VOUCHER",
+            "VERIFICATION_NOTE"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "digest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "reference",
+        "digest"
+      ],
+      "additionalProperties": false
+    },
+    "Allocation": {
+      "type": "object",
+      "properties": {
+        "lotEntryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "amount": {
+          "$ref": "#/$defs/PositiveMoneyInput"
+        }
+      },
+      "required": [
+        "lotEntryId",
+        "amount"
+      ],
+      "additionalProperties": false
+    },
+    "AllocationView": {
+      "type": "object",
+      "properties": {
+        "lotEntryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "amount": {
+          "$ref": "#/$defs/Money"
+        }
+      },
+      "required": [
+        "lotEntryId",
+        "amount"
+      ],
+      "additionalProperties": false
+    },
+    "CounterRef": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "COUNTER_REGISTRATION"
+        },
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "BusinessRef": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "COUNTER_REGISTRATION",
+            "VERIFIED_OPENING",
+            "LEDGER_CORRECTION"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "OpeningPayload": {
+      "type": "object",
+      "properties": {
+        "receivedTotal": {
+          "$ref": "#/$defs/MoneyInput"
+        },
+        "refundedTotal": {
+          "$ref": "#/$defs/MoneyInput"
+        },
+        "cutoffAt": {
+          "$ref": "#/$defs/Time"
+        },
+        "sourceProofDigest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "receivedTotal",
+        "refundedTotal",
+        "cutoffAt",
+        "sourceProofDigest"
+      ],
+      "additionalProperties": false
+    },
+    "CashReplacement": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "$ref": "#/$defs/PositiveMoneyInput"
+        },
+        "actualAt": {
+          "$ref": "#/$defs/Time"
+        },
+        "methodCode": {
+          "$ref": "#/$defs/MethodCode"
+        },
+        "paymentState": {
+          "const": "RECORDED"
+        }
+      },
+      "required": [
+        "amount",
+        "actualAt",
+        "methodCode",
+        "paymentState"
+      ],
+      "additionalProperties": false
+    },
+    "RefundReplacement": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "$ref": "#/$defs/PositiveMoneyInput"
+        },
+        "actualAt": {
+          "$ref": "#/$defs/Time"
+        },
+        "methodCode": {
+          "$ref": "#/$defs/MethodCode"
+        },
+        "paymentState": {
+          "const": "RECORDED"
+        },
+        "allocations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Allocation"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "amount",
+        "actualAt",
+        "methodCode",
+        "paymentState",
+        "allocations"
+      ],
+      "additionalProperties": false
+    },
+    "ReceiptPayload": {
+      "type": "object",
+      "properties": {
+        "factKey": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "amount": {
+          "$ref": "#/$defs/PositiveMoneyInput"
+        },
+        "actualAt": {
+          "$ref": "#/$defs/Time"
+        },
+        "methodCode": {
+          "$ref": "#/$defs/MethodCode"
+        },
+        "paymentState": {
+          "const": "RECORDED"
+        },
+        "businessRef": {
+          "$ref": "#/$defs/CounterRef"
+        }
+      },
+      "required": [
+        "factKey",
+        "amount",
+        "actualAt",
+        "methodCode",
+        "paymentState",
+        "businessRef"
+      ],
+      "additionalProperties": false
+    },
+    "RefundPayload": {
+      "type": "object",
+      "properties": {
+        "factKey": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "amount": {
+          "$ref": "#/$defs/PositiveMoneyInput"
+        },
+        "actualAt": {
+          "$ref": "#/$defs/Time"
+        },
+        "methodCode": {
+          "$ref": "#/$defs/MethodCode"
+        },
+        "paymentState": {
+          "const": "RECORDED"
+        },
+        "allocations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Allocation"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "businessRef": {
+          "$ref": "#/$defs/CounterRef"
+        }
+      },
+      "required": [
+        "factKey",
+        "amount",
+        "actualAt",
+        "methodCode",
+        "paymentState",
+        "allocations",
+        "businessRef"
+      ],
+      "additionalProperties": false
+    },
+    "CorrectOpening": {
+      "type": "object",
+      "properties": {
+        "originalEntryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "originalKind": {
+          "const": "OPENING"
+        },
+        "replacement": {
+          "$ref": "#/$defs/OpeningPayload"
+        }
+      },
+      "required": [
+        "originalEntryId",
+        "originalKind",
+        "replacement"
+      ],
+      "additionalProperties": false
+    },
+    "CorrectReceipt": {
+      "type": "object",
+      "properties": {
+        "originalEntryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "originalKind": {
+          "const": "RECEIPT"
+        },
+        "replacement": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CashReplacement"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "originalEntryId",
+        "originalKind",
+        "replacement"
+      ],
+      "additionalProperties": false
+    },
+    "CorrectRefund": {
+      "type": "object",
+      "properties": {
+        "originalEntryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "originalKind": {
+          "const": "REFUND"
+        },
+        "replacement": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RefundReplacement"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "originalEntryId",
+        "originalKind",
+        "replacement"
+      ],
+      "additionalProperties": false
+    },
+    "OpeningInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "OPENING"
+        },
+        "payload": {
+          "$ref": "#/$defs/OpeningPayload"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "ReceiptInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "RECEIPT"
+        },
+        "payload": {
+          "$ref": "#/$defs/ReceiptPayload"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "RefundInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "REFUND"
+        },
+        "payload": {
+          "$ref": "#/$defs/RefundPayload"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "CorrectOpeningInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "CORRECT"
+        },
+        "payload": {
+          "$ref": "#/$defs/CorrectOpening"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "CorrectReceiptInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "CORRECT"
+        },
+        "payload": {
+          "$ref": "#/$defs/CorrectReceipt"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "CorrectRefundInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "CORRECT"
+        },
+        "payload": {
+          "$ref": "#/$defs/CorrectRefund"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "FinancialInput": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/OpeningInput"
+        },
+        {
+          "$ref": "#/$defs/ReceiptInput"
+        },
+        {
+          "$ref": "#/$defs/RefundInput"
+        },
+        {
+          "$ref": "#/$defs/CorrectOpeningInput"
+        },
+        {
+          "$ref": "#/$defs/CorrectReceiptInput"
+        },
+        {
+          "$ref": "#/$defs/CorrectRefundInput"
+        }
+      ]
+    },
+    "KnownAmount": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "const": "KNOWN"
+        },
+        "amount": {
+          "$ref": "#/$defs/Money"
+        },
+        "reasonCode": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "state",
+        "amount",
+        "reasonCode"
+      ],
+      "additionalProperties": false
+    },
+    "UnknownAmount": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "const": "UNKNOWN"
+        },
+        "amount": {
+          "type": "null"
+        },
+        "reasonCode": {
+          "enum": [
+            "OPENING_UNVERIFIED",
+            "SOURCE_LINK_UNVERIFIED",
+            "UNEXPLAINED_HISTORY",
+            "LEDGER_ANOMALY",
+            "NOT_ASSESSED"
+          ]
+        }
+      },
+      "required": [
+        "state",
+        "amount",
+        "reasonCode"
+      ],
+      "additionalProperties": false
+    },
+    "Amount": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/KnownAmount"
+        },
+        {
+          "$ref": "#/$defs/UnknownAmount"
+        }
+      ]
+    },
+    "Balance": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "accountId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "scopeCutoffAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Utc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "openingEntryId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "openingState": {
+          "enum": [
+            "UNKNOWN",
+            "VERIFIED"
+          ]
+        },
+        "verifiedPaid": {
+          "$ref": "#/$defs/Amount"
+        },
+        "verifiedRefunded": {
+          "$ref": "#/$defs/Amount"
+        },
+        "balance": {
+          "$ref": "#/$defs/Amount"
+        },
+        "feeHeadroom": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Amount"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "newReceipts": {
+          "$ref": "#/$defs/Money"
+        },
+        "newRefunds": {
+          "$ref": "#/$defs/Money"
+        },
+        "newNet": {
+          "$ref": "#/$defs/SignedMoney"
+        },
+        "asRecordedAt": {
+          "$ref": "#/$defs/Utc"
+        }
+      },
+      "required": [
+        "memberId",
+        "accountId",
+        "fund",
+        "currency",
+        "financeRevision",
+        "scopeCutoffAt",
+        "openingEntryId",
+        "openingState",
+        "verifiedPaid",
+        "verifiedRefunded",
+        "balance",
+        "feeHeadroom",
+        "newReceipts",
+        "newRefunds",
+        "newNet",
+        "asRecordedAt"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "fund": {
+                "const": "MEMBER_FEE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "feeHeadroom": {
+                "$ref": "#/$defs/Amount"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "feeHeadroom": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "openingState": {
+                "const": "UNKNOWN"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "verifiedPaid": {
+                "$ref": "#/$defs/UnknownAmount"
+              },
+              "verifiedRefunded": {
+                "$ref": "#/$defs/UnknownAmount"
+              },
+              "balance": {
+                "$ref": "#/$defs/UnknownAmount"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "accountId": {
+                "$ref": "#/$defs/Id"
+              },
+              "openingEntryId": {
+                "$ref": "#/$defs/Id"
+              },
+              "scopeCutoffAt": {
+                "$ref": "#/$defs/Utc"
+              },
+              "verifiedPaid": {
+                "$ref": "#/$defs/KnownAmount"
+              },
+              "verifiedRefunded": {
+                "$ref": "#/$defs/KnownAmount"
+              },
+              "balance": {
+                "$ref": "#/$defs/KnownAmount"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "fund": {
+                "const": "MEMBER_FEE"
+              },
+              "openingState": {
+                "const": "UNKNOWN"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "feeHeadroom": {
+                "$ref": "#/$defs/UnknownAmount"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "fund": {
+                "const": "MEMBER_FEE"
+              },
+              "openingState": {
+                "const": "VERIFIED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "feeHeadroom": {
+                "$ref": "#/$defs/KnownAmount"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "accountId": {
+                "type": "null"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "openingEntryId": {
+                "type": "null"
+              },
+              "scopeCutoffAt": {
+                "type": "null"
+              },
+              "financeRevision": {
+                "const": "0"
+              },
+              "openingState": {
+                "const": "UNKNOWN"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Identity": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "realName": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 50
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cardNo": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "accountStatus": {
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "role": {
+          "const": "READER"
+        },
+        "deleted": {
+          "const": false
+        }
+      },
+      "required": [
+        "memberId",
+        "realName",
+        "cardNo",
+        "accountStatus",
+        "memberRevision",
+        "role",
+        "deleted"
+      ],
+      "additionalProperties": false
+    },
+    "Policy": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "$ref": "#/$defs/Hash"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "scale": {
+          "const": 2
+        },
+        "rounding": {
+          "const": "REJECT_EXTRA_SCALE"
+        },
+        "businessAmountLimit": {
+          "type": "null"
+        },
+        "paymentMethodsState": {
+          "enum": [
+            "UNCONFIRMED",
+            "CONFIRMED"
+          ]
+        },
+        "paymentMethodCodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MethodCode"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "datePolicyState": {
+          "enum": [
+            "UNCONFIRMED",
+            "CONFIRMED"
+          ]
+        },
+        "cutoffAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Utc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "financialTimeZone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "backdateRuleRef": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "debtPolicyState": {
+          "enum": [
+            "UNCONFIRMED",
+            "CONFIRMED"
+          ]
+        },
+        "debtPolicyVersion": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enabledActions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Action"
+          },
+          "minItems": 0,
+          "maxItems": 4
+        }
+      },
+      "required": [
+        "digest",
+        "currency",
+        "scale",
+        "rounding",
+        "businessAmountLimit",
+        "paymentMethodsState",
+        "paymentMethodCodes",
+        "datePolicyState",
+        "cutoffAt",
+        "financialTimeZone",
+        "backdateRuleRef",
+        "debtPolicyState",
+        "debtPolicyVersion",
+        "enabledActions"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "paymentMethodsState": {
+                "const": "UNCONFIRMED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "paymentMethodCodes": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "paymentMethodCodes": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "datePolicyState": {
+                "const": "UNCONFIRMED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cutoffAt": {
+                "type": "null"
+              },
+              "financialTimeZone": {
+                "type": "null"
+              },
+              "backdateRuleRef": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "cutoffAt": {
+                "$ref": "#/$defs/Utc"
+              },
+              "financialTimeZone": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "backdateRuleRef": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "debtPolicyState": {
+                "const": "UNCONFIRMED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "debtPolicyVersion": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "debtPolicyVersion": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Block": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/Code"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      },
+      "required": [
+        "code",
+        "path",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "DebtItem": {
+      "type": "object",
+      "properties": {
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "type": {
+          "$ref": "#/$defs/Code"
+        },
+        "amount": {
+          "$ref": "#/$defs/Amount"
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/Code"
+        }
+      },
+      "required": [
+        "reference",
+        "type",
+        "amount",
+        "reasonCode"
+      ],
+      "additionalProperties": false
+    },
+    "Eligibility": {
+      "type": "object",
+      "properties": {
+        "applicability": {
+          "enum": [
+            "NOT_APPLICABLE",
+            "DEPOSIT_REFUND"
+          ]
+        },
+        "unreturnedCount": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Revision"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "anomalyCount": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Revision"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "debtState": {
+          "enum": [
+            "NOT_APPLICABLE",
+            "CLEAR",
+            "BLOCKED",
+            "UNKNOWN"
+          ]
+        },
+        "debtPolicyVersion": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "debtGuardVersion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Revision"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coveredSources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Code"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "asOf": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Utc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DebtItem"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "applicability",
+        "unreturnedCount",
+        "anomalyCount",
+        "debtState",
+        "debtPolicyVersion",
+        "debtGuardVersion",
+        "coveredSources",
+        "asOf",
+        "items"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "applicability": {
+                "const": "NOT_APPLICABLE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "unreturnedCount": {
+                "type": "null"
+              },
+              "anomalyCount": {
+                "type": "null"
+              },
+              "debtState": {
+                "const": "NOT_APPLICABLE"
+              },
+              "debtPolicyVersion": {
+                "type": "null"
+              },
+              "debtGuardVersion": {
+                "type": "null"
+              },
+              "coveredSources": {
+                "maxItems": 0
+              },
+              "asOf": {
+                "type": "null"
+              },
+              "items": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "debtState": {
+                "enum": [
+                  "CLEAR",
+                  "BLOCKED",
+                  "UNKNOWN"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "debtState": {
+                "enum": [
+                  "CLEAR",
+                  "BLOCKED"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "debtPolicyVersion": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "debtGuardVersion": {
+                "$ref": "#/$defs/Revision"
+              },
+              "coveredSources": {
+                "minItems": 1
+              },
+              "asOf": {
+                "$ref": "#/$defs/Utc"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "debtState": {
+                "const": "CLEAR"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "items": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "LotImpact": {
+      "type": "object",
+      "properties": {
+        "lotEntryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "beforeRemaining": {
+          "$ref": "#/$defs/Money"
+        },
+        "refundDelta": {
+          "$ref": "#/$defs/SignedMoney"
+        },
+        "afterRemaining": {
+          "$ref": "#/$defs/Money"
+        }
+      },
+      "required": [
+        "lotEntryId",
+        "beforeRemaining",
+        "refundDelta",
+        "afterRemaining"
+      ],
+      "additionalProperties": false
+    },
+    "ProposedEntry": {
+      "type": "object",
+      "properties": {
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "kind": {
+          "$ref": "#/$defs/Kind"
+        },
+        "amount": {
+          "$ref": "#/$defs/Money"
+        },
+        "openingReceived": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Money"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "openingRefunded": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Money"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cutoffAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Utc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actualAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Utc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "methodCode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MethodCode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reversesEntryId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replacesEntryId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allocations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AllocationView"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "ordinal",
+        "kind",
+        "amount",
+        "openingReceived",
+        "openingRefunded",
+        "cutoffAt",
+        "actualAt",
+        "methodCode",
+        "reversesEntryId",
+        "replacesEntryId",
+        "allocations"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "OPENING"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "openingReceived": {
+                "$ref": "#/$defs/Money"
+              },
+              "openingRefunded": {
+                "$ref": "#/$defs/Money"
+              },
+              "cutoffAt": {
+                "$ref": "#/$defs/Utc"
+              },
+              "actualAt": {
+                "type": "null"
+              },
+              "methodCode": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "openingReceived": {
+                "type": "null"
+              },
+              "openingRefunded": {
+                "type": "null"
+              },
+              "cutoffAt": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "RECEIPT",
+                  "REFUND"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "amount": {
+                "not": {
+                  "const": "0.00"
+                }
+              },
+              "actualAt": {
+                "$ref": "#/$defs/Utc"
+              },
+              "methodCode": {
+                "$ref": "#/$defs/MethodCode"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "REFUND"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "allocations": {
+                "minItems": 1
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "allocations": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "REVERSAL"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reversesEntryId": {
+                "$ref": "#/$defs/Id"
+              },
+              "replacesEntryId": {
+                "type": "null"
+              },
+              "methodCode": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "reversesEntryId": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Impact": {
+      "type": "object",
+      "properties": {
+        "before": {
+          "$ref": "#/$defs/Balance"
+        },
+        "after": {
+          "$ref": "#/$defs/ProjectedBalance"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProposedEntry"
+          },
+          "minItems": 1,
+          "maxItems": 2
+        },
+        "lotChanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LotImpact"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "cashExecution": {
+          "const": "NONE"
+        },
+        "entitlementEffect": {
+          "const": "NONE"
+        }
+      },
+      "required": [
+        "before",
+        "after",
+        "entries",
+        "lotChanges",
+        "cashExecution",
+        "entitlementEffect"
+      ],
+      "additionalProperties": false
+    },
+    "Preview": {
+      "type": "object",
+      "properties": {
+        "previewDigest": {
+          "$ref": "#/$defs/Hash"
+        },
+        "inputHash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "identity": {
+          "$ref": "#/$defs/Identity"
+        },
+        "policy": {
+          "$ref": "#/$defs/Policy"
+        },
+        "sourceProofDigest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "impact": {
+          "$ref": "#/$defs/Impact"
+        },
+        "eligibility": {
+          "$ref": "#/$defs/Eligibility"
+        },
+        "canConfirm": {
+          "type": "boolean"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Block"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "previewDigest",
+        "inputHash",
+        "identity",
+        "policy",
+        "sourceProofDigest",
+        "impact",
+        "eligibility",
+        "canConfirm",
+        "blocks"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "canConfirm": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "blocks": {
+                "maxItems": 0
+              },
+              "policy": {
+                "properties": {
+                  "datePolicyState": {
+                    "const": "CONFIRMED"
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "blocks": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "canConfirm": {
+                "const": true
+              },
+              "eligibility": {
+                "properties": {
+                  "applicability": {
+                    "const": "DEPOSIT_REFUND"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "eligibility": {
+                "properties": {
+                  "unreturnedCount": {
+                    "const": "0"
+                  },
+                  "anomalyCount": {
+                    "const": "0"
+                  },
+                  "debtState": {
+                    "const": "CLEAR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Entry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "accountId": {
+          "$ref": "#/$defs/Id"
+        },
+        "requestId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "kind": {
+          "$ref": "#/$defs/Kind"
+        },
+        "amount": {
+          "$ref": "#/$defs/Money"
+        },
+        "openingReceived": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Money"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "openingRefunded": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Money"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cutoffAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Utc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actualAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Utc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "methodCode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MethodCode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rootFactKey": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reversesEntryId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replacesEntryId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "businessRef": {
+          "$ref": "#/$defs/BusinessRef"
+        },
+        "policyDigest": {
+          "$ref": "#/$defs/Hash"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "operatorId": {
+          "$ref": "#/$defs/Id"
+        },
+        "recordedAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "asOf": {
+          "$ref": "#/$defs/Utc"
+        },
+        "effectiveAtAsOf": {
+          "type": "boolean"
+        },
+        "reversalEntryId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allocations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AllocationView"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "id",
+        "accountId",
+        "requestId",
+        "ordinal",
+        "kind",
+        "amount",
+        "openingReceived",
+        "openingRefunded",
+        "cutoffAt",
+        "actualAt",
+        "methodCode",
+        "rootFactKey",
+        "reversesEntryId",
+        "replacesEntryId",
+        "businessRef",
+        "policyDigest",
+        "evidenceRefs",
+        "reason",
+        "operatorId",
+        "recordedAt",
+        "asOf",
+        "effectiveAtAsOf",
+        "reversalEntryId",
+        "allocations"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "OPENING"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "openingReceived": {
+                "$ref": "#/$defs/Money"
+              },
+              "openingRefunded": {
+                "$ref": "#/$defs/Money"
+              },
+              "cutoffAt": {
+                "$ref": "#/$defs/Utc"
+              },
+              "actualAt": {
+                "type": "null"
+              },
+              "methodCode": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "openingReceived": {
+                "type": "null"
+              },
+              "openingRefunded": {
+                "type": "null"
+              },
+              "cutoffAt": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "RECEIPT",
+                  "REFUND"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "amount": {
+                "not": {
+                  "const": "0.00"
+                }
+              },
+              "actualAt": {
+                "$ref": "#/$defs/Utc"
+              },
+              "methodCode": {
+                "$ref": "#/$defs/MethodCode"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "REFUND"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "allocations": {
+                "minItems": 1
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "allocations": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "REVERSAL"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reversesEntryId": {
+                "$ref": "#/$defs/Id"
+              },
+              "replacesEntryId": {
+                "type": "null"
+              },
+              "methodCode": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "reversesEntryId": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "REVERSAL"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "rootFactKey": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Audit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "requestId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "accountId": {
+          "$ref": "#/$defs/Id"
+        },
+        "operatorId": {
+          "$ref": "#/$defs/Id"
+        },
+        "action": {
+          "$ref": "#/$defs/Action"
+        },
+        "beforeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "afterRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "before": {
+          "$ref": "#/$defs/Balance"
+        },
+        "after": {
+          "$ref": "#/$defs/Balance"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "recordedAt": {
+          "$ref": "#/$defs/Utc"
+        }
+      },
+      "required": [
+        "id",
+        "requestId",
+        "accountId",
+        "operatorId",
+        "action",
+        "beforeRevision",
+        "afterRevision",
+        "before",
+        "after",
+        "reason",
+        "recordedAt"
+      ],
+      "additionalProperties": false
+    },
+    "Receipt": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "accountId": {
+          "$ref": "#/$defs/Id"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "action": {
+          "$ref": "#/$defs/Action"
+        },
+        "confirmedAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "beforeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "afterRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "entriesAtCommit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Entry"
+          },
+          "minItems": 1,
+          "maxItems": 2
+        },
+        "audit": {
+          "$ref": "#/$defs/Audit"
+        },
+        "impact": {
+          "$ref": "#/$defs/Impact"
+        },
+        "previewDigest": {
+          "$ref": "#/$defs/Hash"
+        },
+        "policyDigest": {
+          "$ref": "#/$defs/Hash"
+        },
+        "entitlementEffect": {
+          "const": "NONE"
+        }
+      },
+      "required": [
+        "requestId",
+        "operationKey",
+        "memberId",
+        "accountId",
+        "fund",
+        "currency",
+        "action",
+        "confirmedAt",
+        "beforeRevision",
+        "afterRevision",
+        "entriesAtCommit",
+        "audit",
+        "impact",
+        "previewDigest",
+        "policyDigest",
+        "entitlementEffect"
+      ],
+      "additionalProperties": false
+    },
+    "CancelReason": {
+      "enum": [
+        "USER_CANCELLED",
+        "RESTART_AFTER_UNKNOWN",
+        "ABANDON_UNSAVED_DRAFT"
+      ]
+    },
+    "CancelBody": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "editor": {
+          "$ref": "#/$defs/CancelEditor"
+        },
+        "cancelKey": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "previewDigest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/CancelReason"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "operationKey",
+        "memberId",
+        "editor",
+        "cancelKey",
+        "previewDigest",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "CancelReceipt": {
+      "type": "object",
+      "properties": {
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "cancelKey": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "cancelHash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "previewDigest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/CancelReason"
+        },
+        "outcome": {
+          "enum": [
+            "CANCELLED",
+            "ALREADY_COMMITTED",
+            "ALREADY_TERMINAL"
+          ]
+        },
+        "state": {
+          "enum": [
+            "COMMITTED",
+            "CANCELLED",
+            "EXPIRED",
+            "REJECTED"
+          ]
+        },
+        "resolvedAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "requestId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Receipt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "operationKey",
+        "memberId",
+        "cancelKey",
+        "cancelHash",
+        "previewDigest",
+        "reason",
+        "outcome",
+        "state",
+        "resolvedAt",
+        "requestId",
+        "receipt"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "CANCELLED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "state": {
+                "const": "CANCELLED"
+              },
+              "receipt": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "ALREADY_COMMITTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "state": {
+                "const": "COMMITTED"
+              },
+              "receipt": {
+                "$ref": "#/$defs/Receipt"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "ALREADY_TERMINAL"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "EXPIRED",
+                  "REJECTED",
+                  "CANCELLED"
+                ]
+              },
+              "receipt": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "ALREADY_COMMITTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "requestId": {
+                "$ref": "#/$defs/Uuid"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Terminal": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "enum": [
+            "COMMITTED",
+            "CANCELLED",
+            "EXPIRED",
+            "REJECTED"
+          ]
+        },
+        "resolvedAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/Code"
+        },
+        "receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Receipt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "state",
+        "resolvedAt",
+        "reasonCode",
+        "receipt"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "COMMITTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "receipt": {
+                "$ref": "#/$defs/Receipt"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "receipt": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Request": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "operationId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "accountId": {
+          "$ref": "#/$defs/Id"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "action": {
+          "$ref": "#/$defs/Action"
+        },
+        "state": {
+          "$ref": "#/$defs/RequestState"
+        },
+        "input": {
+          "$ref": "#/$defs/CanonicalFinancialInput"
+        },
+        "inputHash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "previewDigest": {
+          "$ref": "#/$defs/Hash"
+        },
+        "preview": {
+          "$ref": "#/$defs/Preview"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "expiresAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Terminal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "requestId",
+        "operationId",
+        "operationKey",
+        "memberId",
+        "accountId",
+        "fund",
+        "currency",
+        "action",
+        "state",
+        "input",
+        "inputHash",
+        "previewDigest",
+        "preview",
+        "createdAt",
+        "expiresAt",
+        "result"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "PREVIEWED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "result": {
+                "$ref": "#/$defs/Terminal"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "COMMITTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "state": {
+                    "const": "COMMITTED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "CANCELLED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "state": {
+                    "const": "CANCELLED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "EXPIRED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "state": {
+                    "const": "EXPIRED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "REJECTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "state": {
+                    "const": "REJECTED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Operation": {
+      "type": "object",
+      "properties": {
+        "operationId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "actorId": {
+          "$ref": "#/$defs/Id"
+        },
+        "editor": {
+          "$ref": "#/$defs/Editor"
+        },
+        "state": {
+          "$ref": "#/$defs/State"
+        },
+        "draftHash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "input": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CanonicalFinancialInput"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "request": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Request"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cancel": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CancelReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Terminal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "draftExpiresAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "serverNow": {
+          "$ref": "#/$defs/Utc"
+        }
+      },
+      "required": [
+        "operationId",
+        "operationKey",
+        "memberId",
+        "actorId",
+        "editor",
+        "state",
+        "draftHash",
+        "input",
+        "request",
+        "cancel",
+        "result",
+        "createdAt",
+        "draftExpiresAt",
+        "updatedAt",
+        "serverNow"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "RESERVED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "draftHash": {
+                "type": "null"
+              },
+              "input": {
+                "type": "null"
+              },
+              "request": {
+                "type": "null"
+              },
+              "result": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "DRAFT_READY"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "draftHash": {
+                "$ref": "#/$defs/Hash"
+              },
+              "input": {
+                "$ref": "#/$defs/CanonicalFinancialInput"
+              },
+              "request": {
+                "type": "null"
+              },
+              "result": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "PREVIEWED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "draftHash": {
+                "$ref": "#/$defs/Hash"
+              },
+              "input": {
+                "$ref": "#/$defs/CanonicalFinancialInput"
+              },
+              "request": {
+                "$ref": "#/$defs/Request"
+              },
+              "result": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "COMMITTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "draftHash": {
+                "$ref": "#/$defs/Hash"
+              },
+              "input": {
+                "$ref": "#/$defs/CanonicalFinancialInput"
+              },
+              "request": {
+                "$ref": "#/$defs/Request"
+              },
+              "result": {
+                "$ref": "#/$defs/Terminal"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "CANCELLED",
+                  "EXPIRED",
+                  "REJECTED"
+                ]
+              },
+              "request": {
+                "type": "null"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "input": {
+                "type": "null"
+              },
+              "result": {
+                "$ref": "#/$defs/Terminal"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "COMMITTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "state": {
+                    "const": "COMMITTED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "CANCELLED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "state": {
+                    "const": "CANCELLED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "EXPIRED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "state": {
+                    "const": "EXPIRED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "REJECTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "state": {
+                    "const": "REJECTED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "PREVIEWED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "request": {
+                "properties": {
+                  "state": {
+                    "const": "PREVIEWED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "COMMITTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "request": {
+                "properties": {
+                  "state": {
+                    "const": "COMMITTED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "CANCELLED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "request": {
+                "properties": {
+                  "state": {
+                    "const": "CANCELLED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "EXPIRED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "request": {
+                "properties": {
+                  "state": {
+                    "const": "EXPIRED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "REJECTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "request": {
+                "properties": {
+                  "state": {
+                    "const": "REJECTED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "request": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "input": {
+                "$ref": "#/$defs/CanonicalFinancialInput"
+              },
+              "draftHash": {
+                "$ref": "#/$defs/Hash"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "FieldError": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "code": {
+          "$ref": "#/$defs/Code"
+        }
+      },
+      "required": [
+        "path",
+        "code"
+      ],
+      "additionalProperties": false
+    },
+    "Error": {
+      "type": "object",
+      "properties": {
+        "errorCode": {
+          "enum": [
+            "INVALID_JSON",
+            "INVALID_INPUT",
+            "DUPLICATE_FIELD",
+            "UNKNOWN_FIELD",
+            "UNAUTHENTICATED",
+            "ADMIN_REQUIRED",
+            "OWNER_REQUIRED",
+            "MEMBER_NOT_FOUND",
+            "OPERATION_NOT_FOUND",
+            "REQUEST_NOT_FOUND",
+            "ACTIVE_OPERATION_EXISTS",
+            "OPERATION_KEY_REUSED",
+            "EDITOR_CHANGED",
+            "CLAIM_KEY_REUSED",
+            "DRAFT_ALREADY_FROZEN",
+            "DRAFT_REQUIRED",
+            "DRAFT_HASH_MISMATCH",
+            "PREVIEW_REQUIRED",
+            "PREVIEW_DIGEST_MISMATCH",
+            "PREVIEW_BINDING_REQUIRED",
+            "CANCEL_KEY_REUSED",
+            "CANCEL_INTENT_FROZEN",
+            "CANCELLED",
+            "EXPIRED",
+            "REJECTED",
+            "DEPENDENCIES_CHANGED",
+            "BUSINESS_FACT_EXISTS",
+            "MONEY_PRECISION",
+            "STORAGE_RANGE",
+            "RULE_NOT_CONFIRMED",
+            "REFUND_BLOCKED",
+            "BAD_CURSOR",
+            "UNKNOWN_RESULT",
+            "INTERNAL_ERROR",
+            "OPERATION_APPEARED"
+          ]
+        },
+        "operationKey": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Key"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requestId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "state": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/State"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "certainty": {
+          "enum": [
+            "NO_FINANCIAL_WRITE",
+            "SAVED_TERMINAL",
+            "UNKNOWN"
+          ]
+        },
+        "recovery": {
+          "enum": [
+            "NONE",
+            "READ_KEY",
+            "RETRY_SAME_COMMAND",
+            "CLAIM_OR_CANCEL_KEY",
+            "REVIEW_TERMINAL"
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "fieldErrors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldError"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "operation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Operation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "errorCode",
+        "operationKey",
+        "requestId",
+        "state",
+        "certainty",
+        "recovery",
+        "retryable",
+        "fieldErrors",
+        "operation"
+      ],
+      "additionalProperties": false
+    },
+    "OperationEnvelope": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "code": {
+          "const": 200
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "data": {
+          "$ref": "#/$defs/Operation"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "code",
+        "message",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ActiveEnvelope": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "code": {
+          "const": 200
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "data": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Operation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "code",
+        "message",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "RequestEnvelope": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "code": {
+          "const": 200
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "data": {
+          "$ref": "#/$defs/Request"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "code",
+        "message",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "CancelEnvelope": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "code": {
+          "const": 200
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "data": {
+          "$ref": "#/$defs/CancelReceipt"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "code",
+        "message",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ErrorEnvelope": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "code": {
+          "enum": [
+            400,
+            401,
+            403,
+            404,
+            409,
+            422,
+            500,
+            503
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "data": {
+          "$ref": "#/$defs/Error"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "code",
+        "message",
+        "data"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": [
+                  401,
+                  403
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "properties": {
+                  "operationKey": {
+                    "type": "null"
+                  },
+                  "requestId": {
+                    "type": "null"
+                  },
+                  "state": {
+                    "type": "null"
+                  },
+                  "operation": {
+                    "type": "null"
+                  },
+                  "fieldErrors": {
+                    "maxItems": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": [
+                  500,
+                  503
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "properties": {
+                  "certainty": {
+                    "const": "UNKNOWN"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Finance": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "accounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Balance"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/Balance"
+                },
+                {
+                  "properties": {
+                    "fund": {
+                      "const": "MEMBER_FEE"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/Balance"
+                },
+                {
+                  "properties": {
+                    "fund": {
+                      "const": "DEPOSIT"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "asRecordedAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "historicalCoverage": {
+          "enum": [
+            "COMPLETE",
+            "PARTIAL",
+            "UNKNOWN"
+          ]
+        },
+        "source": {
+          "const": "MEMBER_FINANCE_LEDGER"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "currency",
+        "accounts",
+        "asRecordedAt",
+        "historicalCoverage",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "FinanceEnvelope": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "code": {
+          "const": 200
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "data": {
+          "$ref": "#/$defs/Finance"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "code",
+        "message",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "EntriesQuery": {
+      "type": "object",
+      "properties": {
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "beforeId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "asRecordedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Utc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "fund",
+        "currency",
+        "beforeId",
+        "size",
+        "asRecordedAt"
+      ],
+      "additionalProperties": false
+    },
+    "EntriesPage": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "asRecordedAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "beforeId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "nextBeforeId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Entry"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "memberId",
+        "fund",
+        "currency",
+        "asRecordedAt",
+        "beforeId",
+        "nextBeforeId",
+        "size",
+        "hasMore",
+        "entries"
+      ],
+      "additionalProperties": false
+    },
+    "EntriesEnvelope": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "code": {
+          "const": 200
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "data": {
+          "$ref": "#/$defs/EntriesPage"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "code",
+        "message",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "RawProfile": {
+      "type": "object",
+      "properties": {
+        "profilePresent": {
+          "type": "boolean"
+        },
+        "sourceKey": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceSystem": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 50
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceArchiveId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "legacyPaidFee": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Money"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "legacyDepositAmount": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Money"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "legacyDepositStatus": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 50
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "profilePresent",
+        "sourceKey",
+        "sourceSystem",
+        "sourceArchiveId",
+        "legacyPaidFee",
+        "legacyDepositAmount",
+        "legacyDepositStatus"
+      ],
+      "additionalProperties": false
+    },
+    "Archive": {
+      "type": "object",
+      "properties": {
+        "archiveId": {
+          "$ref": "#/$defs/Id"
+        },
+        "sourceSystem": {
+          "const": "huiben"
+        },
+        "recordType": {
+          "const": "MEMBER"
+        },
+        "sourceKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "archiveHash": {
+          "$ref": "#/$defs/Hash"
+        }
+      },
+      "required": [
+        "archiveId",
+        "sourceSystem",
+        "recordType",
+        "sourceKey",
+        "memberId",
+        "archiveHash"
+      ],
+      "additionalProperties": false
+    },
+    "SourceField": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SourceAmountField"
+        },
+        {
+          "$ref": "#/$defs/SourceStatusField"
+        }
+      ]
+    },
+    "Source": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "sourceState": {
+          "enum": [
+            "NO_PROFILE",
+            "MANUAL",
+            "VERIFIED_LINK",
+            "UNVERIFIED_LINK",
+            "INVALID_ARCHIVE"
+          ]
+        },
+        "reasonCodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Code"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "profile": {
+          "$ref": "#/$defs/RawProfile"
+        },
+        "archive": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Archive"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceField"
+          },
+          "minItems": 5,
+          "maxItems": 5,
+          "prefixItems": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/SourceField"
+                },
+                {
+                  "properties": {
+                    "key": {
+                      "const": "实际缴纳费用"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/SourceField"
+                },
+                {
+                  "properties": {
+                    "key": {
+                      "const": "实际缴纳押金"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/SourceField"
+                },
+                {
+                  "properties": {
+                    "key": {
+                      "const": "缴费状态"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/SourceField"
+                },
+                {
+                  "properties": {
+                    "key": {
+                      "const": "押金缴纳状态"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/SourceField"
+                },
+                {
+                  "properties": {
+                    "key": {
+                      "const": "押金"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "proofDigest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "asOf": {
+          "$ref": "#/$defs/Utc"
+        }
+      },
+      "required": [
+        "memberId",
+        "sourceState",
+        "reasonCodes",
+        "profile",
+        "archive",
+        "fields",
+        "proofDigest",
+        "asOf"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "sourceState": {
+                "const": "VERIFIED_LINK"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "proofDigest": {
+                "$ref": "#/$defs/Hash"
+              },
+              "archive": {
+                "$ref": "#/$defs/Archive"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "proofDigest": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "SourceEnvelope": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "code": {
+          "const": 200
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "data": {
+          "$ref": "#/$defs/Source"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "code",
+        "message",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ReserveBody": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "editorId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "operationKey",
+        "memberId",
+        "editorId"
+      ],
+      "additionalProperties": false
+    },
+    "ClaimBody": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "editorId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "expectedEpoch": {
+          "$ref": "#/$defs/Epoch"
+        },
+        "claimKey": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "operationKey",
+        "memberId",
+        "editorId",
+        "expectedEpoch",
+        "claimKey"
+      ],
+      "additionalProperties": false
+    },
+    "DraftBody": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "editor": {
+          "$ref": "#/$defs/Editor"
+        },
+        "input": {
+          "$ref": "#/$defs/FinancialInput"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "operationKey",
+        "editor",
+        "input"
+      ],
+      "additionalProperties": false
+    },
+    "PreviewBody": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "editor": {
+          "$ref": "#/$defs/Editor"
+        },
+        "draftHash": {
+          "$ref": "#/$defs/Hash"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "operationKey",
+        "editor",
+        "draftHash"
+      ],
+      "additionalProperties": false
+    },
+    "ConfirmBody": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "editor": {
+          "$ref": "#/$defs/Editor"
+        },
+        "previewDigest": {
+          "$ref": "#/$defs/Hash"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "operationKey",
+        "editor",
+        "previewDigest"
+      ],
+      "additionalProperties": false
+    },
+    "ResolveBody": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "operationKey",
+        "memberId"
+      ],
+      "additionalProperties": false
+    },
+    "SourceAmountField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "enum": [
+            "实际缴纳费用",
+            "实际缴纳押金"
+          ]
+        },
+        "presence": {
+          "enum": [
+            "MISSING",
+            "NULL",
+            "EMPTY",
+            "VALUE",
+            "INVALID_TYPE",
+            "TOO_LONG"
+          ]
+        },
+        "jsonType": {
+          "enum": [
+            "MISSING",
+            "NULL",
+            "STRING",
+            "NUMBER",
+            "BOOLEAN",
+            "ARRAY",
+            "OBJECT"
+          ]
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/Code"
+        },
+        "rawText": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "key",
+        "presence",
+        "jsonType",
+        "reasonCode",
+        "rawText"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "presence": {
+                "const": "MISSING"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "jsonType": {
+                "const": "MISSING"
+              },
+              "rawText": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "presence": {
+                "const": "NULL"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "jsonType": {
+                "const": "NULL"
+              },
+              "rawText": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "presence": {
+                "const": "EMPTY"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "jsonType": {
+                "const": "STRING"
+              },
+              "rawText": {
+                "const": ""
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "presence": {
+                "const": "VALUE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "jsonType": {
+                "enum": [
+                  "STRING",
+                  "NUMBER"
+                ]
+              },
+              "rawText": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "presence": {
+                "enum": [
+                  "INVALID_TYPE",
+                  "TOO_LONG"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "rawText": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "SourceStatusField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "enum": [
+            "缴费状态",
+            "押金缴纳状态",
+            "押金"
+          ]
+        },
+        "presence": {
+          "enum": [
+            "MISSING",
+            "NULL",
+            "EMPTY",
+            "VALUE",
+            "INVALID_TYPE",
+            "TOO_LONG"
+          ]
+        },
+        "jsonType": {
+          "enum": [
+            "MISSING",
+            "NULL",
+            "STRING",
+            "NUMBER",
+            "BOOLEAN",
+            "ARRAY",
+            "OBJECT"
+          ]
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/Code"
+        },
+        "rawText": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "key",
+        "presence",
+        "jsonType",
+        "reasonCode",
+        "rawText"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "presence": {
+                "const": "MISSING"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "jsonType": {
+                "const": "MISSING"
+              },
+              "rawText": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "presence": {
+                "const": "NULL"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "jsonType": {
+                "const": "NULL"
+              },
+              "rawText": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "presence": {
+                "const": "EMPTY"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "jsonType": {
+                "const": "STRING"
+              },
+              "rawText": {
+                "const": ""
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "presence": {
+                "const": "VALUE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "jsonType": {
+                "enum": [
+                  "STRING"
+                ]
+              },
+              "rawText": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "presence": {
+                "enum": [
+                  "INVALID_TYPE",
+                  "TOO_LONG"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "rawText": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RecoveryRecord": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "actorId": {
+          "$ref": "#/$defs/Id"
+        },
+        "operationKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "stage": {
+          "enum": [
+            "RESERVING",
+            "DRAFTING",
+            "PREVIEWING",
+            "ACTIVE",
+            "CONFIRMING",
+            "CANCELLING",
+            "TERMINAL_UNACKNOWLEDGED"
+          ]
+        },
+        "draftHash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previewDigest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requestId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastEditor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Editor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confirmIntent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConfirmBody"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cancelIntent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CancelBody"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/Time"
+        },
+        "factKey": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "actorId",
+        "operationKey",
+        "memberId",
+        "stage",
+        "draftHash",
+        "previewDigest",
+        "requestId",
+        "lastEditor",
+        "confirmIntent",
+        "cancelIntent",
+        "updatedAt",
+        "factKey"
+      ],
+      "additionalProperties": false
+    },
+    "Epoch": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,18}$"
+    },
+    "CancelEditor": {
+      "type": "object",
+      "properties": {
+        "editorId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "epoch": {
+          "$ref": "#/$defs/Revision"
+        }
+      },
+      "required": [
+        "editorId",
+        "epoch"
+      ],
+      "additionalProperties": false
+    },
+    "MethodCode": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{0,31}$"
+    },
+    "MoneyCanonical": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,14})\\.[0-9]{2}$",
+      "maxLength": 18
+    },
+    "PositiveMoneyCanonical": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/MoneyCanonical"
+        },
+        {
+          "not": {
+            "const": "0.00"
+          }
+        }
+      ]
+    },
+    "CanonicalAllocation": {
+      "type": "object",
+      "properties": {
+        "lotEntryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "amount": {
+          "$ref": "#/$defs/PositiveMoneyCanonical"
+        }
+      },
+      "required": [
+        "lotEntryId",
+        "amount"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalOpeningPayload": {
+      "type": "object",
+      "properties": {
+        "receivedTotal": {
+          "$ref": "#/$defs/MoneyCanonical"
+        },
+        "refundedTotal": {
+          "$ref": "#/$defs/MoneyCanonical"
+        },
+        "cutoffAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "sourceProofDigest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "receivedTotal",
+        "refundedTotal",
+        "cutoffAt",
+        "sourceProofDigest"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalCashReplacement": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "$ref": "#/$defs/PositiveMoneyCanonical"
+        },
+        "actualAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "methodCode": {
+          "$ref": "#/$defs/MethodCode"
+        },
+        "paymentState": {
+          "const": "RECORDED"
+        }
+      },
+      "required": [
+        "amount",
+        "actualAt",
+        "methodCode",
+        "paymentState"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalRefundReplacement": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "$ref": "#/$defs/PositiveMoneyCanonical"
+        },
+        "actualAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "methodCode": {
+          "$ref": "#/$defs/MethodCode"
+        },
+        "paymentState": {
+          "const": "RECORDED"
+        },
+        "allocations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CanonicalAllocation"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "amount",
+        "actualAt",
+        "methodCode",
+        "paymentState",
+        "allocations"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalReceiptPayload": {
+      "type": "object",
+      "properties": {
+        "factKey": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "amount": {
+          "$ref": "#/$defs/PositiveMoneyCanonical"
+        },
+        "actualAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "methodCode": {
+          "$ref": "#/$defs/MethodCode"
+        },
+        "paymentState": {
+          "const": "RECORDED"
+        },
+        "businessRef": {
+          "$ref": "#/$defs/CounterRef"
+        }
+      },
+      "required": [
+        "factKey",
+        "amount",
+        "actualAt",
+        "methodCode",
+        "paymentState",
+        "businessRef"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalRefundPayload": {
+      "type": "object",
+      "properties": {
+        "factKey": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "amount": {
+          "$ref": "#/$defs/PositiveMoneyCanonical"
+        },
+        "actualAt": {
+          "$ref": "#/$defs/Utc"
+        },
+        "methodCode": {
+          "$ref": "#/$defs/MethodCode"
+        },
+        "paymentState": {
+          "const": "RECORDED"
+        },
+        "allocations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CanonicalAllocation"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "businessRef": {
+          "$ref": "#/$defs/CounterRef"
+        }
+      },
+      "required": [
+        "factKey",
+        "amount",
+        "actualAt",
+        "methodCode",
+        "paymentState",
+        "allocations",
+        "businessRef"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalCorrectOpening": {
+      "type": "object",
+      "properties": {
+        "originalEntryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "originalKind": {
+          "const": "OPENING"
+        },
+        "replacement": {
+          "$ref": "#/$defs/CanonicalOpeningPayload"
+        }
+      },
+      "required": [
+        "originalEntryId",
+        "originalKind",
+        "replacement"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalCorrectReceipt": {
+      "type": "object",
+      "properties": {
+        "originalEntryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "originalKind": {
+          "const": "RECEIPT"
+        },
+        "replacement": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CanonicalCashReplacement"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "originalEntryId",
+        "originalKind",
+        "replacement"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalCorrectRefund": {
+      "type": "object",
+      "properties": {
+        "originalEntryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "originalKind": {
+          "const": "REFUND"
+        },
+        "replacement": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CanonicalRefundReplacement"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "originalEntryId",
+        "originalKind",
+        "replacement"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalOpeningInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "OPENING"
+        },
+        "payload": {
+          "$ref": "#/$defs/CanonicalOpeningPayload"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalReceiptInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "RECEIPT"
+        },
+        "payload": {
+          "$ref": "#/$defs/CanonicalReceiptPayload"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalRefundInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "REFUND"
+        },
+        "payload": {
+          "$ref": "#/$defs/CanonicalRefundPayload"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalCorrectOpeningInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "CORRECT"
+        },
+        "payload": {
+          "$ref": "#/$defs/CanonicalCorrectOpening"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalCorrectReceiptInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "CORRECT"
+        },
+        "payload": {
+          "$ref": "#/$defs/CanonicalCorrectReceipt"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalCorrectRefundInput": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "memberRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "action": {
+          "const": "CORRECT"
+        },
+        "payload": {
+          "$ref": "#/$defs/CanonicalCorrectRefund"
+        }
+      },
+      "required": [
+        "memberId",
+        "memberRevision",
+        "financeRevision",
+        "fund",
+        "currency",
+        "reason",
+        "evidenceRefs",
+        "action",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "CanonicalFinancialInput": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/CanonicalOpeningInput"
+        },
+        {
+          "$ref": "#/$defs/CanonicalReceiptInput"
+        },
+        {
+          "$ref": "#/$defs/CanonicalRefundInput"
+        },
+        {
+          "$ref": "#/$defs/CanonicalCorrectOpeningInput"
+        },
+        {
+          "$ref": "#/$defs/CanonicalCorrectReceiptInput"
+        },
+        {
+          "$ref": "#/$defs/CanonicalCorrectRefundInput"
+        }
+      ]
+    },
+    "ProjectedBalance": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "$ref": "#/$defs/Id"
+        },
+        "fund": {
+          "$ref": "#/$defs/Fund"
+        },
+        "currency": {
+          "const": "CNY"
+        },
+        "financeRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "scopeCutoffAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Utc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "openingState": {
+          "enum": [
+            "UNKNOWN",
+            "VERIFIED"
+          ]
+        },
+        "verifiedPaid": {
+          "$ref": "#/$defs/Amount"
+        },
+        "verifiedRefunded": {
+          "$ref": "#/$defs/Amount"
+        },
+        "balance": {
+          "$ref": "#/$defs/Amount"
+        },
+        "feeHeadroom": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Amount"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "newReceipts": {
+          "$ref": "#/$defs/Money"
+        },
+        "newRefunds": {
+          "$ref": "#/$defs/Money"
+        },
+        "newNet": {
+          "$ref": "#/$defs/SignedMoney"
+        },
+        "calculatedAt": {
+          "$ref": "#/$defs/Utc"
+        }
+      },
+      "required": [
+        "memberId",
+        "fund",
+        "currency",
+        "financeRevision",
+        "scopeCutoffAt",
+        "openingState",
+        "verifiedPaid",
+        "verifiedRefunded",
+        "balance",
+        "feeHeadroom",
+        "newReceipts",
+        "newRefunds",
+        "newNet",
+        "calculatedAt"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "fund": {
+                "const": "MEMBER_FEE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "feeHeadroom": {
+                "$ref": "#/$defs/Amount"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "feeHeadroom": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "openingState": {
+                "const": "UNKNOWN"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "verifiedPaid": {
+                "$ref": "#/$defs/UnknownAmount"
+              },
+              "verifiedRefunded": {
+                "$ref": "#/$defs/UnknownAmount"
+              },
+              "balance": {
+                "$ref": "#/$defs/UnknownAmount"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "verifiedPaid": {
+                "$ref": "#/$defs/KnownAmount"
+              },
+              "verifiedRefunded": {
+                "$ref": "#/$defs/KnownAmount"
+              },
+              "balance": {
+                "$ref": "#/$defs/KnownAmount"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "fund": {
+                "const": "MEMBER_FEE"
+              },
+              "openingState": {
+                "const": "UNKNOWN"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "feeHeadroom": {
+                "$ref": "#/$defs/UnknownAmount"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "fund": {
+                "const": "MEMBER_FEE"
+              },
+              "openingState": {
+                "const": "VERIFIED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "feeHeadroom": {
+                "$ref": "#/$defs/KnownAmount"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

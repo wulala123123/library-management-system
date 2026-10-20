@@ -5,6 +5,12 @@ for library_project in library library-recovery; do
     [[ -z "$(docker ps -aq --filter "label=com.docker.compose.project=$library_project")" ]] || { echo 'Project already exists; refusing test' >&2; exit 1; }
     [[ -z "$(docker volume ls -q --filter "name=${library_project}_")" ]] || { echo 'Project volumes already exist; refusing test' >&2; exit 1; }
 done
+# BEGIN B40-B RECEIPTS ISOLATION
+for library_receipts_project in library library-recovery; do
+    [[ -z "$(docker network ls -q --filter "label=com.docker.compose.project=$library_receipts_project")" ]] || { echo 'Receipt project network already exists; refusing test' >&2; exit 1; }
+    [[ -z "$(docker network ls -q --filter "name=^${library_receipts_project}_app$")" ]] || { echo 'Receipt network name already exists; refusing test' >&2; exit 1; }
+done
+# END B40-B RECEIPTS ISOLATION
 library_repo="$(cd "$(dirname "$0")/.." && pwd -P)"
 library_archive="$(realpath "${1:?Provide a release ZIP}")"
 library_test="$(mktemp -d)"
@@ -46,6 +52,10 @@ trap library_cleanup EXIT
     echo 'CORS_ORIGINS=http://localhost:18089'
     echo 'APP_NETWORK_SUBNET=172.30.89.0/24'
     echo 'FRONTEND_INTERNAL_IP=172.30.89.10'
+    # BEGIN B40-B RECEIPTS CONFIG
+    echo 'LIBRARY_FINANCE_RECEIPTS_ENABLED=true'
+    echo "LIBRARY_FINANCE_RECEIPTS_START_DATE=$(TZ=Asia/Shanghai date +%F)"
+    # END B40-B RECEIPTS CONFIG
 } > "$library_test/install/.env"
 (umask 077; bash "$library_repo/deploy.sh" "$library_archive" install "$library_test/install")
 library_release="$(readlink -f "$library_test/install/current")"
@@ -1355,6 +1365,43 @@ library_finance_owner library 18089 "$library_test/install/.env" seed
 library_finance_acceptance http://localhost:18089 "$library_test/install/.env" seed-sql > "$library_test/finance-seed.sql"
 docker exec -i library-mysql-1 sh -c 'MYSQL_PWD="$MYSQL_MIGRATION_PASSWORD" exec mysql -u library_migrator --default-character-set=utf8mb4 --batch --raw --skip-column-names --skip-reconnect "$MYSQL_DATABASE"' < "$library_test/finance-seed.sql" > "$library_test/finance-bindings.json" 2> "$library_test/finance-seed-private.log"
 library_finance_acceptance http://localhost:18089 "$library_test/install/.env" bind --bindings "$library_test/finance-bindings.json"
+# BEGIN B40-B RECEIPTS SEED
+# After original finance-bind and before the original all-row before snapshot.
+library_receipts_acceptance() {
+    local library_receipts_base="$1" library_receipts_env="$2" library_receipts_mode="$3"
+    LIBRARY_ACCEPTANCE=1 python3 "$library_release/scripts/container_finance_receipts.py" \
+        --base "$library_receipts_base" --env "$library_receipts_env" --root "$library_test" \
+        --release "$library_release" --state "$library_test/receipts-state.json" \
+        --legacy-helper "$library_test/container_finance_acceptance.py" --mode "$library_receipts_mode" "${@:4}"
+}
+library_receipts_snapshot() {
+    local library_receipts_project="$1" library_receipts_tag="$2" library_receipts_env library_receipts_port
+    if [[ "$library_receipts_project" == library ]]; then
+        library_receipts_env="$library_test/install/.env"; library_receipts_port=18089
+    else
+        [[ "$library_receipts_project" == library-recovery ]] || return 1
+        library_receipts_env="$library_test/recovery/.env"; library_receipts_port=18090
+    fi
+    [[ "$library_receipts_tag" =~ ^(before|install|recreate|update|failed_update|restore)$ ]] || return 1
+    [[ ! -e "$library_test/receipts-$library_receipts_tag.tsv" ]] || return 1
+    library_receipts_acceptance "http://localhost:$library_receipts_port" "$library_receipts_env" guard
+    docker exec -i "$library_receipts_project-mysql-1" sh -c 'MYSQL_PWD="$MYSQL_MIGRATION_PASSWORD" exec mysql -u library_migrator --default-character-set=utf8mb4 --batch --raw --skip-column-names --skip-reconnect "$MYSQL_DATABASE"' \
+        < "$library_test/receipts-persistence.sql" > "$library_test/receipts-$library_receipts_tag.tsv"
+    library_receipts_acceptance "http://localhost:$library_receipts_port" "$library_receipts_env" verify-snapshot --snapshot "$library_test/receipts-$library_receipts_tag.tsv"
+    if [[ "$library_receipts_tag" != before ]]; then
+        cmp --silent "$library_test/receipts-before.tsv" "$library_test/receipts-$library_receipts_tag.tsv"
+    fi
+}
+library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" guard
+[[ "$(docker exec -i library-mysql-1 sh -c 'MYSQL_PWD="$MYSQL_MIGRATION_PASSWORD" exec mysql -u library_migrator --batch --skip-column-names "$MYSQL_DATABASE" -e "SELECT COUNT(*) FROM member_finance_activation"')" == 0 ]]
+library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" activation-sql > "$library_test/receipts-activation.sql"
+library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" guard
+docker exec -i library-mysql-1 sh -c 'MYSQL_PWD="$MYSQL_MIGRATION_PASSWORD" exec mysql -u library_migrator --default-character-set=utf8mb4 --batch --raw --skip-column-names --skip-reconnect "$MYSQL_DATABASE"' \
+    < "$library_test/receipts-activation.sql" > "$library_test/receipts-activation.json"
+library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" seed --activation "$library_test/receipts-activation.json"
+library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" snapshot-sql > "$library_test/receipts-persistence.sql"
+library_receipts_snapshot library before
+# END B40-B RECEIPTS SEED
 library_finance_acceptance http://localhost:18089 "$library_test/install/.env" snapshot-sql > "$library_test/finance-persistence.sql"
 library_finance_snapshot library before
 python3 - "$library_test/finance-before.tsv" <<'B40_NONEMPTY_PY'
@@ -1368,6 +1415,10 @@ B40_NONEMPTY_PY
 library_finance_acceptance http://localhost:18089 "$library_test/install/.env" capture
 library_finance_snapshot library after_get
 # END B40 FINANCE SEED
+# BEGIN B40-B RECEIPTS INSTALL
+library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_receipts_snapshot library install
+# END B40-B RECEIPTS INSTALL
 "${library_dc[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysql -u library_app -D "$MYSQL_DATABASE" -e "SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1"'
 if "${library_dc[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysql -u library_app -D "$MYSQL_DATABASE" -e "CREATE TABLE acceptance_ddl_probe (id INT)"' >/dev/null 2>&1; then
     echo 'Application account unexpectedly has schema-write privileges' >&2; exit 1
@@ -1397,6 +1448,10 @@ library_finance_owner library 18089 "$library_test/install/.env" check
 library_finance_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_finance_snapshot library recreate
 # END B40 FINANCE RECREATE
+# BEGIN B40-B RECEIPTS RECREATE
+library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_receipts_snapshot library recreate
+# END B40-B RECEIPTS RECREATE
 echo 'Container recreate preserved data and files'
 python3 "$library_repo/scripts/package_release.py" acceptance-update
 # Reproduce a release whose JAR changes by one byte while keeping its size and
@@ -1445,6 +1500,10 @@ library_finance_owner library 18089 "$library_test/install/.env" check
 library_finance_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_finance_snapshot library update
 # END B40 FINANCE UPDATE
+# BEGIN B40-B RECEIPTS UPDATE
+library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_receipts_snapshot library update
+# END B40-B RECEIPTS UPDATE
 echo 'Application update preserved data and files'
 python3 "$library_repo/scripts/package_release.py" acceptance-broken
 python3 - "$library_repo/dist/library-management-system-acceptance-broken.zip" <<'PY'
@@ -1482,6 +1541,10 @@ library_finance_owner library 18089 "$library_test/install/.env" check
 library_finance_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_finance_snapshot library failed_update
 # END B40 FINANCE FAILED_UPDATE
+# BEGIN B40-B RECEIPTS FAILED_UPDATE
+library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_receipts_snapshot library failed_update
+# END B40-B RECEIPTS FAILED_UPDATE
 echo 'Failed-start rollback restored previous application and data'
 APP_VERSION="$(basename "$library_release")" bash "$library_release/scripts/backup.sh" "$library_test/backup"
 sed -e 's/18089/18090/g' -e 's/172.30.89/172.30.90/g' "$library_test/install/.env" > "$library_test/recovery/.env"
@@ -1509,4 +1572,8 @@ library_finance_owner library-recovery 18090 "$library_test/recovery/.env" check
 library_finance_acceptance http://localhost:18090 "$library_test/recovery/.env" check
 library_finance_snapshot library-recovery restore
 # END B40 FINANCE RESTORE
+# BEGIN B40-B RECEIPTS RESTORE
+library_receipts_acceptance http://localhost:18090 "$library_test/recovery/.env" check
+library_receipts_snapshot library-recovery restore
+# END B40-B RECEIPTS RESTORE
 echo 'First install, recreate, update, failed-start rollback, backup and isolated restore passed'

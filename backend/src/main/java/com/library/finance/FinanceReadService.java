@@ -25,6 +25,8 @@ public class FinanceReadService {
         try(var c=source.getConnection()) {mysql=c.getMetaData().getDatabaseProductName().equals("MySQL");}
         sources=new FinanceSource(jdbc,mysql);
     }
+    JdbcTemplate jdbcTemplate(){return jdbc;}
+    boolean isMysql(){return mysql;}
     void admin(Authentication a) {
         if(a==null||!a.isAuthenticated()||a.getPrincipal()==null||"anonymousUser".equals(a.getPrincipal())) throw failure(401,"UNAUTHENTICATED");
         long id;
