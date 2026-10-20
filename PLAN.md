@@ -7,13 +7,13 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | B40-B管理员柜台收款：补齐草稿/预览/确认/取消/恢复与当天现金、微信收款；期初、退款、纠错及权益变更不在本批 |
-| 工作项状态 | B40-B后端v2、前端真实响应衔接及容器门槛已经理接纳本地结果，准备提交新目标完整Verify；V17发布资格准备中。两新备尚未执行，生产仍为B40-A/V16，现场只读核对健康及隔离资源通过，未停服/备份/迁移 |
+| 下一工作项 | B40-B已完成；下一批为B41办卡/续费与权益、费用联动设计。期初、退款、纠错及历史补录另批，不自动改变既有权益 |
+| 工作项状态 | B40-B已验收上线并启用：完整CI、两轮新备、生产、v9独立off及管理员页面通过；2026-10-20上海日期锚点及两个环境键已显式启用，前端开放前77表仅锚点变化，原正常借还保持；无测试收款 |
 | 阶段定义 | [阶段 4](docs/plans/member-business-alignment/stages/04-payments.md)，[阶段 0 剩余规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
-| 应用代码基线 | `2a8fdc7abf14e2e181045c79a0ac0179f69e1d71`/V16已验收上线；原V15写代码未恢复，文档HEAD不作应用目标 |
-| 完整 Verify | 已上线B40-A基线[39185737165](https://github.com/wulala123123/library-management-system/actions/runs/39185737165)成功711/579，准确产物12157804436已核；B40-B须提交新目标并完成完整Verify，尚未执行 |
-| 最近维护结果 | [只读财务台账](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)；[套装目录](docs/archive/2026-10/catalog-sets-2026-10-19.md)及此前各批成果保留 |
+| 应用代码基线 | 生产`c24dd21fa34578f5e56e707e34690856ea374879`/V17，三个服务健康；当天现金/微信实收登记已启用，固定起点2026-10-20北京时间00:00；后续文档HEAD不作应用目标 |
+| 完整 Verify | B40-B目标c24dd21的[39381924528](https://github.com/wulala123123/library-management-system/actions/runs/39381924528)成功761/676、0失败/跳过，5轮实际收款/原门槛通过；准确产物12246565376、209文件及V1–V16原字节已核 |
+| 最近维护结果 | [当天收款发布记录](docs/archive/2026-10/member-finance-receipts-2026-10-20.md)已闭环；[只读财务台账](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)、[套装目录](docs/archive/2026-10/catalog-sets-2026-10-19.md)及此前各批成果保留 |
 | 恢复依据 | B40-B由`logs/member-business-stage4/b40-b-manager/recovery.json`恢复；B40-A最终接纳为`manager/v8-production-final-acceptance.json`，原发布/恢复/P不得重跑 |
 
 ## 下一步
@@ -22,8 +22,9 @@
 2. 入库、逐册动作及结构化库位已上线验收，不重复发布或旧修正；`logs/catalog-stage3/stocktake-manager/manager-final-acceptance.json`保存本批结果，执行进程已退出。
 3. B33-A和B35均已上线；B35仅MANUAL核实身份、多主题、维度和别名，SOURCE模式关闭；生产未自动采用来源值，未经核实不采用值或自动合并。
 4. B36出版补录已上线，规则和全部验收见[当次记录](docs/archive/2026-10/catalog-publication-2026-10-18.md)，专属隔离资源已清理；保留首次失败与修正证据，不再消费旧入口。
-5. B34已完整闭环，在当前V16保持；v1/v2失败及v3成功证据均冻结。实体配套及整套收费/扣次仍待后续，不复用旧备或已消费发布入口。
+5. B34已完整闭环，在当前V17保持；v1/v2失败及v3成功证据均冻结。实体配套及整套收费/扣次仍待后续，不复用旧备或已消费发布入口。
 6. B40-A管理员三个GET和台账/来源页面已部署V16，六表仅新增不回填。实现、完整CI、两轮新备恢复升级、实际生产及浏览器通过；最终独立只读验收亦通过，结果见[当批档案](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)。
+7. B40-B当天实收登记已在V17启用，草稿/预览/确认/取消/恢复通过；日期锚点固定2026-10-20，不随重启漂移。后续只保留合法新业务，禁止复用旧空表验收、发布或启用入口；下一批从B41设计开始。
 
 ## 有效执行者
 
@@ -44,10 +45,18 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | B40-B后端 / v2 | 经理接纳，原代理停写源码 | 原后端源码及`b40-b-backend/revision-v2/`冻结；v1证据保留 | 新reserve启用/资格门槛、完整资格依赖及锁后时钟复核已补齐；H2/MySQL写21/28通过，469份新抓Schema通过，27源码/快照和52证据hash全符；未改只读/安全/升级复用v1证据 |
 | B40-B前端 / v2衔接 | 经理接纳，原代理停写 | 18个前端来源及`b40-b-frontend/integration-v2/`冻结，原v1保留 | 原78项及新增35兼容/25页面、类型构建通过；新469响应/275对象关联及客户端离线重放通过，原三个GET字节保持；未声称新端到端HTTP |
 | B40-B容器门槛 / v1 | 经理接纳本地实现，原代理停写 | 原脚本增量及`b40-b-container-gate/`冻结 | 71项定向通过，原25模块和全部原字节保持；实际五轮容器生命周期由新完整CI执行，本机无Docker |
-| B40-B发布准备 / v1 | `/root/release_v6_prepare`沿用配置 | 仅`b40-b-release-prepare/` | 准备76旧表/19类元数据/两新备/前向发布与最后显式启用的新工具；未授权本子任务操作服务器 |
-| B40-B运行合同 / v1 | `/root/source_query_acceptance`沿用配置 | 仅`b40-b-runtime-contracts/` | 准备V17精确DDL/19类元数据及真实库只读财务oracle；本机独立33088纯合成环境，无服务器操作 |
+| B40-B发布工具 / v3 | 经理接纳，原目录冻结 | `b40-b-release-prepare/revision-v3/`只读；v1/v2失败冻结 | 实际Linux装配及新R1通过；原deploy初始化顺序失败保持，不复用其入口 |
+| B40-B封存证据读取 / v5 | 经理接纳，原代理停写 | `b40-b-release-prepare/revision-v5-sql-reader/`全部冻结 | 整数键及SQL六列插入顺序精确还原，原值/哈希/false-gaps不变；R1完整只读重算已接纳，all增量24项窄测通过 |
+| B40-B独立验收外壳 / v5 | 已执行失败，原目录冻结 | `b40-b-release-prepare/revision-v5-accept/`只读 | 准确双metadata/policy及新批准已执行；原封存重算后因正常借还改变首个live基线而拒绝，失败保留，不复用nonce |
+| B40-B验收元数据观察器 / v5 | 经理接纳并执行完成，原代理停写 | `b40-b-release-prepare/revision-v5-observe/`全部冻结 | 成功deployseal下两份实际metadata及5份SQL完整图已采集并生成精确policy；未重跑SQL或业务矩阵 |
+| B40-B前向部署 / v6 | 经理执行完毕，原代理停写 | `b40-b-release-prepare/revision-v6-deploy-forward/`全部冻结 | 原run完成第二备/R2/P并生成deployment-complete；外壳编码比较失败保持，不重跑原业务矩阵 |
+| B40-B发布收尾 / v7-r2 | 经理接纳并执行成功，原代理停写 | `revision-v7-finalize-r2/`及本轮准确双seal冻结 | 核77表/19类/next-ID及环境身份后恢复原准确V17候选；双seal生成，收款仍关闭，无R2/P、恢复或安装重跑 |
+| B40-B正常业务基线衔接 / v8 | 经理执行失败，原目录冻结 | `b40-b-release-prepare/revision-v8-business-continuation/`只读 | 逐cell证明及11项窄测通过；实际原模块图缺generic_runtime，原v7.apps在候选恢复前KeyError；保留失败，不复用nonce |
+| B40-B模块图衔接 / v9 | 经理已执行成功，全部代理停写 | `b40-b-release-prepare/revision-v9-business-continuation/`全部冻结 | 两项实际装配验证及原11项证据接纳；实际仅恢复准确候选、消费一次已确认业务边界，原独立回执、五SQL图全消费及双seal通过，验收时保持收款关闭 |
+| B40-B正式启用 | 经理一次执行成功，全部代理停写 | 原activation源码、准确proposal/批准/回执及seal冻结 | 2026-10-20起点固定，77表仅锚点变化、76旧值/全部next-ID/19类元数据及环境/上传/MySQL保持；前端最后开放，运行/公网通过，无测试收款，不重跑启用 |
+| B40-B运行合同 / v1.1 | 经理接纳，原代理停写 | `b40-b-runtime-contracts/runtime-contract-v1.1.json`及最终清单冻结 | 156文件/7依据hash、36+12+13检查、实际MySQL19类/76旧值与next-ID及启用固定行通过；只读财务profile须逐轮精确证明当前六表为空，通用保值仍支持非空；33088及任务进程0 |
 
-B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。收费、扣次及套餐拦截继续留待后续阶段。
+B22、查询和统一入库均已交付验收上线，证据见对应档案，原实现及测试服务均已退出。后续不重复派发已完成任务。经理独占公共文档和共享提交/发布；同一可写范围仅一执行者。套餐费用联动、退款、扣次及套餐拦截继续留待后续阶段。
 
 ## 已确认与未决
 
