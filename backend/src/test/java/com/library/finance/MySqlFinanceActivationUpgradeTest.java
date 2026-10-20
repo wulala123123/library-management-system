@@ -28,13 +28,13 @@ class MySqlFinanceActivationUpgradeTest {
         Map<String,Object> before=new TreeMap<>(),ddl=new TreeMap<>();for(String table:tables){before.put(table,FinanceLedgerUpgradeTest.rows(j,table));ddl.put(table,j.queryForMap("SHOW CREATE TABLE `"+table+"`").get("Create Table"));}
         var next=j.queryForList("SELECT table_name,auto_increment FROM information_schema.tables WHERE table_schema=DATABASE() ORDER BY table_name");
         var metadata=metadata(j);
-        assertEquals(1,Flyway.configure().dataSource(ds).locations("classpath:db/migration").load().migrate().migrationsExecuted);
+        assertEquals(1,Flyway.configure().dataSource(ds).locations("classpath:db/migration").target("17").load().migrate().migrationsExecuted);
         Map<String,Object> proof=new TreeMap<>();for(String table:tables) {
             var after=FinanceLedgerUpgradeTest.rows(j,table);if(table.equals("flyway_schema_history"))after.removeIf(x->Objects.equals(x.get("version"),"17"));assertEquals(before.get(table),after,table);assertEquals(ddl.get(table),j.queryForMap("SHOW CREATE TABLE `"+table+"`").get("Create Table"),table);
             proof.put(table,obj("rows",after.size(),"beforeSha256",hash(JSON.valueToTree(before.get(table))),"afterSha256",hash(JSON.valueToTree(after)),"ddlSha256",hash(JSON.valueToTree(ddl.get(table)))));
         }
         assertEquals(metadata,metadata(j));assertEquals(next,j.queryForList("SELECT table_name,auto_increment FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name<>'member_finance_activation' ORDER BY table_name"));
-        assertEquals(0,j.queryForObject("SELECT COUNT(*) FROM member_finance_activation",Integer.class));assertEquals(0,Flyway.configure().dataSource(ds).locations("classpath:db/migration").load().migrate().migrationsExecuted);
+        assertEquals(0,j.queryForObject("SELECT COUNT(*) FROM member_finance_activation",Integer.class));assertEquals(0,Flyway.configure().dataSource(ds).locations("classpath:db/migration").target("17").load().migrate().migrationsExecuted);
         String dir=System.getProperty("b40b.evidence.dir");if(dir!=null)Files.writeString(Path.of(dir,"mysql-v16-v17-preservation.json"),JSON.writerWithDefaultPrettyPrinter().writeValueAsString(obj("database",j.queryForObject("SELECT VERSION()",String.class),"syntheticOnly",true,"oldTables",76,"preserved",proof,"metadata",metadata,"nextIds",next,"guardEmpty",true,"repeatMigrationCount",0)));
         }finally {owner.execute("DROP DATABASE `"+schema+"`");}
     }
