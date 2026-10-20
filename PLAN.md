@@ -8,11 +8,11 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | 阶段5独立借还流程：柜台多本借阅订单、明确逐册关联及单册/批量归还。套餐与全部资金后续工作按用户要求暂缓，沿用当前已生效借阅规则 |
-| 工作项状态 | B50-A本地实现已接纳；首轮目标27c776c完整Verify后端810项中2项旧测试版本预期失败，维护后须新候选完整CI；前端735/构建及57响应兼容、容器本地30项通过，尚无线上变更 |
+| 工作项状态 | B50-A本地实现已接纳；第二轮b4ce9b0完整Verify后端810及前端735/构建通过，容器SEED夹具ISBN错误已最小修准，35项及真实MySQL/HTTP全流程通过，进入新候选完整CI。生产无变更 |
 | 阶段定义 | [阶段 5](docs/plans/member-business-alignment/stages/05-circulation.md)，[阶段 4 暂缓范围](docs/plans/member-business-alignment/stages/04-payments.md) |
 | 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
 | 应用代码基线 | 生产`c24dd21fa34578f5e56e707e34690856ea374879`/V17，三个服务健康；当天现金/微信实收登记已启用，固定起点2026-10-20北京时间00:00；后续文档HEAD不作应用目标 |
-| 完整 Verify | B50-A首轮[39453856330](https://github.com/wulala123123/library-management-system/actions/runs/39453856330)失败，后端810/2失败/0错误跳过，未进容器。原生产c24dd21的[39381924528](https://github.com/wulala123123/library-management-system/actions/runs/39381924528)成功及产物12246565376保持 |
+| 完整 Verify | B50-A第二轮[39456323413](https://github.com/wulala123123/library-management-system/actions/runs/39456323413)容器SEED失败，无合格发布产物；首轮[39453856330](https://github.com/wulala123123/library-management-system/actions/runs/39453856330)及原失败证据保留。原生产c24dd21的[39381924528](https://github.com/wulala123123/library-management-system/actions/runs/39381924528)成功及产物12246565376保持 |
 | 最近维护结果 | [当天收款发布记录](docs/archive/2026-10/member-finance-receipts-2026-10-20.md)已闭环；[只读财务台账](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)、[套装目录](docs/archive/2026-10/catalog-sets-2026-10-19.md)及此前各批成果保留 |
 | 恢复依据 | 当前批次`logs/circulation-stage5/recovery.json`；原B40-B为`logs/member-business-stage4/b40-b-manager/recovery.json`，全部旧发布/恢复/启用入口冻结 |
 
@@ -36,9 +36,9 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | --- | --- | --- | --- |
 | B50-A后端 / v4 | 经理接纳，原代理停写 | 仅两测试四处维护；backend-v2/v3/v4冻结 | 旧升级准确target17、latest恢复预期18；V16→17、V17→18及原出版恢复三项现有测试独立MySQL全过，业务源码/原断言保持 |
 | B50-A前端 / v3.2 | 经理接纳，原代理停写 | v3/v3.1/v3.2证据冻结、14份来源保持 | 恢复死锁及迟到403已修准，59定向/完整735/构建通过；新实际57响应（28成功/29拒绝）及请求/回执/订单关联全过，无新服务请求 |
-| B50-A容器门槛 / v1 | 经理接纳本地交付，原代理停写 | 新container_circulation.py及测试、原容器脚本6段增量 | 30项合成测试/合同/原段字节通过；两订单10册及13归还、16条终态重放，实际五轮Docker待完整CI |
-| B50-A发布核验 / v3 | circulation_release子代理 | logs/circulation-stage5/release-v3/私有工具及本机隔离MySQL33128 | v1/v2冻结；补独立实际V17/V18元数据、正式Schema/401及旧GET链；候选CI未绑定，无服务器权限或操作 |
-| B50-A发布effects / v1 | circulation_effects子代理 | logs/circulation-stage5/effects-v1/私有本地工具 | 依据release-v3冻结interface实现新备/恢复/升级/一次性runner，仅合成验证，无服务器或真实effects执行 |
+| B50-A容器门槛 / v2 | 经理接纳，原代理停写 | container-v1/v2冻结；原shell和产品保持 | 35项及独立MySQL/实际HTTP完成SEED、capture和两轮16条原终态重放，SQL快照保持；33130/18130关闭，实际五轮Docker待新完整CI |
+| B50-A发布核验 / v3 | circulation_release子代理 | logs/circulation-stage5/release-v3/私有工具及本机隔离MySQL33128 | v1/v2冻结；正式Schema/401及旧GET链实际通过，正按目标Compose字符集配置补V17→V18元数据；候选CI未绑定，无服务器权限或操作 |
+| B50-A发布effects / v1及审查 | effects交付停写，circulation_backend只读审查 | effects-v1/冻结；审查仅写effects-review-v1/ | 34合成及本机实际bridge装配通过；独立审批准/回执、保值和停服链。准确成功CI、产物及Linux实装尚未绑定，禁止执行 |
 | 阶段1–3已上线批次 | 经理接纳完成，原代理停写 | 对应档案及原私有证据只读 | B22、查询、入库、逐册、库位、盘点、属性、B35/B36/B34均保持；不重复旧修正或发布 |
 | B40-A设计与实现 | 经理接纳，原代理停写 | 原设计/后端/前端/metadata/容器证据冻结 | 三个管理员GET和页面、六表新增及原字节/70表/19类元数据通过；应用固定2a8fdc7，完整CI711/579通过 |
 | B40-A历次中断与修准 | 已接纳并归档，原代理停写 | 原v4–v8及恢复/审查证据只读 | 原409、种子guard、类型比较等失败保留；准确恢复和已消费标记由[当批档案](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)及私有恢复游标定位，全部旧入口禁止重跑 |

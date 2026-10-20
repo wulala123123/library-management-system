@@ -350,10 +350,35 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class Client:
-    def __init__(self, owner, allowed_replays=None):
+    def __init__(self, owner, allowed_replays=None, diagnostic_path=None):
         self.owner, self.allowed_replays = owner, allowed_replays
+        self.diagnostic_path = diagnostic_path
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
         self.transcript = []
+
+    def record_response(self, actor, role, method, path, content_type, payload, actual, response_raw, expected):
+        reason_code = "UNAVAILABLE"
+        try:
+            data = strict_json(response_raw).get("data")
+            value = data.get("reasonCode") if type(data) is dict else None
+            if type(value) is str and re.fullmatch(r"[A-Z][A-Z0-9_]{0,63}", value): reason_code = value
+        except (RuntimeError, ValueError, UnicodeError, AttributeError): pass
+        summary = dict(method=method, path=urllib.parse.urlsplit(path).path, status=actual,
+                       expectedStatus=expected, reasonCode=reason_code)
+        if path.startswith(PREFIX):
+            self.transcript.append(dict(actor=actor, role=role, method=method, path=path,
+                contentType=content_type, requestBody=None if payload is None else payload.decode("utf-8"),
+                status=actual, responseBody=response_raw.decode("utf-8", "replace")))
+        if self.diagnostic_path is not None:
+            require(self.diagnostic_path.parent == self.owner.root and not self.diagnostic_path.is_symlink(),
+                    "Private circulation diagnostic path required")
+            flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+            with os.fdopen(os.open(self.diagnostic_path, flags, 0o600), "ab") as file:
+                # Only the circulation protocol has full synthetic wire capture.
+                # User creation and other routes never save bodies or headers.
+                record = {**summary, "syntheticWire": self.transcript[-1]} if path.startswith(PREFIX) else summary
+                file.write((packed(record) + "\n").encode("utf-8"))
+        return method + " " + summary["path"] + " expected=" + str(expected) + " actual=" + str(actual) + " reasonCode=" + reason_code
 
     def call(self, actor, role, path, body=NO_BODY, status=200, reason=None, raw=None, content_type="application/json"):
         require(path.startswith("/api/") and not any(c in path for c in "\r\n"), "Unsafe circulation path")
@@ -375,18 +400,15 @@ class Client:
                 actual, response_raw = response.status, response.read(2097153)
         except urllib.error.HTTPError as error:
             actual, response_raw = error.code, error.read(2097153)
+        diagnostic = self.record_response(actor, role, method, path, content_type, payload, actual, response_raw, status)
         require(actual == status and len(response_raw) <= 2097152,
-                "Unexpected circulation HTTP status/size: expected=" + str(status) + " actual=" + str(actual))
+                "Unexpected circulation HTTP status/size: " + diagnostic)
         envelope = strict_json(response_raw)
         exact(envelope, "code message data")
         require(type(envelope["code"]) is int and envelope["code"] == status and type(envelope["message"]) is str)
         if reason is not None:
             exact(envelope["data"], "schemaVersion reasonCode")
             require(envelope["data"]["schemaVersion"] == 1 and envelope["data"]["reasonCode"] == reason, "Circulation refusal reason differs")
-        if path.startswith(PREFIX):
-            self.transcript.append(dict(actor=actor, role=role, method=method, path=path,
-                contentType=content_type, requestBody=None if payload is None else payload.decode("utf-8"),
-                status=actual, responseBody=response_raw.decode("utf-8")))
         return envelope["data"]
 
 
@@ -408,7 +430,7 @@ def new_inventory(client, marker):
     category = next(c["id"] for c in categories if c.get("status") == 1)
     key = str(uuid.uuid4())
     lines = [dict(lineKey=str(uuid.uuid4()), target=dict(bookId=None, newBook=dict(
-        isbn=marker + "_" + str(i), title="B50 synthetic " + str(i), categoryId=category), purchaseItemId=None),
+        isbn=marker.replace("_", "-") + "-" + str(i), title="B50 synthetic " + str(i), categoryId=category), purchaseItemId=None),
         copies=[dict(input="SCANNED", barcode="000" + marker + "_" + str(i) + "_" + str(j), location=None)
                 for j in range(2 if i == 0 else 1)]) for i in range(11)]
     body = dict(idempotencyKey=key, source=dict(type="MANUAL", purchaseOrderId=None), reason="B50 synthetic circulation intake", lines=lines)
@@ -436,7 +458,7 @@ def legacy_fixtures(owner, marker, member):
     require(re.fullmatch("b50_[0-9a-f]{8}", marker))
     statements = ["START TRANSACTION;"]
     for index, kind in enumerate(("DATED", "UNLIMITED", "UNKNOWN")):
-        label = marker + "_legacy_" + str(index)
+        label = marker.replace("_", "-") + "-hist-" + str(index)
         due = "'2020-01-31'" if kind == "DATED" else "NULL"
         statements += ["INSERT INTO book(isbn,title,stock_total,stock_available,status,deleted) VALUES (" + sql_text(label) + "," + sql_text("B50 synthetic historical " + kind) + ",1,0,1,0);",
             "SET @b50_book=LAST_INSERT_ID();",
@@ -728,16 +750,17 @@ def main(argv=None):
     owner = Owner(args.base, args.env, args.root, args.release, args.mode)
     require(args.state == args.root / "circulation-state.json", "Exact circulation state path required")
     seed_path = args.root / "circulation-seed.json"
+    diagnostic_path = args.root / ("circulation-http-" + args.mode + ".jsonl")
     if args.mode == "guard": return
-    if args.mode == "seed": seed(Client(owner), seed_path); return
-    if args.mode == "capture": capture(Client(owner), read_state(seed_path, False), args.state); return
+    if args.mode == "seed": seed(Client(owner, diagnostic_path=diagnostic_path), seed_path); return
+    if args.mode == "capture": capture(Client(owner, diagnostic_path=diagnostic_path), read_state(seed_path, False), args.state); return
     state = read_state(args.state)
     if args.mode == "snapshot-sql": print(snapshot_sql(owner, state), end=""); return
     if args.mode == "verify-snapshot":
         require(args.snapshot is not None and args.snapshot.parent == args.root and args.snapshot.is_file() and not args.snapshot.is_symlink(), "Exact private SQL snapshot required")
         verify_snapshot(args.snapshot, state)
         return
-    check(Client(owner, state["replays"]), state)
+    check(Client(owner, state["replays"], diagnostic_path), state)
 
 
 if __name__ == "__main__":

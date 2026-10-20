@@ -226,6 +226,57 @@ class HttpTests(unittest.TestCase):
         client.call(1, "ADMIN", "/api/users", dict(password="synthetic-only"))
         self.assertEqual(client.transcript, [])
 
+    def test_unexpected_status_reports_only_route_status_and_reason(self):
+        client, owner = self.client()
+        body = dict(password="DO_NOT_PRINT_PASSWORD")
+        response = gate.encoded(dict(code=400, message="DO_NOT_PRINT_MESSAGE", data=dict(reasonCode="INVALID_INPUT")))
+        client.opener.open.return_value = Response(response, 400)
+        with self.assertRaisesRegex(RuntimeError, r"POST /api/users expected=200 actual=400 reasonCode=INVALID_INPUT") as error:
+            client.call(1, "ADMIN", "/api/users?secret=DO_NOT_PRINT_QUERY", body)
+        diagnostic = str(error.exception)
+        for secret in (body["password"], "DO_NOT_PRINT_MESSAGE", "DO_NOT_PRINT_QUERY", owner.env["JWT_SECRET"], "Bearer"):
+            self.assertNotIn(secret, diagnostic)
+
+    def test_unexpected_non_json_and_untrusted_reason_never_echo_response(self):
+        for response in (b'<html>PRIVATE_SERVER_BODY</html>',
+                gate.encoded(dict(code=400, message="PRIVATE_SERVER_BODY", data=dict(reasonCode="PRIVATE\nBODY")))):
+            client, _ = self.client()
+            client.opener.open.return_value = Response(response, 400)
+            with self.assertRaisesRegex(RuntimeError, "reasonCode=UNAVAILABLE") as error:
+                client.call(1, "ADMIN", "/api/inventory-intakes/previews", {})
+            self.assertNotIn("PRIVATE", str(error.exception))
+
+    def test_private_journal_redacts_identity_route_and_keeps_failed_circulation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            client, owner = self.client()
+            owner.root = Path(folder)
+            client.diagnostic_path = owner.root / "http.jsonl"
+            client.opener.open.return_value = Response(envelope(dict(id=2)))
+            client.call(1, "ADMIN", "/api/users", dict(password="NEVER_SAVED_PASSWORD"))
+            first = gate.strict_json(client.diagnostic_path.read_bytes())
+            self.assertEqual(set(first), {"method", "path", "status", "expectedStatus", "reasonCode"})
+            body = dict(operation="RETURN", recordIds=[501], remark="exact synthetic input")
+            raw = envelope(dict(schemaVersion=1, reasonCode="INVALID_INPUT"), 400)
+            client.opener.open.return_value = Response(raw, 400)
+            with self.assertRaises(RuntimeError): client.call(1, "ADMIN", gate.endpoint(KEY, "preview"), body)
+            last = gate.strict_json(client.diagnostic_path.read_bytes().splitlines()[-1])
+            self.assertEqual(last["syntheticWire"]["requestBody"], gate.packed(body))
+            self.assertEqual(last["syntheticWire"]["responseBody"].encode(), raw)
+            self.assertEqual(last["status"], 400)
+            self.assertEqual(client.transcript[-1], last["syntheticWire"])
+            for secret in ("NEVER_SAVED_PASSWORD", owner.env["JWT_SECRET"], "Authorization", "Bearer"):
+                self.assertNotIn(secret, client.diagnostic_path.read_text(encoding="utf-8"))
+
+    def test_private_journal_refuses_other_directory(self):
+        with tempfile.TemporaryDirectory() as folder:
+            client, owner = self.client()
+            owner.root = Path(folder) / "owned"
+            client.diagnostic_path = Path(folder) / "outside.jsonl"
+            client.opener.open.return_value = Response(envelope({}))
+            with self.assertRaisesRegex(RuntimeError, "Private circulation diagnostic path required"):
+                client.call(1, "ADMIN", "/api/categories")
+            self.assertFalse(client.diagnostic_path.exists())
+
 
 class DockerGuardTests(unittest.TestCase):
     def setUp(self):
@@ -384,6 +435,32 @@ class EvidenceTests(unittest.TestCase):
         self.assertIn("NULL,'UNLIMITED'", sql)
         for forbidden in ("UPDATE ", "DELETE ", "DROP ", "TRUNCATE ", "member_finance", "member_profile"):
             self.assertNotIn(forbidden, sql)
+
+        labels = re.findall(r"CONVERT\(UNHEX\('([0-9a-f]+)'\) USING utf8mb4\)", sql)
+        isbns = [bytes.fromhex(value).decode() for value in labels if bytes.fromhex(value).decode().startswith("b50-")]
+        self.assertEqual(len(set(isbns)), 3)
+        self.assertTrue(all(len(value) <= 20 and re.fullmatch(r"[a-zA-Z0-9-]+", value) for value in isbns))
+
+    def test_intake_fixture_respects_existing_isbn_contract(self):
+        client = mock.Mock()
+        captured = {}
+        def call(actor, role, path, body=gate.NO_BODY):
+            if path == "/api/categories": return [dict(id=1, status=1)]
+            if path == "/api/inventory-intakes/previews":
+                captured["body"] = body
+                return dict(intakeId=1, previewDigest="a" * 64)
+            copies = [dict(bookId=201 + index, copyId=301 + index * 2 + number, barcode=entry["barcode"])
+                      for index, line in enumerate(captured["body"]["lines"]) for number, entry in enumerate(line["copies"])]
+            return dict(books=[dict(bookId=201 + i) for i in range(11)], copies=copies)
+        client.call.side_effect = call
+        result = gate.new_inventory(client, "b50_1234abcd")
+        lines = captured["body"]["lines"]
+        isbns = [line["target"]["newBook"]["isbn"] for line in lines]
+        self.assertEqual(len(result), 11)
+        self.assertEqual(len(set(isbns)), 11)
+        self.assertTrue(all(len(value) <= 20 and re.fullmatch(r"[a-zA-Z0-9-]+", value) for value in isbns))
+        self.assertEqual(sum(len(line["copies"]) for line in lines), 12)
+        self.assertTrue(all(entry["barcode"].startswith("000") for line in lines for entry in line["copies"]))
 
     def test_terminal_check_detects_receipt_stock_or_request_drift(self):
         value = sample_request(committed=True)
