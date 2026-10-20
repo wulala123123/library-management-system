@@ -35,7 +35,7 @@
         <if test="userId != null">
             AND br.user_id = #{userId}
         </if>
-        ORDER BY br.create_time DESC
+        ORDER BY br.create_time DESC, br.id DESC
     </select>
 
     <select id="countByStatus" resultType="java.lang.Long">

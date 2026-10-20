@@ -120,7 +120,8 @@ public class BorrowCodeServiceImpl implements BorrowCodeService {
         Page<BorrowCode> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<BorrowCode> wrapper = new LambdaQueryWrapper<BorrowCode>()
                 .eq(BorrowCode::getUserId, userId)
-                .orderByDesc(BorrowCode::getCreateTime);
+                .orderByDesc(BorrowCode::getCreateTime)
+                .orderByDesc(BorrowCode::getId);
         IPage<BorrowCode> result = borrowCodeMapper.selectPage(pageParam, wrapper);
         enrichCodes(result);
         return new PageResult<>(result.getRecords(), result.getTotal(), (long) page, (long) size);
@@ -131,7 +132,7 @@ public class BorrowCodeServiceImpl implements BorrowCodeService {
         Page<BorrowCode> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<BorrowCode> wrapper = new LambdaQueryWrapper<>();
         if (status != null && !status.isEmpty()) wrapper.eq(BorrowCode::getStatus, status);
-        wrapper.orderByDesc(BorrowCode::getCreateTime);
+        wrapper.orderByDesc(BorrowCode::getCreateTime).orderByDesc(BorrowCode::getId);
         IPage<BorrowCode> result = borrowCodeMapper.selectPage(pageParam, wrapper);
         enrichCodes(result);
         return new PageResult<>(result.getRecords(), result.getTotal(), (long) page, (long) size);
