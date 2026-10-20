@@ -72,6 +72,33 @@ library_verify_backend "$library_release"
 python3 "$library_release/scripts/container_smoke.py" --base http://localhost:18089 --env "$library_test/install/.env" --state "$library_test/state.json"
 export LIBRARY_ENV_FILE="$library_test/install/.env"
 source "$library_release/scripts/lib.sh"; library_init
+# BEGIN B50-A CIRCULATION SEED
+library_circulation_acceptance() {
+    local library_circulation_base="$1" library_circulation_env="$2" library_circulation_mode="$3"
+    shift 3
+    LIBRARY_ACCEPTANCE=1 python3 "$library_release/scripts/container_circulation.py" \
+        --base "$library_circulation_base" --env "$library_circulation_env" --root "$library_test" \
+        --release "$library_release" --state "$library_test/circulation-state.json" --mode "$library_circulation_mode" "$@"
+}
+library_circulation_snapshot() {
+    local library_circulation_project="$1" library_circulation_tag="$2" library_circulation_port=18089 library_circulation_env="$library_test/install/.env"
+    if [[ "$library_circulation_project" == library-recovery ]]; then
+        library_circulation_port=18090; library_circulation_env="$library_test/recovery/.env"
+    fi
+    library_circulation_acceptance "http://localhost:$library_circulation_port" "$library_circulation_env" guard
+    docker exec -i "$library_circulation_project-mysql-1" sh -c 'MYSQL_PWD="$MYSQL_MIGRATION_PASSWORD" exec mysql -u library_migrator --default-character-set=utf8mb4 --batch --raw --skip-column-names --skip-reconnect "$MYSQL_DATABASE"' \
+        < "$library_test/circulation-persistence.sql" > "$library_test/circulation-$library_circulation_tag.tsv"
+    library_circulation_acceptance "http://localhost:$library_circulation_port" "$library_circulation_env" verify-snapshot --snapshot "$library_test/circulation-$library_circulation_tag.tsv"
+    if [[ "$library_circulation_tag" != before ]]; then
+        cmp --silent "$library_test/circulation-before.tsv" "$library_test/circulation-$library_circulation_tag.tsv"
+    fi
+}
+python3 "$library_release/scripts/test_container_circulation.py"
+library_circulation_acceptance http://localhost:18089 "$library_test/install/.env" seed
+library_circulation_acceptance http://localhost:18089 "$library_test/install/.env" capture
+library_circulation_acceptance http://localhost:18089 "$library_test/install/.env" snapshot-sql > "$library_test/circulation-persistence.sql"
+library_circulation_snapshot library before
+# END B50-A CIRCULATION SEED
 # BEGIN B34 SETS SEED
 cat > "$library_test/container_set_acceptance.py" <<'B34_PY'
 """B34 formal HTTP synthetic lifecycle helper, exact isolated deployments only.
@@ -1419,6 +1446,10 @@ library_finance_snapshot library after_get
 library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_receipts_snapshot library install
 # END B40-B RECEIPTS INSTALL
+# BEGIN B50-A CIRCULATION INSTALL
+library_circulation_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_circulation_snapshot library install
+# END B50-A CIRCULATION INSTALL
 "${library_dc[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysql -u library_app -D "$MYSQL_DATABASE" -e "SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1"'
 if "${library_dc[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysql -u library_app -D "$MYSQL_DATABASE" -e "CREATE TABLE acceptance_ddl_probe (id INT)"' >/dev/null 2>&1; then
     echo 'Application account unexpectedly has schema-write privileges' >&2; exit 1
@@ -1452,6 +1483,10 @@ library_finance_snapshot library recreate
 library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_receipts_snapshot library recreate
 # END B40-B RECEIPTS RECREATE
+# BEGIN B50-A CIRCULATION RECREATE
+library_circulation_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_circulation_snapshot library recreate
+# END B50-A CIRCULATION RECREATE
 echo 'Container recreate preserved data and files'
 python3 "$library_repo/scripts/package_release.py" acceptance-update
 # Reproduce a release whose JAR changes by one byte while keeping its size and
@@ -1504,6 +1539,10 @@ library_finance_snapshot library update
 library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_receipts_snapshot library update
 # END B40-B RECEIPTS UPDATE
+# BEGIN B50-A CIRCULATION UPDATE
+library_circulation_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_circulation_snapshot library update
+# END B50-A CIRCULATION UPDATE
 echo 'Application update preserved data and files'
 python3 "$library_repo/scripts/package_release.py" acceptance-broken
 python3 - "$library_repo/dist/library-management-system-acceptance-broken.zip" <<'PY'
@@ -1545,6 +1584,10 @@ library_finance_snapshot library failed_update
 library_receipts_acceptance http://localhost:18089 "$library_test/install/.env" check
 library_receipts_snapshot library failed_update
 # END B40-B RECEIPTS FAILED_UPDATE
+# BEGIN B50-A CIRCULATION FAILED_UPDATE
+library_circulation_acceptance http://localhost:18089 "$library_test/install/.env" check
+library_circulation_snapshot library failed_update
+# END B50-A CIRCULATION FAILED_UPDATE
 echo 'Failed-start rollback restored previous application and data'
 APP_VERSION="$(basename "$library_release")" bash "$library_release/scripts/backup.sh" "$library_test/backup"
 sed -e 's/18089/18090/g' -e 's/172.30.89/172.30.90/g' "$library_test/install/.env" > "$library_test/recovery/.env"
@@ -1576,4 +1619,8 @@ library_finance_snapshot library-recovery restore
 library_receipts_acceptance http://localhost:18090 "$library_test/recovery/.env" check
 library_receipts_snapshot library-recovery restore
 # END B40-B RECEIPTS RESTORE
+# BEGIN B50-A CIRCULATION RESTORE
+library_circulation_acceptance http://localhost:18090 "$library_test/recovery/.env" check
+library_circulation_snapshot library-recovery restore
+# END B50-A CIRCULATION RESTORE
 echo 'First install, recreate, update, failed-start rollback, backup and isolated restore passed'

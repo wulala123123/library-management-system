@@ -1,0 +1,390 @@
+{
+  "requestView": {
+    "schemaVersion": 1,
+    "operationKey": "123e4567-e89b-42d3-a456-426614174000",
+    "state": "PREVIEWED",
+    "operation": "BORROW",
+    "actorId": 1,
+    "createdAt": "2026-10-20T01:59:00Z",
+    "expiresAt": "2026-10-20T02:14:00Z",
+    "businessDate": "2026-10-20",
+    "input": {
+      "operation": "BORROW",
+      "userId": 101,
+      "items": [
+        {
+          "bookId": 201,
+          "copyId": 301,
+          "borrowDays": 30
+        }
+      ],
+      "remark": ""
+    },
+    "previewDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "preview": {
+      "schemaVersion": 1,
+      "operation": "BORROW",
+      "businessDate": "2026-10-20",
+      "borrower": {
+        "userId": 101,
+        "userName": "合成会员",
+        "cardNo": "000101",
+        "status": 1
+      },
+      "items": [
+        {
+          "ordinal": 1,
+          "recordId": null,
+          "userId": 101,
+          "userName": "合成会员",
+          "bookId": 201,
+          "bookTitle": "合成图书",
+          "copyId": 301,
+          "barcode": "000Aa ",
+          "beforeRecordStatus": null,
+          "afterRecordStatus": "BORROWING",
+          "beforeCopyStatus": "AVAILABLE",
+          "afterCopyStatus": "BORROWED",
+          "copyVersionBefore": 0,
+          "copyVersionAfter": 1,
+          "borrowDate": "2026-10-20",
+          "dueDate": "2026-11-19",
+          "dueDateKind": "DATED",
+          "returnDate": null,
+          "renewCount": 0
+        }
+      ],
+      "books": [
+        {
+          "bookId": 201,
+          "stockTotal": 2,
+          "stockAvailable": 2,
+          "deltaAvailable": -1,
+          "afterAvailable": 1
+        }
+      ],
+      "activeCountBefore": 0,
+      "activeCountAfter": 1,
+      "warnings": []
+    },
+    "receipt": null,
+    "cancelledAt": null
+  },
+  "committedRequestView": {
+    "schemaVersion": 1,
+    "operationKey": "123e4567-e89b-42d3-a456-426614174000",
+    "state": "COMMITTED",
+    "operation": "BORROW",
+    "actorId": 1,
+    "createdAt": "2026-10-20T01:59:00Z",
+    "expiresAt": "2026-10-20T02:14:00Z",
+    "businessDate": "2026-10-20",
+    "input": {
+      "operation": "BORROW",
+      "userId": 101,
+      "items": [
+        {
+          "bookId": 201,
+          "copyId": 301,
+          "borrowDays": 30
+        }
+      ],
+      "remark": ""
+    },
+    "previewDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "preview": {
+      "schemaVersion": 1,
+      "operation": "BORROW",
+      "businessDate": "2026-10-20",
+      "borrower": {
+        "userId": 101,
+        "userName": "合成会员",
+        "cardNo": "000101",
+        "status": 1
+      },
+      "items": [
+        {
+          "ordinal": 1,
+          "recordId": null,
+          "userId": 101,
+          "userName": "合成会员",
+          "bookId": 201,
+          "bookTitle": "合成图书",
+          "copyId": 301,
+          "barcode": "000Aa ",
+          "beforeRecordStatus": null,
+          "afterRecordStatus": "BORROWING",
+          "beforeCopyStatus": "AVAILABLE",
+          "afterCopyStatus": "BORROWED",
+          "copyVersionBefore": 0,
+          "copyVersionAfter": 1,
+          "borrowDate": "2026-10-20",
+          "dueDate": "2026-11-19",
+          "dueDateKind": "DATED",
+          "returnDate": null,
+          "renewCount": 0
+        }
+      ],
+      "books": [
+        {
+          "bookId": 201,
+          "stockTotal": 2,
+          "stockAvailable": 2,
+          "deltaAvailable": -1,
+          "afterAvailable": 1
+        }
+      ],
+      "activeCountBefore": 0,
+      "activeCountAfter": 1,
+      "warnings": []
+    },
+    "receipt": {
+      "schemaVersion": 1,
+      "operationKey": "123e4567-e89b-42d3-a456-426614174000",
+      "operation": "BORROW",
+      "actorId": 1,
+      "confirmedAt": "2026-10-20T02:00:00Z",
+      "businessDate": "2026-10-20",
+      "orderId": 401,
+      "previewDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "items": [
+        {
+          "ordinal": 1,
+          "recordId": 501,
+          "userId": 101,
+          "userName": "合成会员",
+          "bookId": 201,
+          "bookTitle": "合成图书",
+          "copyId": 301,
+          "barcode": "000Aa ",
+          "beforeRecordStatus": null,
+          "afterRecordStatus": "BORROWING",
+          "beforeCopyStatus": "AVAILABLE",
+          "afterCopyStatus": "BORROWED",
+          "copyVersionBefore": 0,
+          "copyVersionAfter": 1,
+          "borrowDate": "2026-10-20",
+          "dueDate": "2026-11-19",
+          "dueDateKind": "DATED",
+          "returnDate": null,
+          "renewCount": 0,
+          "stockFlowId": 601
+        }
+      ],
+      "books": [
+        {
+          "bookId": 201,
+          "stockTotal": 2,
+          "stockAvailable": 2,
+          "deltaAvailable": -1,
+          "afterAvailable": 1
+        }
+      ]
+    },
+    "cancelledAt": null
+  },
+  "cancelledUnknownRequestView": {
+    "schemaVersion": 1,
+    "operationKey": "123e4567-e89b-42d3-a456-426614174000",
+    "state": "CANCELLED",
+    "operation": null,
+    "actorId": 1,
+    "createdAt": "2026-10-20T01:59:00Z",
+    "expiresAt": null,
+    "businessDate": null,
+    "input": null,
+    "previewDigest": null,
+    "preview": null,
+    "receipt": null,
+    "cancelledAt": "2026-10-20T02:00:00Z"
+  },
+  "returnPreview": {
+    "schemaVersion": 1,
+    "operation": "RETURN",
+    "businessDate": "2026-10-20",
+    "borrower": null,
+    "items": [
+      {
+        "ordinal": 1,
+        "recordId": 501,
+        "userId": 101,
+        "userName": "合成会员",
+        "bookId": 201,
+        "bookTitle": "合成图书",
+        "copyId": 301,
+        "barcode": "000Aa ",
+        "beforeRecordStatus": "BORROWING",
+        "afterRecordStatus": "RETURNED",
+        "beforeCopyStatus": "BORROWED",
+        "afterCopyStatus": "AVAILABLE",
+        "copyVersionBefore": 1,
+        "copyVersionAfter": 2,
+        "borrowDate": "2026-10-20",
+        "dueDate": "2026-11-19",
+        "dueDateKind": "DATED",
+        "returnDate": "2026-10-20",
+        "renewCount": 0
+      }
+    ],
+    "books": [
+      {
+        "bookId": 201,
+        "stockTotal": 2,
+        "stockAvailable": 1,
+        "deltaAvailable": 1,
+        "afterAvailable": 2
+      }
+    ],
+    "activeCountBefore": null,
+    "activeCountAfter": null,
+    "warnings": []
+  },
+  "receipt": {
+    "schemaVersion": 1,
+    "operationKey": "123e4567-e89b-42d3-a456-426614174000",
+    "operation": "BORROW",
+    "actorId": 1,
+    "confirmedAt": "2026-10-20T02:00:00Z",
+    "businessDate": "2026-10-20",
+    "orderId": 401,
+    "previewDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "items": [
+      {
+        "ordinal": 1,
+        "recordId": 501,
+        "userId": 101,
+        "userName": "合成会员",
+        "bookId": 201,
+        "bookTitle": "合成图书",
+        "copyId": 301,
+        "barcode": "000Aa ",
+        "beforeRecordStatus": null,
+        "afterRecordStatus": "BORROWING",
+        "beforeCopyStatus": "AVAILABLE",
+        "afterCopyStatus": "BORROWED",
+        "copyVersionBefore": 0,
+        "copyVersionAfter": 1,
+        "borrowDate": "2026-10-20",
+        "dueDate": "2026-11-19",
+        "dueDateKind": "DATED",
+        "returnDate": null,
+        "renewCount": 0,
+        "stockFlowId": 601
+      }
+    ],
+    "books": [
+      {
+        "bookId": 201,
+        "stockTotal": 2,
+        "stockAvailable": 2,
+        "deltaAvailable": -1,
+        "afterAvailable": 1
+      }
+    ]
+  },
+  "returnReceipt": {
+    "schemaVersion": 1,
+    "operationKey": "123e4567-e89b-42d3-a456-426614174000",
+    "operation": "RETURN",
+    "actorId": 1,
+    "confirmedAt": "2026-10-20T02:00:00Z",
+    "businessDate": "2026-10-20",
+    "orderId": null,
+    "previewDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "items": [
+      {
+        "ordinal": 1,
+        "recordId": 501,
+        "userId": 101,
+        "userName": "合成会员",
+        "bookId": 201,
+        "bookTitle": "合成图书",
+        "copyId": 301,
+        "barcode": "000Aa ",
+        "beforeRecordStatus": "BORROWING",
+        "afterRecordStatus": "RETURNED",
+        "beforeCopyStatus": "BORROWED",
+        "afterCopyStatus": "AVAILABLE",
+        "copyVersionBefore": 1,
+        "copyVersionAfter": 2,
+        "borrowDate": "2026-10-20",
+        "dueDate": "2026-11-19",
+        "dueDateKind": "DATED",
+        "returnDate": "2026-10-20",
+        "renewCount": 0,
+        "stockFlowId": 602
+      }
+    ],
+    "books": [
+      {
+        "bookId": 201,
+        "stockTotal": 2,
+        "stockAvailable": 1,
+        "deltaAvailable": 1,
+        "afterAvailable": 2
+      }
+    ]
+  },
+  "orderPage": {
+    "schemaVersion": 1,
+    "records": [
+      {
+        "orderId": 401,
+        "userId": 101,
+        "userName": "合成会员",
+        "cardNo": "000101",
+        "actorId": 1,
+        "createdAt": "2026-10-20T02:00:00Z",
+        "businessDate": "2026-10-20",
+        "itemCount": 1,
+        "activeCount": 1,
+        "returnedCount": 0,
+        "state": "BORROWING",
+        "remark": ""
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "size": 20,
+    "pages": 1
+  },
+  "orderDetail": {
+    "orderId": 401,
+    "userId": 101,
+    "userName": "合成会员",
+    "cardNo": "000101",
+    "actorId": 1,
+    "createdAt": "2026-10-20T02:00:00Z",
+    "businessDate": "2026-10-20",
+    "itemCount": 1,
+    "activeCount": 1,
+    "returnedCount": 0,
+    "state": "BORROWING",
+    "remark": "",
+    "items": [
+      {
+        "ordinal": 1,
+        "recordId": 501,
+        "bookId": 201,
+        "bookTitle": "合成图书",
+        "copyId": 301,
+        "barcode": "000Aa ",
+        "status": "BORROWING",
+        "borrowDate": "2026-10-20",
+        "dueDate": "2026-11-19",
+        "dueDateKind": "DATED",
+        "returnDate": null,
+        "renewCount": 0
+      }
+    ],
+    "schemaVersion": 1
+  },
+  "error": {
+    "code": 409,
+    "message": "借还办理失败，请核对输入或恢复原请求",
+    "data": {
+      "schemaVersion": 1,
+      "reasonCode": "PREVIEW_STALE"
+    }
+  }
+}
