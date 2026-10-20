@@ -8,11 +8,11 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | 阶段5独立借还流程：柜台多本借阅订单、明确逐册关联及单册/批量归还。套餐与全部资金后续工作按用户要求暂缓，沿用当前已生效借阅规则 |
-| 工作项状态 | B50-A本地实现已接纳；第二轮b4ce9b0完整Verify后端810及前端735/构建通过，容器SEED夹具ISBN错误已最小修准，35项及真实MySQL/HTTP全流程通过，进入新候选完整CI。生产无变更 |
+| 工作项状态 | B50-A分页修复a39bfaf已通过完整Verify：后端820/前端735及五轮容器通过，准确产物/213文件权限与原迁移字节已核。新分页oracle/资格工具准备已接纳，尚未执行新Linux资格、两新备及生产发布；原失败资源均清理0、生产保值通过。维护例外待用户选择 |
 | 阶段定义 | [阶段 5](docs/plans/member-business-alignment/stages/05-circulation.md)，[阶段 4 暂缓范围](docs/plans/member-business-alignment/stages/04-payments.md) |
-| 工作分支 | `codex/member-business-batch1`；文档整理与技能接入已保留并提交 |
-| 应用代码基线 | 生产`c24dd21fa34578f5e56e707e34690856ea374879`/V17，三个服务健康；当天现金/微信实收登记已启用，固定起点2026-10-20北京时间00:00；后续文档HEAD不作应用目标 |
-| 完整 Verify | B50-A第二轮[39456323413](https://github.com/wulala123123/library-management-system/actions/runs/39456323413)容器SEED失败，无合格发布产物；首轮[39453856330](https://github.com/wulala123123/library-management-system/actions/runs/39453856330)及原失败证据保留。原生产c24dd21的[39381924528](https://github.com/wulala123123/library-management-system/actions/runs/39381924528)成功及产物12246565376保持 |
+| 工作分支 | `codex/member-business-batch1`；应用候选固定a39bfaf，后续文档HEAD不作应用目标 |
+| 应用代码基线 | 生产仍`c24dd21fa34578f5e56e707e34690856ea374879`/V17，双端维护停止、MySQL健康；原收款配置和2026-10-20锚点保留。新候选`a39bfaf8435b6d1d242f53f1bcfabc878a7d66e1`/V18替代11c131e，旧产物不用于下一发布 |
+| 完整 Verify | 新候选a39bfaf的[39485535420](https://github.com/wulala123123/library-management-system/actions/runs/39485535420)成功，准确产物12294790102已下载验字节。原11c131e的[39460755918](https://github.com/wulala123123/library-management-system/actions/runs/39460755918)及产物仅历史保持；原生产c24dd21的[39381924528](https://github.com/wulala123123/library-management-system/actions/runs/39381924528)保持 |
 | 最近维护结果 | [当天收款发布记录](docs/archive/2026-10/member-finance-receipts-2026-10-20.md)已闭环；[只读财务台账](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)、[套装目录](docs/archive/2026-10/catalog-sets-2026-10-19.md)及此前各批成果保留 |
 | 恢复依据 | 当前批次`logs/circulation-stage5/recovery.json`；原B40-B为`logs/member-business-stage4/b40-b-manager/recovery.json`，全部旧发布/恢复/启用入口冻结 |
 
@@ -25,6 +25,7 @@
 5. B34已完整闭环，在当前V17保持；v1/v2失败及v3成功证据均冻结。实体配套及整套收费/扣次仍待后续，不复用旧备或已消费发布入口。
 6. B40-A管理员三个GET和台账/来源页面已部署V16，六表仅新增不回填。实现、完整CI、两轮新备恢复升级、实际生产及浏览器通过；最终独立只读验收亦通过，结果见[当批档案](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)。
 7. B40-B当天实收登记已在V17启用，日期锚点固定2026-10-20。保留合法新业务，禁止复用旧空表验收、发布或启用入口。2026-10-20用户进一步暂缓退款及全部资金后续工作，并授权先完善独立借还流程；不据此停用现有收款。
+8. B50新候选a39bfaf的准确产物及包检查由`logs/circulation-stage5/manager-run-v3/`定位；先处理待答复的维护方式选择。恢复现有V17须明确批准已准备的维护例外；继续发布须按新候选完成新Linux资格、两轮独立新备恢复及P/OPEN，不重跑任何原失败入口。
 
 ## 有效执行者
 
@@ -36,9 +37,14 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 | --- | --- | --- | --- |
 | B50-A后端 / v4 | 经理接纳，原代理停写 | 仅两测试四处维护；backend-v2/v3/v4冻结 | 旧升级准确target17、latest恢复预期18；V16→17、V17→18及原出版恢复三项现有测试独立MySQL全过，业务源码/原断言保持 |
 | B50-A前端 / v3.2 | 经理接纳，原代理停写 | v3/v3.1/v3.2证据冻结、14份来源保持 | 恢复死锁及迟到403已修准，59定向/完整735/构建通过；新实际57响应（28成功/29拒绝）及请求/回执/订单关联全过，无新服务请求 |
-| B50-A容器门槛 / v2 | 经理接纳，原代理停写 | container-v1/v2冻结；原shell和产品保持 | 35项及独立MySQL/实际HTTP完成SEED、capture和两轮16条原终态重放，SQL快照保持；33130/18130关闭，实际五轮Docker待新完整CI |
-| B50-A发布核验 / v3 | circulation_release子代理 | logs/circulation-stage5/release-v3/私有工具及本机隔离MySQL33128 | v1/v2冻结；正式Schema/401及旧GET链实际通过，正按目标Compose字符集配置补V17→V18元数据；候选CI未绑定，无服务器权限或操作 |
-| B50-A发布effects / v1及审查 | effects交付停写，circulation_backend只读审查 | effects-v1/冻结；审查仅写effects-review-v1/ | 34合成及本机实际bridge装配通过；独立审批准/回执、保值和停服链。准确成功CI、产物及Linux实装尚未绑定，禁止执行 |
+| B50-A容器门槛 / v2 | 经理接纳，原代理停写 | container-v1/v2冻结；原shell和产品保持 | 35项及独立MySQL/实际HTTP完成SEED、capture和两轮16条原终态重放，SQL快照保持；33130/18130关闭，目标完整CI实际五轮Docker通过 |
+| B50-A发布核验 / v4 | 经理接纳，原代理停写 | release-v4/冻结；v3及原证据保持 | 28来源仅transport改合法重复Vary投影，原27份保持；4项定向通过。正式Schema/SQL/DDL/角色比较保持，完整Linux资格仍待 |
+| B50-A发布effects / v4 | 经理接纳，原代理停写 | effects-v4/六源码冻结；v3及33131关闭证据保持 | 只更新oracle图绑定、增加私有原响应证据；原reader整类、阶段/批准/保值保持。原59项/18项真实MySQL及Linux无损读取证据有效，新完整图仍待资格 |
+| B50-A Linux停服前资格 / v3.1 | 经理实际执行已失败并清理，原代理停写 | 资格v1/v2/v3及manager-run-v1/原失败冻结 | 新私网GET健康/完整97静态及BuildKit已过，原MySQL探针唯一NUL→空格失败；2335份原证据保持，全部隔离资源/镜像0、生产三服务健康。等待新reader后新namespace重验 |
+| B50-A Linux资格 / v5 | 经理接纳，原代理停写 | linux-qualification-v5/及实际结果冻结；资源全清理 | V17/V18实际382/425份GET，原始响应/投影、全部角色、无损读取、77→80表/19类元数据、97/98静态全过；最终图Linux装配106源码/71模块/正式Schema通过 |
+| B50-A正式发布 / v2-R1失败诊断 | 经理接纳，原代理停写诊断 | 原两轮state/失败及diagnosis-v2冻结；经理独占服务器 | 严格重放51HTTP/38SQL证明第3/4页重复且字段全等；两原包mapper相同，属于既有分页缺陷。未到R2/P/OPEN；原v2资源清理0及生产保值通过 |
+| B50-A稳定借阅分页修复 | 经理接纳，原代理停写 | 两业务文件/两测试及pagination-backend-v1/冻结 | 四入口仅补id DESC，21项定向通过、旧源码检出四失败；a39bfaf完整CI的820/735及五轮容器通过，原迁移保留；33132关闭，未上线 |
+| B50-A分页验收协议及资格准备 | 经理接纳，原代理停写 | pagination-release-v1/与pagination-qualification-v1/冻结 | 28文件仅legacy_reads改，9纯测过；V17明确完整整页，V18严格37跨页/唯一顺序。13资格源码只改准确图/hash及version传递，reader/owner保留；未实际执行 |
 | 阶段1–3已上线批次 | 经理接纳完成，原代理停写 | 对应档案及原私有证据只读 | B22、查询、入库、逐册、库位、盘点、属性、B35/B36/B34均保持；不重复旧修正或发布 |
 | B40-A设计与实现 | 经理接纳，原代理停写 | 原设计/后端/前端/metadata/容器证据冻结 | 三个管理员GET和页面、六表新增及原字节/70表/19类元数据通过；应用固定2a8fdc7，完整CI711/579通过 |
 | B40-A历次中断与修准 | 已接纳并归档，原代理停写 | 原v4–v8及恢复/审查证据只读 | 原409、种子guard、类型比较等失败保留；准确恢复和已消费标记由[当批档案](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)及私有恢复游标定位，全部旧入口禁止重跑 |

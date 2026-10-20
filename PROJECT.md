@@ -20,6 +20,8 @@
 
 当前部署代码为 `c24dd21fa34578f5e56e707e34690856ea374879`/V17，已通过 [Verify 39381924528](https://github.com/wulala123123/library-management-system/actions/runs/39381924528)，当天实收登记已启用，固定起点为2026-10-20北京时间00:00。完整发布和启用证据见[当天收款记录](docs/archive/2026-10/member-finance-receipts-2026-10-20.md)；原V16结果见[只读财务台账记录](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)。服务器操作前仍需现场核对实际版本。
 
+B50借还发布演练已发现并修复既有分页排序问题，新候选a39bfaf已通过完整Verify，尚未上线。生产应用当前处于维护，MySQL及原数据保留；恢复现有V17的例外选择和后续发布位置见PLAN。
+
 ## 总体路线
 
 活动计划为[会员业务整合](docs/plans/member-business-alignment/README.md)。本表维护阶段顺序；任务定义、勾选状态和验收条件由链接的阶段文档维护。
