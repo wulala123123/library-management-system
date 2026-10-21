@@ -30,6 +30,7 @@
 - [未升级生产的 V17 服务恢复](preupgrade-v17-service-recovery-2026-10-21.md)
 - [柜台多本借还与验证范围收敛](counter-circulation-2026-10-21.md)
 - [历史资料、借阅来源与完整导出合批（已上线）](history-context-2026-10-21.md)
+- [管理员非资金统计与三类完整导出（已上线）](admin-reporting-2026-10-22.md)
 
 ## 候选包来源
 
