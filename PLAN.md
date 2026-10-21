@@ -7,13 +7,13 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | 用户已同意三项合批发布：既有历史资料衔接＋借阅来源/数量口径＋全部筛选结果CSV；B62/B65仅借阅查询子集，无迁移。套餐及资金后续仍暂缓，不扩全站报表 |
-| 工作项状态 | 合批实现及经理审查完成：新后端32/门控3/原历史36项、前端54项及构建通过。营业中资格备份15.5秒、隔离恢复101.1秒及80表/19类元数据/全部next-ID完整保持通过；最终组合CI待。生产仍a39bfaf/V18，未停服 |
+| 下一工作项 | 历史资料衔接＋借阅来源/数量口径＋全部筛选CSV三项合批已上线。B63统一报表、B64日期精度及B65其他导出仍待后续；套餐、计次及资金后续继续暂缓 |
+| 工作项状态 | 89c2d24/V18已开放，实际维护343.1秒（5分43秒）。完整CI后端962项全过；最终停服新备/全新隔离恢复、80表/19类元数据/全部next-ID/959附件、生产39GET、运行字节、公网和浏览器通过，专属隔离资源0 |
 | 阶段定义 | [阶段6历史查询与导出合批](docs/plans/member-business-alignment/stages/06-reporting.md)，仅B60/B61首批及B62/B65借阅查询子集；原[阶段5](docs/plans/member-business-alignment/stages/05-circulation.md)剩余和[阶段4暂缓](docs/plans/member-business-alignment/stages/04-payments.md)保持 |
-| 工作分支 | `codex/member-business-batch1`；本批起点3ee7395，只读应用候选`d9e937f`，生产仍a39bfaf；[草稿PR](https://github.com/wulala123123/library-management-system/pull/1) |
-| 应用代码基线 | 生产`a39bfaf8435b6d1d242f53f1bcfabc878a7d66e1`/V18已上线并开放；原MySQL/环境/上传/其他服务及现有财务配置、2026-10-20锚点保持。原生产c24dd21/V17及所有失败/恢复证据冻结，不重启旧写代码 |
-| 完整 Verify | 历史候选d9e937f的[39601808026](https://github.com/wulala123123/library-management-system/actions/runs/39601808026)成功，准确产物12346643495已生成、未下载部署；首轮39600763770失败保留。生产a39bfaf的[39485535420](https://github.com/wulala123123/library-management-system/actions/runs/39485535420)及产物12294790102仍有效 |
-| 最近维护结果 | [柜台多本借还与范围收敛](docs/archive/2026-10/counter-circulation-2026-10-21.md)已完成；[原V17恢复](docs/archive/2026-10/preupgrade-v17-service-recovery-2026-10-21.md)、当天收款及此前各批成果保持，旧入口不重跑 |
+| 工作分支 | `codex/member-business-batch1`；本批起点3ee7395，已部署应用代码`89c2d24`，后续状态文档提交不替代已验收产物；[草稿PR](https://github.com/wulala123123/library-management-system/pull/1) |
+| 应用代码基线 | 生产`89c2d24d1a8589c87668201ac60c164284d494fe`/V18，版本目录为CI的PR合并SHA db687c9；原MySQL/环境/上传/其他服务、财务配置及2026-10-20锚点保持。a39bfaf为前一V18应用，旧发布/恢复入口冻结，不回灌旧备 |
+| 完整 Verify | 合批89c2d24的[39611862889](https://github.com/wulala123123/library-management-system/actions/runs/39611862889)成功，准确产物12351642230已部署；包、JAR、运行镜像及静态绑定见[本批档案](docs/archive/2026-10/history-context-2026-10-21.md)。原候选、失败证据与CI保持 |
+| 最近维护结果 | [历史查询与导出合批](docs/archive/2026-10/history-context-2026-10-21.md)5分43秒完成；此前[柜台借还](docs/archive/2026-10/counter-circulation-2026-10-21.md)、[V17恢复](docs/archive/2026-10/preupgrade-v17-service-recovery-2026-10-21.md)及当天收款成果保持，旧入口不重跑 |
 | 恢复依据 | 本批范围/游标见阶段6与本PLAN；私有验证输出`logs/history-stage6/`。原发布为`logs/circulation-stage5/recovery.json`，已消费入口冻结 |
 
 ## 下一步
@@ -26,6 +26,7 @@
 6. B40-A管理员三个GET和台账/来源页面已部署V16，六表仅新增不回填。实现、完整CI、两轮新备恢复升级、实际生产及浏览器通过；最终独立只读验收亦通过，结果见[当批档案](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)。
 7. B40-B当天实收登记已在V17启用，日期锚点固定2026-10-20。保留合法新业务，禁止复用旧空表验收、发布或启用入口。2026-10-20用户进一步暂缓退款及全部资金后续工作，并授权先完善独立借还流程；不据此停用现有收款。
 8. 2026-10-21用户要求继续推进并给本次维护上限120分钟。新profile实际隔离193/279GET、同库升级、完整保值与资源0通过；两份最新独立新备及R1/R2/P/OPEN逐阶段独立验收、公网和浏览器均完成，实际维护42.2分钟。原完整CI/三角色资格按准确候选复用，新柜台已开放；后续保留合法新业务，禁止重复旧入口或回灌。
+9. 历史三项合批按默认30分钟预算完成，22:42:15–22:47:58维护343.1秒；一次最终停服新备恢复通过，无迁移、不机械套旧两轮。失败退出、重复拒绝和成功切换已演练；生产及浏览器通过，后续保留合法新业务，不重跑本批入口。标准非root解压的附件元数据缺口已在本批隔离恢复中补齐，通用脚本增强另批。
 
 ## 有效执行者
 
@@ -35,8 +36,8 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
-| B62/B65后端 / v1 | 经理接纳，`history_backend`停写 | 新borrowquery包/控制器/测试，共享history只读判定；旧借还接口不改 | 新32/门控3/原历史36项通过；原历史合同保持，MySQL同32项交最终CI |
-| B62/B65前端 / v1 | 经理接纳，`history_frontend`停写 | 新borrowInquiry API/辅助/测试、借阅页及定向测试；历史抽屉保持 | 54项及构建过，条件/数量/下载头与迟到保护核对；证据inquiry-frontend/ |
+| B62/B65后端 / v1 | 经理验收上线，`history_backend`停写 | 新borrowquery包/控制器/测试，共享history只读判定；旧借还接口不改 | H2/MySQL新查询各32、历史各36和两门控各3实际通过；生产全量分页/CSV及权限通过 |
+| B62/B65前端 / v1 | 经理验收上线，`history_frontend`停写 | 新borrowInquiry API/辅助/测试、借阅页及定向测试；历史抽屉保持 | 54项/构建及完整CI通过；公网浏览器筛选、数量、实际CSV下载及历史抽屉通过，代理与测试进程已停 |
 | B50-A验证范围收敛 / v1 | 经理验收完成 | `manager-run-v5/`及范围/预算工具、活动文档 | 2316→65；新工具193/279GET及完整保值/同库升级通过；两新备/生产四阶段独立验收、公网/浏览器和资源0闭环，42.2分钟已开放 |
 | B50-A有界发布运行树 / v1 | 经理已接纳；代理停写 | 仅`bounded-release-runtime-v1/`；不得访问服务器 | 26项定向/43源码编译及原字节独立核通过；准确新图实际执行及生产闭环完成，全部原入口冻结 |
 | B50-A后端 / v4 | 经理接纳，原代理停写 | 仅两测试四处维护；backend-v2/v3/v4冻结 | 旧升级准确target17、latest恢复预期18；V16→17、V17→18及原出版恢复三项现有测试独立MySQL全过，业务源码/原断言保持 |
