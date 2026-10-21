@@ -8,7 +8,7 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | B60/B61历史资料衔接首批：会员、书目及借阅入口关联已存来源档案，区分迁入/新柜台/本系统记录；不猜配旧订单，套餐及全部资金后续仍暂缓 |
-| 工作项状态 | 历史只读接口与三处管理员入口已完成并经理审查；H2 36项、MySQL门控3项、前端57项及构建通过。MySQL相同36项待目标完整Verify；无迁移/回填。生产仍a39bfaf/V18，发布预算与维护尚未开始 |
+| 工作项状态 | 历史只读接口与三处入口已审，H2/真实MySQL各36项、门控3项、前端57项及构建过。首轮完整CI因旧测试连接数耗尽失败；仅修测试池空闲回收后重验。无迁移/回填，生产仍a39bfaf/V18，维护未开始 |
 | 阶段定义 | [阶段6历史衔接](docs/plans/member-business-alignment/stages/06-reporting.md)的独立只读首批；原[阶段5](docs/plans/member-business-alignment/stages/05-circulation.md)剩余及[阶段4暂缓](docs/plans/member-business-alignment/stages/04-payments.md)保持 |
 | 工作分支 | `codex/member-business-batch1`；本批起点3ee7395，历史只读候选待提交后固定；生产仍a39bfaf |
 | 应用代码基线 | 生产`a39bfaf8435b6d1d242f53f1bcfabc878a7d66e1`/V18已上线并开放；原MySQL/环境/上传/其他服务及现有财务配置、2026-10-20锚点保持。原生产c24dd21/V17及所有失败/恢复证据冻结，不重启旧写代码 |
