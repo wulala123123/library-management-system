@@ -8,13 +8,13 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | 用户已同意管理员非资金统计统一＋会员/书目/库存完整筛选导出合批。日期到天即可，B64取消；读者默认不登录、阶段7范围外，全部日常操作由管理员办理；套餐、计次及资金后续仍暂缓 |
-| 工作项状态 | 管理员统计与导出b5a7246已实现；首轮CI1062项仅旧升级测试元数据行序断言失败，新报告/导出真实MySQL均通过，正在定向修准；营业备份14.4秒/隔离恢复81.1秒及80表/19类元数据/全部next-ID/959附件通过，尚未上线，前批89c2d24/V18开放 |
+| 工作项状态 | 管理员统计与导出已实现；第二轮CI39632771871后端/前端通过，容器来源保护拒绝新增附件断言已定向修准，原脚本哈希和五轮钩子保持，36项纯测通过并前移CI；营业备份14.4秒/隔离恢复81.1秒及80表/19类元数据/全部next-ID/959附件通过，尚未上线，前批89c2d24/V18开放 |
 | 阶段定义 | [阶段6管理员统计与导出](docs/plans/member-business-alignment/stages/06-reporting.md)，B63非资金子集/B65会员、书目及库存导出；B64取消、阶段7范围外，阶段4/5的套餐和资金后续仍暂缓 |
 | 工作分支 | `codex/member-business-batch1`；本批起点3ee7395，已部署应用代码`89c2d24`，后续状态文档提交不替代已验收产物；[草稿PR](https://github.com/wulala123123/library-management-system/pull/1) |
 | 应用代码基线 | 生产`89c2d24d1a8589c87668201ac60c164284d494fe`/V18，版本目录为CI的PR合并SHA db687c9；原MySQL/环境/上传/其他服务、财务配置及2026-10-20锚点保持。a39bfaf为前一V18应用，旧发布/恢复入口冻结，不回灌旧备 |
 | 完整 Verify | 合批89c2d24的[39611862889](https://github.com/wulala123123/library-management-system/actions/runs/39611862889)成功，准确产物12351642230已部署；包、JAR、运行镜像及静态绑定见[本批档案](docs/archive/2026-10/history-context-2026-10-21.md)。原候选、失败证据与CI保持 |
 | 最近维护结果 | [历史查询与导出合批](docs/archive/2026-10/history-context-2026-10-21.md)5分43秒完成；此前[柜台借还](docs/archive/2026-10/counter-circulation-2026-10-21.md)、[V17恢复](docs/archive/2026-10/preupgrade-v17-service-recovery-2026-10-21.md)及当天收款成果保持，旧入口不重跑 |
-| 恢复依据 | 本批范围/游标见阶段6与本PLAN；私有验证输出`logs/history-stage6/`。原发布为`logs/circulation-stage5/recovery.json`，已消费入口冻结 |
+| 恢复依据 | 当前批次`logs/admin-reporting-stage6/release-preparation.json`定位全新服务器私有根，`runtime-v1/`及`remote/`保存准确工具与结果；第三轮候选为本分支后续HEAD，由`ci-runs-v3.json`定位，默认30分钟维护且尚未停服。原`logs/history-stage6/`和`logs/circulation-stage5/recovery.json`已消费入口冻结 |
 
 ## 下一步
 

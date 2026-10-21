@@ -41,6 +41,7 @@ python3 scripts/check_docs.py
 git diff --check
 python3 -B scripts/test_release_validation_plan.py
 python3 -B scripts/test_restore_uploads.py
+python3 -B scripts/test_container_circulation.py
 mvn -B -ntp -f backend/pom.xml verify
 pnpm --dir frontend test
 pnpm --dir frontend build
@@ -48,6 +49,8 @@ pnpm --dir frontend audit --audit-level=high
 ```
 
 按变更范围选择检查。纯文档修改运行文档检查和差异检查；发布文档路径或打包入口变化时，另核对分发包内容。前端 build 包含完整类型检查。
+
+修改容器验收脚本或其来源保护时，先运行上述Docker无关的容器纯测试，再提交完整CI。新增验收段须明确边界并独立绑定字节，保留原流程字节与五轮业务钩子检查；不得直接更换原流程哈希来掩盖范围外改动。Verify在构建前执行同一快速检查，并在解包产物后核验实际分发脚本。
 
 `scripts/release_validation_plan.py`提供未改模块的确定性代表项选择及按实测成本计算维护预算的纯工具；覆盖类别超出上限时拒绝截断，未知耗时拒绝当作零。其预算结果只说明时间条件，不授权生产操作；本批业务检查、完整数据保全、备份恢复和发布资格须另外满足。对应定向测试已接入 Verify 的文档与工具检查步骤。
 

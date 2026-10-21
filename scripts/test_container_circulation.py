@@ -19,6 +19,17 @@ import container_circulation as gate
 
 KEY = "123e4567-e89b-42d3-a456-426614174000"
 ORIGINAL_SHELL_SHA = "1ef04765464120c09d3d7f287709fb5b51d1735a80c050b3bf490cfa077b520a"
+UPLOAD_METADATA_SHELL_SHA = "3bd25343cd9a54b28c0418c5c01b954abab546c45512f209a42042f955b4e8ca"
+
+
+def original_shell_without_reviewed_upload_checks(raw):
+    pattern = rb"(?m)^# BEGIN UPLOAD METADATA ([A-Z_]+)\n[\s\S]*?^# END UPLOAD METADATA \1\n"
+    blocks = list(re.finditer(pattern, raw))
+    if [block.group(1) for block in blocks] != [b"BEFORE_BACKUP", b"AFTER_BACKUP", b"AFTER_RESTORE"]:
+        raise AssertionError("Exactly the three reviewed upload checks are required")
+    if hashlib.sha256(b"".join(block.group() for block in blocks)).hexdigest() != UPLOAD_METADATA_SHELL_SHA:
+        raise AssertionError("Upload acceptance bytes changed without review")
+    return re.sub(pattern, b"", raw)
 
 
 def sample_request(operation="BORROW", committed=False, no_copy=False, name="Synthetic Reader"):
@@ -500,7 +511,7 @@ class EvidenceTests(unittest.TestCase):
     def test_shell_original_bytes_and_all_five_hooks_remain(self):
         raw = Path(__file__).with_name("container-acceptance.sh").read_bytes()
         pattern = rb"(?m)^# BEGIN B50-A CIRCULATION ([A-Z_]+)\n[\s\S]*?^# END B50-A CIRCULATION \1\n"
-        original, blocks = re.subn(pattern, b"", raw)
+        original, blocks = re.subn(pattern, b"", original_shell_without_reviewed_upload_checks(raw))
         self.assertEqual(blocks, 6)
         self.assertEqual(hashlib.sha256(original).hexdigest(), ORIGINAL_SHELL_SHA)
         self.assertLess(raw.index(b"# BEGIN B50-A CIRCULATION SEED"), raw.index(b"# BEGIN B34 SETS SEED"))
@@ -509,6 +520,18 @@ class EvidenceTests(unittest.TestCase):
             self.assertIn(b" check\n", segment)
             self.assertIn((" " + stage.lower() + "\n").encode(), segment)
             self.assertEqual(segment.count(b"library_circulation_acceptance"), 1)
+
+    def test_reviewed_upload_blocks_cannot_hide_other_shell_edits(self):
+        raw = Path(__file__).with_name("container-acceptance.sh").read_bytes()
+        for changed in (raw.replace(b"synthetic root-only bytes", b"changed bytes"),
+                        raw.replace(b"# BEGIN UPLOAD METADATA AFTER_BACKUP", b"# BEGIN UPLOAD METADATA OTHER"),
+                        raw + b"# BEGIN UPLOAD METADATA EXTRA\nignored\n# END UPLOAD METADATA EXTRA\n"):
+            with self.subTest(sha=hashlib.sha256(changed).hexdigest()), self.assertRaises(AssertionError):
+                original_shell_without_reviewed_upload_checks(changed)
+        edited = raw.replace(b"echo 'Failed-start rollback restored previous application and data'", b"echo 'unreviewed legacy change'")
+        original = original_shell_without_reviewed_upload_checks(edited)
+        original = re.sub(rb"(?m)^# BEGIN B50-A CIRCULATION ([A-Z_]+)\n[\s\S]*?^# END B50-A CIRCULATION \1\n", b"", original)
+        self.assertNotEqual(hashlib.sha256(original).hexdigest(), ORIGINAL_SHELL_SHA)
 
 
 if __name__ == "__main__": unittest.main(verbosity=2)

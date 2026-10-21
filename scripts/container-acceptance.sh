@@ -1589,6 +1589,7 @@ library_circulation_acceptance http://localhost:18089 "$library_test/install/.en
 library_circulation_snapshot library failed_update
 # END B50-A CIRCULATION FAILED_UPDATE
 echo 'Failed-start rollback restored previous application and data'
+# BEGIN UPLOAD METADATA BEFORE_BACKUP
 # Synthetic attachment metadata includes a root-owned 0600 file, distinct
 # directory ownership/mode and nanosecond mtimes. The existing MySQL image's
 # GNU tar preserves PAX times; the backend tar writer rounds to seconds.
@@ -1616,16 +1617,21 @@ directory, item = (items['uploads/metadata-acceptance'], items['uploads/metadata
 assert (directory['uid'], directory['gid'], directory['mode'], directory['mtime']) == (0, 0, 0o750, Decimal('1700000002.234567891'))
 assert (item['uid'], item['gid'], item['mode'], item['mtime']) == (0, 0, 0o600, Decimal('1700000003.345678912'))
 UPLOAD_ASSERT
+# END UPLOAD METADATA BEFORE_BACKUP
 APP_VERSION="$(basename "$library_release")" bash "$library_release/scripts/backup.sh" "$library_test/backup"
+# BEGIN UPLOAD METADATA AFTER_BACKUP
 python3 "$library_release/scripts/restore_uploads.py" --compare "$library_test/uploads-before.tar.gz" "$library_test/backup/uploads.tar.gz"
+# END UPLOAD METADATA AFTER_BACKUP
 sed -e 's/18089/18090/g' -e 's/172.30.89/172.30.90/g' "$library_test/install/.env" > "$library_test/recovery/.env"
 library_recovery_release="$library_release"
 LIBRARY_PROJECT_NAME=library-recovery LIBRARY_ENV_FILE="$library_test/recovery/.env" bash "$library_release/scripts/restore.sh" "$library_test/backup"
 library_verify_backend "$library_recovery_release" library-recovery
+# BEGIN UPLOAD METADATA AFTER_RESTORE
 library_upload_recovery="$(docker ps -q --filter label=com.docker.compose.project=library-recovery --filter label=com.docker.compose.service=backend)"
 [[ "$library_upload_recovery" =~ ^[a-f0-9]{12,64}$ ]]
 python3 "$library_release/scripts/restore_uploads.py" --capture "$library_test/uploads-restored.tar.gz" -- docker compose -p library-recovery --project-directory "$library_release" --env-file "$library_test/recovery/.env" -f "$library_release/compose.yaml"
 python3 "$library_release/scripts/restore_uploads.py" --compare "$library_test/uploads-before.tar.gz" "$library_test/uploads-restored.tar.gz"
+# END UPLOAD METADATA AFTER_RESTORE
 python3 "$library_release/scripts/container_smoke.py" --base http://localhost:18090 --env "$library_test/recovery/.env" --state "$library_test/state.json" --check-state --complete-recovered-link
 # BEGIN B33-A ATTRIBUTES RESTORE
 library_attributes_acceptance http://localhost:18090 "$library_test/recovery/.env" check
