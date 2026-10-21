@@ -1,10 +1,11 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { computed, defineComponent, h, inject, provide, type ComputedRef } from 'vue'
+import { computed, defineComponent, h, inject, provide, reactive, type ComputedRef } from 'vue'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
-const api = vi.hoisted(() => ({ list: vi.fn(), detail: vi.fn(), me: vi.fn(), source: vi.fn(), create: vi.fn(), update: vi.fn(), push: vi.fn(), user: { isAdmin: true, isLibrarian: false, isReader: false }, route: { query: {} as Record<string, string> } }))
+const api = vi.hoisted(() => ({ list: vi.fn(), detail: vi.fn(), me: vi.fn(), source: vi.fn(), create: vi.fn(), update: vi.fn(), push: vi.fn(), user: { isAdmin: true, isLibrarian: false, isReader: false, token: 'synthetic-admin', userInfo: { id: 2, role: 'ADMIN' } }, route: { query: {} as Record<string, string> } }))
 vi.mock('@/api/member', () => ({ getMemberPage: api.list, getMemberById: api.detail, getMyMembership: api.me, getMemberSourcePreview: api.source, createMember: api.create, updateMember: api.update }))
 vi.mock('@/api/memberEntitlement', () => ({ getMyEntitlement: api.me }))
+vi.mock('@/api/managementReports', async original => ({ ...await original<object>(), createManagementReportsApi: () => ({ listPage: (_kind: string, query: object) => api.list(query) }) }))
 vi.mock('@/store/modules/user', () => ({ useUserStore: () => api.user }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: api.push }), useRoute: () => api.route }))
 vi.mock('element-plus', () => ({ ElMessage: { success: vi.fn(), error: vi.fn() } }))
@@ -22,12 +23,12 @@ const column = defineComponent({ props: ['prop', 'label'], setup(props, { slots 
 const description = defineComponent({ props: ['label'], setup(props, { slots }) { return () => h('div', [props.label, ': ', slots.default?.()]) } })
 const button = defineComponent({ setup(_, { slots, attrs }) { return () => h('button', attrs, slots.default?.()) } })
 const input = defineComponent({ props: ['modelValue', 'placeholder'], emits: ['update:modelValue'], setup(props, { emit, attrs }) { return () => h('input', { ...attrs, value: props.modelValue, placeholder: props.placeholder, onInput: (event: Event) => emit('update:modelValue', (event.target as HTMLInputElement).value) }) } })
-const stubs = { ElCard: slot, ElDialog: slot, ElDescriptions: slot, ElDescriptionsItem: description, ElTable: table, ElTableColumn: column, ElButton: button, ElForm: slot, ElFormItem: slot, ElInput: input, ElSelect: true, ElOption: true, ElTag: slot, ElAlert: true, ElPagination: true, ElRow: slot, ElCol: slot, ElInputNumber: true, ElDatePicker: true, ElEmpty: slot, MemberEntitlementPanel: true }
+const stubs = { ElCard: slot, ElDialog: slot, ElDescriptions: slot, ElDescriptionsItem: description, ElTable: table, ElTableColumn: column, ElButton: button, ElForm: slot, ElFormItem: slot, ElInput: input, ElSelect: true, ElOption: true, ElTag: slot, ElAlert: true, ElPagination: true, ElRow: slot, ElCol: slot, ElInputNumber: true, ElDatePicker: true, ElEmpty: slot, MemberEntitlementPanel: true, HistoryContextDrawer: true }
 const wrappers: ReturnType<typeof mount>[] = []
 function page(component: any, props = {}) { const wrapper = mount(component, { props, global: { stubs, directives: { loading: () => {} } } }); wrappers.push(wrapper); return wrapper }
 const member: MemberDetail = { id: 5, username: 'reader_5', realName: '合成会员', phone: '13800138000', email: null, cardNo: '000005', planName: '原套餐', accountStatus: 0, profilePresent: true, revision: 3, serviceStart: '2026-10-15', serviceEnd: '2026-10-15', serviceStatus: 'ACTIVE', asOfDate: '2026-10-15', usageType: 'LIMITED', usedUses: 0, totalUses: 0, remainingUses: 0, overused: false, notes: '家庭备注', address: '敏感家庭地址', children: [{ id: 9, name: '宝宝资料', gender: null, birthDate: null, birthDatePrecision: 'YEAR', sourceBirthText: '2020年', notes: null }], financialFacts: { paidFee: 0, depositAmount: 0, depositStatus: '未退' }, sourceKey: 'huiben:5', sourceSystem: 'huiben', borrowHistory: [{ id: 1, bookId: 1, bookTitle: '合成绘本', borrowDate: '2026-10-15', dueDate: null, dueDateKind: 'UNLIMITED', returnDate: null, status: 'BORROWING' }] }
 beforeEach(() => {
-  vi.clearAllMocks(); Object.assign(api.user, { isAdmin: true, isLibrarian: false, isReader: false }); api.route.query = {}
+  vi.clearAllMocks(); api.user = reactive({ isAdmin: true, isLibrarian: false, isReader: false, token: 'synthetic-admin', userInfo: { id: 2, role: 'ADMIN' } }); api.route.query = {}
   api.list.mockResolvedValue({ records: [member], total: 1 }); api.detail.mockResolvedValue(member); api.me.mockResolvedValue({ member, effectiveRules: emptyDefinition().rules, snapshotPresent: false })
 })
 afterEach(() => wrappers.splice(0).forEach(wrapper => wrapper.unmount()))
@@ -57,13 +58,22 @@ it('shows admin family, financial facts and history while separating account and
   expect(wrapper.text()).toContain('编辑会员')
 })
 
+it('opens the shared history drawer for the exact loaded member and closes it when member or parent visibility changes', async () => {
+  const wrapper = page(MemberDetailDialog, { visible: true, memberId: 5 }); await flushPromises()
+  await wrapper.findAll('button').find(button => button.text() === '历史资料')!.trigger('click'); await flushPromises()
+  expect(wrapper.findComponent({ name: 'HistoryContextDrawer' }).props()).toMatchObject({ visible: true, entityType: 'members', entityId: 5 })
+  api.detail.mockResolvedValueOnce({ ...member, id: 6 }); await wrapper.setProps({ memberId: 6 }); await flushPromises()
+  expect(wrapper.findComponent({ name: 'HistoryContextDrawer' }).props()).toMatchObject({ visible: false, entityId: 6 })
+  await wrapper.setProps({ visible: false }); expect(wrapper.findComponent({ name: 'HistoryContextDrawer' }).exists()).toBe(false)
+})
+
 it('keeps librarian views read-only and hides family, finance, source and admin actions even if extra payload fields arrive', async () => {
   Object.assign(api.user, { isAdmin: false, isLibrarian: true })
   const wrapper = page(Members); await flushPromises()
   expect(wrapper.text()).not.toContain('新增会员')
   await wrapper.findAll('button').find(button => button.text() === '查看档案')!.trigger('click'); await flushPromises()
   expect(wrapper.text()).toContain('000005'); expect(wrapper.text()).toContain('13800138000')
-  for (const text of ['编辑会员', '家庭及宝宝资料', '敏感家庭地址', '宝宝资料', '历史费用与押金', '来源与修订', '读取来源预填预览']) expect(wrapper.text()).not.toContain(text)
+  for (const text of ['编辑会员', '家庭及宝宝资料', '敏感家庭地址', '宝宝资料', '历史费用与押金', '来源与修订', '读取来源预填预览', '历史资料']) expect(wrapper.text()).not.toContain(text)
   expect(api.source).not.toHaveBeenCalled(); expect(api.create).not.toHaveBeenCalled(); expect(api.update).not.toHaveBeenCalled()
 })
 

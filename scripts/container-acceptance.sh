@@ -1589,11 +1589,49 @@ library_circulation_acceptance http://localhost:18089 "$library_test/install/.en
 library_circulation_snapshot library failed_update
 # END B50-A CIRCULATION FAILED_UPDATE
 echo 'Failed-start rollback restored previous application and data'
+# BEGIN UPLOAD METADATA BEFORE_BACKUP
+# Synthetic attachment metadata includes a root-owned 0600 file, distinct
+# directory ownership/mode and nanosecond mtimes. The existing MySQL image's
+# GNU tar preserves PAX times; the backend tar writer rounds to seconds.
+library_upload_backend="$(docker ps -q --filter label=com.docker.compose.project=library --filter label=com.docker.compose.service=backend)"
+[[ "$library_upload_backend" =~ ^[a-f0-9]{12,64}$ ]]
+library_upload_tar_image="$(docker inspect library-mysql-1 --format '{{.Image}}')"
+python3 - <<'UPLOAD_SEED' | docker run --rm -i --network none --read-only --user 0:0 --mount type=volume,src=library_uploads,dst=/app/uploads --entrypoint tar "$library_upload_tar_image" -xpf - --same-owner --delay-directory-restore -C /app
+import io, sys, tarfile
+with tarfile.open(fileobj=sys.stdout.buffer, mode='w|', format=tarfile.PAX_FORMAT) as archive:
+    directory = tarfile.TarInfo('uploads/metadata-acceptance'); directory.type = tarfile.DIRTYPE
+    directory.mode = 0o750; directory.pax_headers = {'mtime': '1700000002.234567891'}
+    archive.addfile(directory)
+    item = tarfile.TarInfo('uploads/metadata-acceptance/root.txt'); raw = b'synthetic root-only bytes\n'
+    item.mode = 0o600; item.size = len(raw); item.pax_headers = {'mtime': '1700000003.345678912'}
+    archive.addfile(item, io.BytesIO(raw))
+UPLOAD_SEED
+python3 "$library_release/scripts/restore_uploads.py" --capture "$library_test/uploads-before.tar.gz" -- docker compose -p library --project-directory "$library_release" --env-file "$library_test/install/.env" -f "$library_release/compose.yaml"
+python3 - "$library_release/scripts" "$library_test/uploads-before.tar.gz" <<'UPLOAD_ASSERT'
+import sys
+from decimal import Decimal
+sys.path.insert(0, sys.argv[1])
+from restore_uploads import inventory
+items = inventory(sys.argv[2])
+directory, item = (items['uploads/metadata-acceptance'], items['uploads/metadata-acceptance/root.txt'])
+assert (directory['uid'], directory['gid'], directory['mode'], directory['mtime']) == (0, 0, 0o750, Decimal('1700000002.234567891'))
+assert (item['uid'], item['gid'], item['mode'], item['mtime']) == (0, 0, 0o600, Decimal('1700000003.345678912'))
+UPLOAD_ASSERT
+# END UPLOAD METADATA BEFORE_BACKUP
 APP_VERSION="$(basename "$library_release")" bash "$library_release/scripts/backup.sh" "$library_test/backup"
+# BEGIN UPLOAD METADATA AFTER_BACKUP
+python3 "$library_release/scripts/restore_uploads.py" --compare "$library_test/uploads-before.tar.gz" "$library_test/backup/uploads.tar.gz"
+# END UPLOAD METADATA AFTER_BACKUP
 sed -e 's/18089/18090/g' -e 's/172.30.89/172.30.90/g' "$library_test/install/.env" > "$library_test/recovery/.env"
 library_recovery_release="$library_release"
 LIBRARY_PROJECT_NAME=library-recovery LIBRARY_ENV_FILE="$library_test/recovery/.env" bash "$library_release/scripts/restore.sh" "$library_test/backup"
 library_verify_backend "$library_recovery_release" library-recovery
+# BEGIN UPLOAD METADATA AFTER_RESTORE
+library_upload_recovery="$(docker ps -q --filter label=com.docker.compose.project=library-recovery --filter label=com.docker.compose.service=backend)"
+[[ "$library_upload_recovery" =~ ^[a-f0-9]{12,64}$ ]]
+python3 "$library_release/scripts/restore_uploads.py" --capture "$library_test/uploads-restored.tar.gz" -- docker compose -p library-recovery --project-directory "$library_release" --env-file "$library_test/recovery/.env" -f "$library_release/compose.yaml"
+python3 "$library_release/scripts/restore_uploads.py" --compare "$library_test/uploads-before.tar.gz" "$library_test/uploads-restored.tar.gz"
+# END UPLOAD METADATA AFTER_RESTORE
 python3 "$library_release/scripts/container_smoke.py" --base http://localhost:18090 --env "$library_test/recovery/.env" --state "$library_test/state.json" --check-state --complete-recovered-link
 # BEGIN B33-A ATTRIBUTES RESTORE
 library_attributes_acceptance http://localhost:18090 "$library_test/recovery/.env" check

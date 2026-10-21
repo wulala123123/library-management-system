@@ -2,6 +2,8 @@
 
 本页维护当前安装、更新、代理和恢复步骤。项目状态见 [PROJECT](../../PROJECT.md)，发布前通过[完整验证](../development/testing.md)，使用目标提交的 `verified-distribution` 及配套校验文件。历史服务器操作与验收见[档案](../archive/README.md)。
 
+新批次及重新审查后的编排按[发布验证与维护时间](release-validation.md)确定范围、真实规模耗时、维护预算与退出路径。本页各版本专项段落保留兼容和数据安全限制；旧的完整 HTTP 清单复用时须重新审查适用范围，不能自动累加。在途已批准图及历史证据不因本文变化而改判。
+
 ## 发布目录
 
 发布 ZIP 只有一个版本目录，包含 `compose.yaml`、`compose.sub2api.yaml`、`backend/target/library-backend.jar`、两个 Dockerfile、`frontend/dist`、代理模板、运维脚本和文档。数据库迁移位于 JAR 内。包中不包含 `.env`、SSH 密钥、运行上传目录或开发依赖。ZIP 附带 SHA256 校验文件。
@@ -116,5 +118,7 @@ LIBRARY_PROJECT_NAME=library-recovery LIBRARY_ENV_FILE=/absolute/path/recovery.e
 ```
 
 恢复必须从备份中 `application-version.txt` 记录的对应版本运行脚本，不同版本会被拒绝；示例中的 `current` 只有在与备份版本一致时才适用。恢复环境不能包含 `use-sub2api` 标记。脚本核对校验和，恢复数据库与上传文件，启动并等待健康。切换真实流量前还要核对用户、库存、借阅记录和文件。数据库账号及迁移账号的密码轮换需更新数据库本身，单改 `.env` 不会修改已有 MySQL 卷内的账号密码。
+
+旧附件可能具有与应用用户不同的属主/组。新版备份和恢复脚本通过`restore_uploads.py`核对Compose归属与准确上传卷，复用已运行MySQL镜像中的GNU tar，以独立、无网络、只挂载上传卷的root辅助容器保存和恢复内容、权限、属主/组及PAX纳秒mtime；辅助容器不运行数据库或业务入口。恢复仅允许全新隔离项目，先校验完整档案路径、类型和元数据，拒绝链接、路径逃逸及重名；后端只创建为停止状态，附件恢复完成后才启动应用。CI使用合成root 0600附件及不同目录元数据，完整比较备份前、备份及恢复重启后的结果。旧版本的非root恢复缺口及当次修复保留在[历史查询合批记录](../archive/2026-10/history-context-2026-10-21.md)，不能以旧备回灌生产。
 
 原仓库跟踪的 3 张历史头像已按原路径、原字节整理到 `legacy-data/uploads/`，本机运行目录中的文件保留。它们不随发布包分发、不在新库自动导入。接管旧库应备份和迁移完整的真实上传目录；只有数据库头像路径匹配且原文件缺失时才核对该参考归档，不能用它替代完整备份。

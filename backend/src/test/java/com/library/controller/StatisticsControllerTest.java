@@ -184,7 +184,7 @@ class StatisticsControllerTest {
     }
 
     @Test
-    void exportContainsTheSameTenMetricsDatesAndDefinitionsAsTheSummary() throws Exception {
+    void exportContainsTheSameThirteenMetricsDatesAndDefinitionsAsTheSummary() throws Exception {
         JsonNode summary = data("/statistics", librarian);
         String csv = mvc.perform(get("/statistics/export").header("Authorization", bearer(librarian)))
                 .andExpect(status().isOk()).andExpect(content().contentType("text/csv;charset=UTF-8"))
@@ -192,8 +192,8 @@ class StatisticsControllerTest {
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         String[] lines = csv.substring(1).split("\r\n");
         assertEquals("metric,label,value,unit,asOfDate,scope", lines[0]);
-        assertEquals(27, lines.length);
-        for (int i = 1; i <= 10; i++) {
+        assertEquals(30, lines.length);
+        for (int i = 1; i <= 13; i++) {
             String[] cells = lines[i].split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
             assertEquals(6, cells.length);
             String metric = unquote(cells[0]);
@@ -201,7 +201,7 @@ class StatisticsControllerTest {
             assertEquals(summary.path("asOfDate").asText(), cells[4]);
             assertEquals(summary.path("statisticalScope").path(metric).asText(), unquote(cells[5]));
         }
-        for(int i=11;i<lines.length;i++){
+        for(int i=14;i<lines.length;i++){
             String[] cells=lines[i].split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)",-1);assertEquals(6,cells.length);
             String field=unquote(cells[0]).substring("reconciliationV2.".length());assertEquals(summary.path("reconciliationV2").path(field).asText(),unquote(cells[2]));
             assertEquals(summary.path("asOfDate").asText(),cells[4]);

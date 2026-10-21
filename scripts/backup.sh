@@ -21,7 +21,7 @@ library_resume() {
 trap library_resume EXIT
 "${library_dc[@]}" stop frontend backend
 "${library_dc[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysqldump -u library_app --single-transaction --no-tablespaces --skip-triggers --column-statistics=0 --set-gtid-purged=OFF "$MYSQL_DATABASE"' > "$library_backup/database.sql"
-"${library_dc[@]}" run --rm --no-deps -T --entrypoint tar backend -czf - -C /app uploads > "$library_backup/uploads.tar.gz"
+python3 "$library_release/scripts/restore_uploads.py" --capture "$library_backup/uploads.tar.gz" -- "${library_dc[@]}"
 cp -- "$library_env" "$library_backup/environment.env"
 printf '%s\n' "$APP_VERSION" > "$library_backup/application-version.txt"
 (cd "$library_backup" && sha256sum database.sql uploads.tar.gz environment.env application-version.txt > SHA256SUMS)

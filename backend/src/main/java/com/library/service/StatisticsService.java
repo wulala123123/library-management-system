@@ -70,11 +70,15 @@ public class StatisticsService {
         labels.put("memberCount", "会员人数");
         labels.put("validMemberCount", "有效会员人数");
         labels.put("unknownValidityMemberCount", "有效期待核实会员人数");
+        labels.put("todayBorrows", "今日借阅明细");
+        labels.put("overdueCount", "逾期明细");
+        labels.put("borrowRecordCount", "借阅明细总量");
         Map<String, Object> values = summary.toMap();
         StringBuilder csv = new StringBuilder("\uFEFFmetric,label,value,unit,asOfDate,scope\r\n");
         labels.forEach((key, label) -> {
             String unit = key.endsWith("Titles") ? "种" : key.endsWith("Copies") ? "册" : "人";
             if ("accountCount".equals(key)) unit = "个";
+            if (List.of("todayBorrows", "overdueCount", "borrowRecordCount").contains(key)) unit = "条";
             csv.append(csvCell(key)).append(',').append(csvCell(label)).append(',')
                     .append(values.get(key)).append(',').append(csvCell(unit)).append(',')
                     .append(summary.getAsOfDate()).append(',')

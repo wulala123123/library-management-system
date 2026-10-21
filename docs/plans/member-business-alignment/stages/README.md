@@ -9,4 +9,4 @@
 - [阶段 4 收费与押金](04-payments.md)
 - [阶段 5 借还流程](05-circulation.md)
 - [阶段 6 历史与报表](06-reporting.md)
-- [阶段 7 读者服务](07-reader-services.md)
+- [阶段 7 原读者服务计划](07-reader-services.md)：当前范围外，不实施。

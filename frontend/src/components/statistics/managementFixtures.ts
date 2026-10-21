@@ -1,0 +1,7 @@
+import type { BorrowOperationsReport, BorrowReportFilters } from '@/api/managementReports'
+import type { CsvDownload } from '@/api/csvDownload'
+export const managementAsOf = '2026-10-21T16:00:00.123Z'
+export const reportFilters = (): BorrowReportFilters => ({ keyword: '', status: null, origin: 'ALL', startDate: null, endDate: null })
+export const operationsReport = (filters = reportFilters()): BorrowOperationsReport => ({ asOf: managementAsOf, asOfDate: '2026-10-22', filters, totals: { borrowDetails: 37, borrowedCopyEvents: 37, activeDetails: 13, returnedDetails: 24, overdueDetails: 3, knownCounterOrders: 5 }, origins: { total: 37, imported: 20, counterOrder: 9, system: 7, unverified: 1, unit: '条', scope: '明细数量不与原系统累计相加' }, trend: [{ date: '2026-10-20', label: '10-20', borrowDetails: 13, knownCounterOrders: 2 }, { date: '2026-10-21', label: '10-21', borrowDetails: 24, knownCounterOrders: 3 }], hotBooks: [{ bookId: 7, title: '合成绘本 <img>', borrowDetails: 13, knownCounterOrders: 2 }], scope: '全部符合筛选的借阅明细；日闭区间；明确柜台订单按单统计' })
+export const managementFile = (kind = 'members', total = 21): CsvDownload => ({ blob: new Blob(['\ufeff筛选,全部\r\n总量,21\r\n\r\n序号,会员编号,卡号\r\n1,5,000005\r\n'], { type: 'text/csv;charset=utf-8' }), filename: `management-${kind}-20261021T160000Z.csv`, total, asOf: managementAsOf })
+export function pendingManagement<T>() { let resolve!: (value: T) => void, reject!: (cause: unknown) => void; const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no }); return { promise, resolve, reject } }

@@ -27,6 +27,10 @@
 - [未升级生产的 V15 服务恢复](preupgrade-service-recovery-2026-10-19.md)
 - [管理员只读财务台账上线验收](member-finance-readonly-2026-10-20.md)
 - [当天柜台收款实现与发布记录（进行中）](member-finance-receipts-2026-10-20.md)
+- [未升级生产的 V17 服务恢复](preupgrade-v17-service-recovery-2026-10-21.md)
+- [柜台多本借还与验证范围收敛](counter-circulation-2026-10-21.md)
+- [历史资料、借阅来源与完整导出合批（已上线）](history-context-2026-10-21.md)
+- [管理员非资金统计与三类完整导出（已上线）](admin-reporting-2026-10-22.md)
 
 ## 候选包来源
 

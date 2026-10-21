@@ -22,6 +22,27 @@ cat > "$library_test/bin/docker" <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
 if [[ "$1" == volume ]]; then exit 0; fi
+if [[ "$1" == inspect ]]; then
+    python3 - <<'PY'
+import json, os
+project = os.environ['LIBRARY_PROJECT_NAME']
+print(json.dumps([{'Config': {'Labels': {'com.docker.compose.project': project, 'com.docker.compose.service': 'backend'}}, 'Mounts': [{'Destination': '/app/uploads', 'Type': 'volume', 'Name': project+'_uploads'}]}, {'Config': {'Labels': {'com.docker.compose.project': project, 'com.docker.compose.service': 'mysql'}}, 'Image': 'sha256:'+'c'*64}]))
+PY
+    exit 0
+fi
+if [[ "$1" == run ]]; then
+    if [[ "$*" != *'--format=pax --numeric-owner -czpf - -C /app uploads' ]]; then cat > /dev/null; exit 0; fi
+    python3 - <<'PY'
+import io, sys, tarfile
+with tarfile.open(fileobj=sys.stdout.buffer, mode='w|gz') as archive:
+    root = tarfile.TarInfo('uploads'); root.type = tarfile.DIRTYPE; root.mode = 0o755
+    archive.addfile(root)
+    item = tarfile.TarInfo('uploads/synthetic.txt'); raw = b'disposable upload bytes\n'
+    item.size = len(raw); item.mode = 0o600; item.uid = 0; item.gid = 0
+    archive.addfile(item, io.BytesIO(raw))
+PY
+    exit 0
+fi
 shift
 project=''
 release=''
@@ -44,8 +65,12 @@ case "$1" in
         fi
         [[ "${LIBRARY_MOCK_FAILURE:-}" != dump ]] || exit 1
         printf 'disposable database dump\n';;
-    run) printf 'disposable upload archive\n';;
+    ps)
+        if [[ "$*" == 'ps -aq backend' && ( "$project" == library || -f "$LIBRARY_MOCK_EVENTS.backend-created" ) ]]; then printf '%064d\n' 1; fi
+        if [[ "$*" == 'ps -aq mysql' ]]; then printf '%064d\n' 2; fi;;
+    run) cat > /dev/null;;
     up)
+        if [[ "$*" == 'up --no-start --no-deps --no-recreate backend' ]]; then touch "$LIBRARY_MOCK_EVENTS.backend-created"; exit 0; fi
         [[ "${LIBRARY_MOCK_FAILURE:-}" != resume ]] || exit 1
         if [[ "${LIBRARY_MOCK_FAILURE:-}" == broken && "$APP_VERSION" == *-broken ]]; then exit 1; fi;;
 esac
@@ -57,6 +82,7 @@ for library_path in "$library_old" "$library_new"; do
     mkdir -p "$library_path/scripts" "$library_path/backend/target"
     printf 'disposable backend artifact: %s\n' "$library_path" > "$library_path/backend/target/library-backend.jar"
     cp "$library_repo/scripts/"{lib,backup,restore}.sh "$library_path/scripts/"
+    cp "$library_repo/scripts/restore_uploads.py" "$library_path/scripts/"
     cp "$library_repo/compose.yaml" "$library_path/compose.yaml"
     cp "$library_repo/.env.example" "$library_path/.env.example"
 done

@@ -39,11 +39,15 @@
           <el-input v-model="queryParams.keyword" placeholder="搜索读者/图书名称/ISBN" clearable style="width: 240px" :prefix-icon="Search" @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 140px">
+          <el-select v-model="queryParams.status" aria-label="借阅明细状态筛选" placeholder="全部状态" clearable style="width: 140px">
+            <el-option label="全部未还" value="ACTIVE" />
             <el-option label="借阅中" value="BORROWING" />
             <el-option label="已逾期" value="OVERDUE" />
             <el-option label="已归还" value="RETURNED" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="来源">
+          <el-select v-model="queryParams.origin" aria-label="借阅明细来源筛选" style="width: 150px"><el-option v-for="(label, value) in borrowOriginNames" :key="value" :label="label" :value="value" /></el-select>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
@@ -53,23 +57,40 @@
     </div>
 
     <div class="card-container">
+      <section class="inquiry-scope" aria-label="借阅查询范围">
+        <p>已应用筛选：关键词「{{ applied.keyword || '全部' }}」 · 状态 {{ applied.status ? borrowStatusNames[applied.status] : '全部状态' }} · 来源 {{ borrowOriginNames[applied.origin] }}</p>
+        <p v-if="unapplied" class="text-warning">筛选输入尚未应用；当前列表与导出仍使用上方已应用条件，请点击搜索更新。</p>
+        <template v-if="inquiryData">
+          <p>筛选结果共 {{ total }} 条借阅明细 · 查询时点 {{ inquiryData.asOf }}</p>
+          <p>迁入 {{ inquiryData.summary.imported }} 条 · 新柜台 {{ inquiryData.summary.counterOrder }} 条 · 本系统 {{ inquiryData.summary.system }} 条 · 待核实 {{ inquiryData.summary.unverified }} 条</p>
+          <p>{{ inquiryData.summary.scope }}</p>
+        </template>
+        <p>按当前筛选统计借阅明细条数；原系统累计借阅数、逐条明细与柜台订单数分别核对，不能混加。本页不表示办理订单次数。</p>
+        <p>借出、应还、归还日期当前仅保留日精度；未知或不限含义保持，页面与 CSV 均不补时分秒。</p>
+      </section>
       <div class="table-toolbar">
         <div class="toolbar-left">
           <el-button type="primary" @click="handleBorrow"><el-icon><Plus /></el-icon> 办理借阅</el-button>
           <el-button :disabled="!session?.canStart.value || !returnSelection.length" @click="openReturn(returnSelection)">预览归还所选 {{ returnSelection.length }} 册</el-button>
+          <el-button :disabled="!canExport" :loading="exportBusy" @click="inquiry.exportAll">导出全部筛选结果</el-button>
         </div>
         <div class="toolbar-right">
-          <el-tag type="info" effect="plain">共 {{ total }} 条记录</el-tag>
+          <el-tag v-if="inquiryData" type="info" effect="plain">共 {{ total }} 条借阅明细</el-tag>
         </div>
       </div>
+      <p v-if="exportBusy" role="status">正在生成全部筛选结果 CSV（最多 20000 条，超限请缩小筛选）。</p>
+      <p v-if="lastExport" role="status">已导出 {{ lastExport.total }} 条 · 导出时点 {{ lastExport.asOf }}。导出按该时点的完整筛选结果生成。</p>
+      <el-alert v-if="exportError" :title="exportError" type="error" :closable="false" />
+      <section v-if="inquiryError" role="alert"><p>{{ inquiryError }}</p><el-button @click="fetchBorrowList">重新读取借阅明细</el-button></section>
 
       <el-table v-loading="loading" :data="borrowList" stripe border size="default" row-key="id" row-class-name="borrow-row" style="width: 100%" @selection-change="selectReturns">
-        <el-table-column type="selection" width="45" :selectable="(row: BorrowRecord) => row.status === 'BORROWING' || row.status === 'OVERDUE'" />
-        <el-table-column prop="id" label="ID" width="65" align="center" />
+        <el-table-column type="selection" width="45" :selectable="(row: BorrowInquiryRecord) => row.status === 'BORROWING' || row.status === 'OVERDUE'" />
+        <el-table-column prop="id" label="借阅明细编号" width="120" align="center" />
+        <el-table-column label="来源 / 明确柜台订单" min-width="175"><template #default="{ row }">{{ borrowOriginNames[row.origin as BorrowOrigin] }}<br /><el-button v-if="row.counterOrderId !== null" type="primary" link @click="showOrder(row.counterOrderId)">柜台订单 #{{ row.counterOrderId }}</el-button><span v-else>无明确柜台订单关联</span></template></el-table-column>
         <el-table-column label="读者信息" min-width="140">
           <template #default="{ row }">
             <div class="user-cell">
-              <strong>{{ row.userName }}</strong>
+              <strong>{{ row.userName ?? '原姓名未提供' }}</strong>
               <span class="sub">{{ row.userRealName || '-' }}</span>
             </div>
           </template>
@@ -81,7 +102,7 @@
                 <img :src="getCoverUrl(row.bookCoverImage)" alt="" @error="(e: Event) => (e.target as HTMLImageElement).style.display = 'none'" />
               </div>
               <div class="book-text">
-                <strong>{{ row.bookTitle }}</strong>
+                <strong>{{ row.bookTitle ?? '原书名未提供' }}</strong>
                 <span class="isbn">{{ row.bookIsbn || '-' }}</span>
                 <span v-if="row.copyBarcode" class="isbn">馆内条码：{{ row.copyBarcode }}</span>
               </div>
@@ -94,7 +115,7 @@
         <el-table-column prop="dueDate" label="应还日期" width="120">
           <template #default="{ row }">
             <span :class="{ 'text-danger': isOverdue(row), 'text-warning': isDueSoon(row) }">
-              {{ dueDateText(row) }}
+              {{ inquiryDueDateText(row) }}
             </span>
           </template>
         </el-table-column>
@@ -116,8 +137,9 @@
             <el-tag :type="getStatusType(row.status)" size="small" effect="dark">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="250" align="center" fixed="right">
           <template #default="{ row }">
+            <el-button v-if="user.isAdmin" type="primary" link size="small" @click="openHistory(row.id)">历史资料</el-button>
             <template v-if="row.status === 'BORROWING' || row.status === 'OVERDUE'">
               <el-button type="danger" link size="small" @click="handleReturn(row)">归还</el-button>
               <el-button
@@ -133,15 +155,17 @@
         </el-table-column>
       </el-table>
 
-      <div class="pagination-wrapper">
+      <p v-if="inquiryData && borrowList.length === 0 && !loading" class="inquiry-empty">当前筛选暂无借阅明细。</p>
+      <div v-if="inquiryData && !loading && !inquiryError" class="pagination-wrapper">
         <el-pagination
-          v-model:current-page="queryParams.page"
-          v-model:page-size="queryParams.size"
+          :current-page="pagination.page"
+          :page-size="pagination.size"
           :total="total"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
           background
-          @change="fetchBorrowList"
+          @current-change="inquiry.changePage"
+          @size-change="inquiry.changeSize"
         />
       </div>
     </div>
@@ -151,28 +175,32 @@
     <CounterBorrowDialog :key="draftEpoch" v-model:visible="counterVisible" :can-start="session?.canStart.value ?? false" :busy="session?.busy.value" @preview="previewCirculation" />
     <ReturnDialog v-model:visible="returnVisible" :can-start="session?.canStart.value ?? false" :busy="session?.busy.value" :initial-records="initialReturns" @preview="previewCirculation" />
     <BorrowOrderDrawer v-model:visible="orderVisible" :order-id="selectedOrderId" :can-start="session?.canStart.value ?? false" :refresh="orderRefresh" @return-records="openReturn" />
+    <HistoryContextDrawer v-if="user.isAdmin" v-model:visible="historyVisible" entity-type="borrows" :entity-id="historyBorrowId" />
   </div>
   <el-empty v-else description="仅当前有效的管理员和馆员可办理借还，请重新登录核对权限。" />
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, shallowRef, watch, onUnmounted } from 'vue'
+import { ref, computed, shallowRef, watch, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
-import { getBorrowPage, returnBook } from '@/api/borrow'
+import { returnBook } from '@/api/borrow'
+import { borrowOriginNames, borrowStatusNames, type BorrowInquiryRecord, type BorrowOrigin } from '@/api/borrowInquiry'
+import { useBorrowInquiry } from './borrowInquiry'
 import type { BorrowRecord } from '@/types'
 import BorrowDialog from './components/BorrowDialog.vue'
 import RenewDialog from './components/RenewDialog.vue'
 import { dueDateText } from '@/utils/borrowDates'
 import { useUserStore } from '@/store/modules/user'
 import { searchUsers, type BorrowerSummary } from '@/api/user'
-import { createCirculationApi, type BorrowOrder, type CirculationInput, type OrderState, type ReturnSelection } from '@/api/circulation'
+import { createCirculationApi, type BorrowOrder, type CirculationInput, type DueDateKind, type OrderState, type ReturnSelection } from '@/api/circulation'
 import { useCirculationSession, type CirculationSession } from './circulationSession'
 import { circulationProblem } from './circulationProtocol'
 import CounterBorrowDialog from './components/CounterBorrowDialog.vue'
 import ReturnDialog from './components/ReturnDialog.vue'
 import BorrowOrderDrawer from './components/BorrowOrderDrawer.vue'
 import CirculationRequestPanel from './components/CirculationRequestPanel.vue'
+import HistoryContextDrawer from '@/components/HistoryContextDrawer.vue'
 
 const user = useUserStore(), accessDenied = ref(false), canRead = computed(() => !accessDenied.value && (user.isAdmin || user.isLibrarian))
 const session = shallowRef<CirculationSession | null>(null)
@@ -181,29 +209,30 @@ const draftEpoch = ref(0)
 const orders = ref<BorrowOrder[]>([]), ordersLoading = ref(false), orderError = ref(''), orderPage = ref(1), orderTotal = ref(0)
 const orderUserId = ref<number>(), orderState = ref<OrderState | ''>(''), orderReaders = ref<BorrowerSummary[]>([]), orderReadersLoading = ref(false)
 const orderVisible = ref(false), selectedOrderId = ref<number | null>(null), orderRefresh = ref(0)
-let orderSequence = 0, orderReaderSequence = 0, borrowSequence = 0
+let orderSequence = 0, orderReaderSequence = 0
 
-const loading = ref(false)
-const borrowList = ref<BorrowRecord[]>([])
-const total = ref(0)
+const inquiry = useBorrowInquiry(() => ({ id: user.userInfo?.id, role: user.userInfo?.role, token: user.token }))
+const { draft: queryParams, pagination, applied, data: inquiryData, records: borrowList, total, loading, error: inquiryError, exportBusy, exportError, lastExport, canExport, unapplied } = inquiry
+watch(borrowList, () => { returnSelection.value = [] }, { flush: 'sync' })
 const borrowDialogVisible = ref(false)
 const renewDialogVisible = ref(false)
 const renewRecord = ref<BorrowRecord | null>(null)
-
-const queryParams = reactive({ page: 1, size: 10, keyword: '', status: undefined as string | undefined })
+const historyVisible = ref(false), historyBorrowId = ref<number | null>(null)
+function openHistory(id: number) { if (user.isAdmin && user.token && canRead.value) { historyBorrowId.value = id; historyVisible.value = true } }
 
 watch(() => [user.userInfo?.id,user.userInfo?.role,user.token], () => {
   session.value?.dispose(); session.value = null; accessDenied.value = false
-  ++orderSequence; ++borrowSequence; ++orderReaderSequence; orders.value = []; borrowList.value = []; total.value = 0; orderTotal.value = 0
+  ++orderSequence; ++orderReaderSequence; orders.value = []; orderTotal.value = 0
   orderReaders.value = []; orderUserId.value = undefined; returnSelection.value = []; initialReturns.value = []; selectedOrderId.value = null
   counterVisible.value = false; returnVisible.value = false; orderVisible.value = false; borrowDialogVisible.value = false; renewDialogVisible.value = false
+  historyVisible.value = false; historyBorrowId.value = null
   const actor = user.userInfo?.id, token = user.token
   if (canRead.value && actor && Number.isSafeInteger(actor)) {
     session.value = useCirculationSession(actor,() => canRead.value && user.userInfo?.id === actor && user.token === token,createCirculationApi(token))
-    fetchBorrowList(); loadOrders()
+    loadOrders()
   }
 },{immediate:true})
-function accessInvalidated() { accessDenied.value = true; ++orderSequence; ++borrowSequence; ++orderReaderSequence; orders.value = []; borrowList.value = []; orderReaders.value = []; returnSelection.value = []; initialReturns.value = []; counterVisible.value = false; returnVisible.value = false; orderVisible.value = false }
+function accessInvalidated() { accessDenied.value = true; ++orderSequence; ++orderReaderSequence; orders.value = []; orderReaders.value = []; returnSelection.value = []; initialReturns.value = []; counterVisible.value = false; returnVisible.value = false; orderVisible.value = false; historyVisible.value = false; historyBorrowId.value = null }
 window.addEventListener('auth-access-invalidated',accessInvalidated)
 onUnmounted(() => { session.value?.dispose(); window.removeEventListener('auth-access-invalidated',accessInvalidated) })
 
@@ -223,30 +252,20 @@ async function searchOrderReaders(keyword:string) {
 }
 const orderStateText = (state:string) => state === 'RETURNED' ? '全部归还' : state === 'PARTIALLY_RETURNED' ? '部分归还' : '在借'
 function showOrder(id:number) { selectedOrderId.value = id; orderVisible.value = true }
-function selectReturns(rows:BorrowRecord[]) { returnSelection.value = rows.filter(row => row.status === 'BORROWING' || row.status === 'OVERDUE').map(row => ({id:row.id,bookTitle:row.bookTitle,copyBarcode:row.copyBarcode,userName:row.userName,dueDate:row.dueDate,dueDateKind:row.dueDateKind})) }
+function knownDueKind(kind: string | null): DueDateKind | undefined { return kind === 'DATED' || kind === 'UNLIMITED' || kind === 'UNKNOWN' ? kind : undefined }
+function inquiryDueDateText(record: BorrowInquiryRecord) { return dueDateText({ dueDate: record.dueDate, dueDateKind: knownDueKind(record.dueDateKind) }) }
+function selectReturns(rows:BorrowInquiryRecord[]) { returnSelection.value = rows.filter(row => row.status === 'BORROWING' || row.status === 'OVERDUE').map(row => ({id:row.id,bookTitle:row.bookTitle ?? '原书名未提供',copyBarcode:row.copyBarcode,userName:row.userName,dueDate:row.dueDate,dueDateKind:knownDueKind(row.dueDateKind)})) }
 function openReturn(records:ReturnSelection[]) { if (!session.value?.canStart.value || !canRead.value) return; orderVisible.value = false; initialReturns.value = records.map(row => ({...row})); returnVisible.value = true }
 async function previewCirculation(input:CirculationInput) { if (!session.value?.canStart.value) return; counterVisible.value = false; returnVisible.value = false; await session.value.start(input) }
 function circulationSuccess() { returnSelection.value = []; initialReturns.value = []; ++orderRefresh.value; fetchBorrowList(); loadOrders() }
 
-async function fetchBorrowList() {
-  if (!canRead.value) return
-  const sequence = ++borrowSequence
-  returnSelection.value = []
-  loading.value = true
-  try {
-    const res = await getBorrowPage(queryParams)
-    if (sequence === borrowSequence && canRead.value) { borrowList.value = res?.records || []; total.value = res?.total || 0 }
-  } catch {
-    if (sequence === borrowSequence) { borrowList.value = []; total.value = 0 }
-  } finally { if (sequence === borrowSequence) loading.value = false }
-}
-
-function handleSearch() { queryParams.page = 1; fetchBorrowList() }
-function resetQuery() { Object.assign(queryParams, { page: 1, keyword: '', status: undefined }); fetchBorrowList() }
+function fetchBorrowList() { returnSelection.value = []; return inquiry.reload() }
+function handleSearch() { returnSelection.value = []; inquiry.apply() }
+function resetQuery() { returnSelection.value = []; inquiry.reset() }
 
 function handleBorrow() { borrowDialogVisible.value = true }
 
-async function handleReturn(record: BorrowRecord) {
+async function handleReturn(record: BorrowInquiryRecord) {
   try {
     await ElMessageBox.confirm(
       `确认归还《${record.bookTitle}》？\n读者：${record.userName}\n${isOverdue(record) ? '⚠️ 该书已逾期' : ''}`,
@@ -259,33 +278,34 @@ async function handleReturn(record: BorrowRecord) {
   } catch {}
 }
 
-function handleRenew(record: BorrowRecord) {
+function handleRenew(record: BorrowInquiryRecord) {
+  if (record.status !== 'BORROWING' && record.status !== 'OVERDUE') return
   if (record.renewCount >= 2) { ElMessage.warning('续借次数已达上限'); return }
-  renewRecord.value = record
+  renewRecord.value = { ...record, userName: record.userName ?? '', bookTitle: record.bookTitle ?? '', borrowDate: record.borrowDate ?? '', returnDate: record.returnDate ?? '', remark: record.remark ?? '', status: record.status, copyId: record.copyId ?? undefined, copyBarcode: record.copyBarcode ?? undefined, dueDateKind: knownDueKind(record.dueDateKind) }
   renewDialogVisible.value = true
 }
 
-function formatDate(dateStr?: string): string { if (!dateStr) return '-'; return dateStr.split('T')[0] }
+function formatDate(dateStr?: string | null): string { if (!dateStr) return '-'; return dateStr.split('T')[0] }
 
-function isOverdue(record: BorrowRecord): boolean {
+function isOverdue(record: BorrowInquiryRecord): boolean {
   if (!record.dueDate) return false
   return record.status === 'OVERDUE' || (record.status === 'BORROWING' && new Date(record.dueDate) < new Date())
 }
 
-function isDueSoon(record: BorrowRecord): boolean {
+function isDueSoon(record: BorrowInquiryRecord): boolean {
   if (record.status !== 'BORROWING' || !record.dueDate) return false
   const diff = new Date(record.dueDate).getTime() - new Date().getTime()
   return diff > 0 && diff <= 3 * 24 * 60 * 60 * 1000
 }
 
-function getStatusType(status: string): string {
+function getStatusType(status: string | null): string {
   const map: Record<string, string> = { BORROWING: '', RETURNED: 'success', OVERDUE: 'danger' }
-  return map[status] || ''
+  return status === null ? 'info' : Object.prototype.hasOwnProperty.call(map, status) ? map[status] : ''
 }
 
-function getStatusText(status: string): string {
+function getStatusText(status: string | null): string {
   const map: Record<string, string> = { BORROWING: '借阅中', RETURNED: '已归还', OVERDUE: '逾期' }
-  return map[status] || status
+  return status === null ? '待核实' : Object.prototype.hasOwnProperty.call(map, status) ? map[status] : status
 }
 
 function getCoverUrl(url: string) {
@@ -298,6 +318,7 @@ function getCoverUrl(url: string) {
 
 <style lang="scss" scoped>
 .borrow-management {
+  .inquiry-scope { margin-bottom: 16px; color: var(--text-secondary); font-size: 13px; line-height: 1.7; p { margin: 5px 0; } }
   .circulation-orders { margin-bottom: 20px; h3 { margin: 0 0 16px; } }
   .page-header {
     margin-bottom: 20px;

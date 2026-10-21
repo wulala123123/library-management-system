@@ -9,6 +9,7 @@ vi.mock('@/api/dashboard', () => ({
   getBorrowTrend: vi.fn().mockResolvedValue([]), getCategoryDistribution: vi.fn().mockResolvedValue([]), getHotBooks: vi.fn().mockResolvedValue([]),
 }))
 vi.mock('@/api/book', () => ({ getBookPage: api.books }))
+vi.mock('@/api/managementReports', async original => ({ ...await original<object>(), createManagementReportsApi: () => ({ listPage: (_kind: string, query: object) => api.books(query) }) }))
 vi.mock('@/api/borrow', () => ({ getBorrowPage: api.borrows, getMyBorrows: api.mine }))
 vi.mock('@/store/modules/user', () => ({ useUserStore: () => api.user }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }))
