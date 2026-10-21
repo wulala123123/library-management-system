@@ -116,8 +116,9 @@
             <el-tag :type="getStatusType(row.status)" size="small" effect="dark">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="250" align="center" fixed="right">
           <template #default="{ row }">
+            <el-button v-if="user.isAdmin" type="primary" link size="small" @click="openHistory(row.id)">历史资料</el-button>
             <template v-if="row.status === 'BORROWING' || row.status === 'OVERDUE'">
               <el-button type="danger" link size="small" @click="handleReturn(row)">归还</el-button>
               <el-button
@@ -151,6 +152,7 @@
     <CounterBorrowDialog :key="draftEpoch" v-model:visible="counterVisible" :can-start="session?.canStart.value ?? false" :busy="session?.busy.value" @preview="previewCirculation" />
     <ReturnDialog v-model:visible="returnVisible" :can-start="session?.canStart.value ?? false" :busy="session?.busy.value" :initial-records="initialReturns" @preview="previewCirculation" />
     <BorrowOrderDrawer v-model:visible="orderVisible" :order-id="selectedOrderId" :can-start="session?.canStart.value ?? false" :refresh="orderRefresh" @return-records="openReturn" />
+    <HistoryContextDrawer v-if="user.isAdmin" v-model:visible="historyVisible" entity-type="borrows" :entity-id="historyBorrowId" />
   </div>
   <el-empty v-else description="仅当前有效的管理员和馆员可办理借还，请重新登录核对权限。" />
 </template>
@@ -173,6 +175,7 @@ import CounterBorrowDialog from './components/CounterBorrowDialog.vue'
 import ReturnDialog from './components/ReturnDialog.vue'
 import BorrowOrderDrawer from './components/BorrowOrderDrawer.vue'
 import CirculationRequestPanel from './components/CirculationRequestPanel.vue'
+import HistoryContextDrawer from '@/components/HistoryContextDrawer.vue'
 
 const user = useUserStore(), accessDenied = ref(false), canRead = computed(() => !accessDenied.value && (user.isAdmin || user.isLibrarian))
 const session = shallowRef<CirculationSession | null>(null)
@@ -189,6 +192,8 @@ const total = ref(0)
 const borrowDialogVisible = ref(false)
 const renewDialogVisible = ref(false)
 const renewRecord = ref<BorrowRecord | null>(null)
+const historyVisible = ref(false), historyBorrowId = ref<number | null>(null)
+function openHistory(id: number) { if (user.isAdmin && user.token && canRead.value) { historyBorrowId.value = id; historyVisible.value = true } }
 
 const queryParams = reactive({ page: 1, size: 10, keyword: '', status: undefined as string | undefined })
 
@@ -197,13 +202,14 @@ watch(() => [user.userInfo?.id,user.userInfo?.role,user.token], () => {
   ++orderSequence; ++borrowSequence; ++orderReaderSequence; orders.value = []; borrowList.value = []; total.value = 0; orderTotal.value = 0
   orderReaders.value = []; orderUserId.value = undefined; returnSelection.value = []; initialReturns.value = []; selectedOrderId.value = null
   counterVisible.value = false; returnVisible.value = false; orderVisible.value = false; borrowDialogVisible.value = false; renewDialogVisible.value = false
+  historyVisible.value = false; historyBorrowId.value = null
   const actor = user.userInfo?.id, token = user.token
   if (canRead.value && actor && Number.isSafeInteger(actor)) {
     session.value = useCirculationSession(actor,() => canRead.value && user.userInfo?.id === actor && user.token === token,createCirculationApi(token))
     fetchBorrowList(); loadOrders()
   }
 },{immediate:true})
-function accessInvalidated() { accessDenied.value = true; ++orderSequence; ++borrowSequence; ++orderReaderSequence; orders.value = []; borrowList.value = []; orderReaders.value = []; returnSelection.value = []; initialReturns.value = []; counterVisible.value = false; returnVisible.value = false; orderVisible.value = false }
+function accessInvalidated() { accessDenied.value = true; ++orderSequence; ++borrowSequence; ++orderReaderSequence; orders.value = []; borrowList.value = []; orderReaders.value = []; returnSelection.value = []; initialReturns.value = []; counterVisible.value = false; returnVisible.value = false; orderVisible.value = false; historyVisible.value = false; historyBorrowId.value = null }
 window.addEventListener('auth-access-invalidated',accessInvalidated)
 onUnmounted(() => { session.value?.dispose(); window.removeEventListener('auth-access-invalidated',accessInvalidated) })
 

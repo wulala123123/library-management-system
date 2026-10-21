@@ -55,11 +55,13 @@
         </section>
         <section v-if="userStore.isAdmin" class="source-section">
           <h3>来源与修订</h3>
+          <el-button @click="openHistory">历史资料</el-button>
           <p class="note">来源：{{ displayValue(member.sourceSystem, '本系统') }} · {{ displayValue(member.sourceKey) }}；修订版本：{{ member.revision }}；最近修订：{{ displayValue(member.updatedAt, '未记录') }}</p>
         </section>
       </template>
       <p v-else-if="!loading">会员资料暂不可用。</p>
     </div>
+    <HistoryContextDrawer v-if="visible && userStore.isAdmin && member" v-model:visible="historyVisible" entity-type="members" :entity-id="member.id" />
     <template #footer>
       <el-button @click="close(false)">关闭</el-button>
       <el-button v-if="userStore.isAdmin && member" type="primary" @click="emit('edit', member)">编辑会员</el-button>
@@ -76,6 +78,7 @@ import { displayValue } from '@/utils/display'
 import { dueDateText } from '@/utils/borrowDates'
 import MemberBenefits from './MemberBenefits.vue'
 import MemberEntitlementPanel from './MemberEntitlementPanel.vue'
+import HistoryContextDrawer from '@/components/HistoryContextDrawer.vue'
 const props = defineProps<{ visible: boolean; memberId: number | null }>()
 const emit = defineEmits<{ (e: 'update:visible', value: boolean): void; (e: 'edit', value: MemberDetail): void }>()
 const userStore = useUserStore()
@@ -85,13 +88,16 @@ const canRead = computed(() => !accessInvalidated.value && userStore.token !== '
 const member = ref<MemberDetail | null>(null)
 const financeTarget = computed(() => member.value && Number.isSafeInteger(member.value.id) && member.value.id > 0 ? String(member.value.id) : null)
 const loading = ref(false)
+const historyVisible = ref(false)
 let requestNumber = 0
 const precisionText: Record<string, string> = { DAY: '日', MONTH: '月', YEAR: '年', UNKNOWN: '待核实' }
 const borrowStateText = (state: string) => ({ BORROWING: '借阅中', OVERDUE: '已逾期', RETURNED: '已归还' }[state] ?? state)
-function close(value: boolean) { emit('update:visible', value) }
+function close(value: boolean) { historyVisible.value = false; emit('update:visible', value) }
+function openHistory() { if (props.visible && userStore.isAdmin && canRead.value && member.value) historyVisible.value = true }
 function openFinance() { if (!userStore.isAdmin || !financeTarget.value || !props.visible) return; const memberId=financeTarget.value;close(false);router.push({path:`/member-finance/${memberId}`}) }
 async function refresh() {
   const request = ++requestNumber
+  historyVisible.value = false
   member.value = null
   if (!props.visible || props.memberId == null || !canRead.value) { loading.value = false; return }
   loading.value = true
@@ -99,7 +105,7 @@ async function refresh() {
   catch { /* The request layer displays the failure. */ }
   finally { if (request === requestNumber) loading.value = false }
 }
-function invalidateAccess() { accessInvalidated.value=true; ++requestNumber; member.value=null; loading.value=false }
+function invalidateAccess() { accessInvalidated.value=true; ++requestNumber; member.value=null; loading.value=false; historyVisible.value=false }
 window.addEventListener('auth-access-invalidated',invalidateAccess)
 window.addEventListener('member-finance-access-revoked',invalidateAccess)
 onBeforeUnmount(()=>{++requestNumber;member.value=null;window.removeEventListener('auth-access-invalidated',invalidateAccess);window.removeEventListener('member-finance-access-revoked',invalidateAccess)})

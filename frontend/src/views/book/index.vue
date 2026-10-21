@@ -69,7 +69,7 @@
             <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '在馆' : '下架' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="520" align="center" fixed="right">
+        <el-table-column label="操作" width="590" align="center" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleEdit(row)">书目资料</el-button>
             <el-button type="primary" link size="small" @click="openPublication(row.id)">出版资料补录</el-button>
@@ -77,6 +77,7 @@
             <el-button type="primary" link size="small" @click="openAttributes(row.id)">属性</el-button>
             <el-button type="primary" link size="small" @click="membershipBookId = row.id; membershipVisible = true">套装关系</el-button>
             <el-button v-if="user.isAdmin" type="primary" link size="small" @click="openSource(row.id)">来源核对</el-button>
+            <el-button v-if="user.isAdmin" type="primary" link size="small" @click="openHistory(row.id)">历史资料</el-button>
             <el-button type="primary" link size="small" @click="handleIntake(row)">登记实体册</el-button>
             <el-button type="success" link size="small" @click="handleBorrow(row)">借阅</el-button>
             <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
@@ -103,12 +104,13 @@
     <CatalogIdentityDialog v-model:visible="identityVisible" :book-id="identityBookId" @success="fetchBookList" />
     <CatalogPublicationDialog v-model:visible="publicationVisible" :book-id="publicationBookId" :batch="publicationBookId === null" @success="fetchBookList" />
     <BookSourceAdoptionDialog v-if="user.isAdmin" v-model:visible="sourceVisible" :book-id="sourceBookId" @success="fetchBookList" />
+    <HistoryContextDrawer v-if="user.isAdmin" v-model:visible="historyVisible" entity-type="books" :entity-id="historyBookId" />
   </div>
   <el-empty v-else description="仅管理员和馆员可管理书目与实体册。" />
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BookDialog from './components/BookDialog.vue'
@@ -119,6 +121,7 @@ import CatalogPublicationDialog from './components/CatalogPublicationDialog.vue'
 import BookSetMemberships from '@/views/catalog-sets/BookSetMemberships.vue'
 import BookSourceAdoptionDialog from './components/BookSourceAdoptionDialog.vue'
 import CatalogAttributeFilters from '@/components/catalog/CatalogAttributeFilters.vue'
+import HistoryContextDrawer from '@/components/HistoryContextDrawer.vue'
 import { useUserStore } from '@/store/modules/user'
 import { deleteBook } from '@/api/book'
 import { getCatalogBooks, type CatalogBook } from '@/api/catalogAttribute'
@@ -142,6 +145,9 @@ const attributeVisible = ref(false), attributeBookId = ref<number | null>(null),
 const identityVisible = ref(false), identityBookId = ref<number | null>(null)
 const publicationVisible = ref(false), publicationBookId = ref<number | null>(null)
 const membershipVisible = ref(false), membershipBookId = ref<number | null>(null)
+const historyVisible = ref(false), historyBookId = ref<number | null>(null)
+function openHistory(id: number) { if (user.isAdmin && user.token) { historyBookId.value = id; historyVisible.value = true } }
+watch(() => [user.userInfo?.id, user.userInfo?.role, user.token, user.isAdmin], () => { historyVisible.value = false; historyBookId.value = null }, { flush: 'sync' })
 function openPublication(id: number | null) { if (!canManage.value || (id === null && !user.isAdmin)) return; publicationBookId.value = id; publicationVisible.value = true }
 function openAttributes(id: number) { attributeBookId.value = id; attributeVisible.value = true }
 function openIdentity(id: number) { identityBookId.value = id; identityVisible.value = true }
