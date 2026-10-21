@@ -28,6 +28,7 @@
 - [管理员只读财务台账上线验收](member-finance-readonly-2026-10-20.md)
 - [当天柜台收款实现与发布记录（进行中）](member-finance-receipts-2026-10-20.md)
 - [未升级生产的 V17 服务恢复](preupgrade-v17-service-recovery-2026-10-21.md)
+- [柜台多本借还与验证范围收敛](counter-circulation-2026-10-21.md)
 
 ## 候选包来源
 

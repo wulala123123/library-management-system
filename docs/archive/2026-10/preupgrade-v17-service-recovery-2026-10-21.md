@@ -30,3 +30,19 @@
 私有游标为 `logs/circulation-stage5/recovery.json`，其 `activeV17Reopen` 定位本次 `success.json` 的准确 SHA256、批准、独立公网、浏览器及最终验收。恢复源码 `manager-run-v1/restore_current_v17_v3.py` 的 SHA256 为 `ed43e70a022cdaf6cb538ee57c2760f091f126a6e4e6229af05b51a80b36da6f`。相对证据均位于私有 `logs/circulation-stage5/`，不随公开文档提交。
 
 候选 `a39bfaf8435b6d1d242f53f1bcfabc878a7d66e1` 已通过 [Verify 39485535420](https://github.com/wulala123123/library-management-system/actions/runs/39485535420)，但新 Linux 资格、两轮全新备份隔离恢复及生产 P/OPEN 仍待完成。本次恢复不替代这些门槛，不重复原演练或恢复入口。
+
+## 当日后续维护中断与恢复
+
+以下为同日后续操作，保留上文首次恢复及原失败结论。用户曾授权核验后维护发布；新图Linux资格及独立验收通过后，新R1完成原版完整查询和隔离V18升级保值，进入新版完整查询。真实990种书目的逐书回归与重复环境读取导致维护过长。用户随后在“查看验证进度与耗时原因”聊天要求控制停机、优先恢复V17，并调整未来发布流程。
+
+截至2026-10-21北京时间16:17，原V17已再次恢复并通过只读验收：
+
+- 核对准确PID、启动标识、命令SHA及锁后仅发送一次SIGINT；R1以KeyboardInterrupt保留失败，进程退出、锁释放。新版查询未完成，R1不判通过；R2、P、OPEN均未启动。
+- 只清理本轮准确隔离容器、卷与网络，最终均为0，完整保留备份、原失败及部分查询。生产未安装或迁移V18，仍为原77表/V17。
+- 清理后、启动前及仅后端启动后完整核对77表全部原值、19类元数据与全部next-ID，原非空财务数据和2026-10-20收款锚点保持。未回灌、导入、清库或重建生产容器。
+- 以新一次性批准启动原准确后端和前端；原MySQL完整身份、应用容器ID/镜像/配置/挂载、环境、上传及其他服务保持。应用StartedAt仅绑定本次实际启动值。
+- 最后启动后的原JAR、97份完整静态和97份实际私网HTTP字节通过；三个服务健康。独立公网核对借阅页及JS/CSS共3项通过，内置浏览器刷新后借阅标题、表格、办理借阅及归还控件正常，无加载错误，未提交业务动作。
+
+本次准确私有入口为`logs/circulation-stage5/recovery.json`中的`currentPriorityAdjustment`、`v17RestoreCurrentR1Steps`及`activeV17Reopen`。恢复源码为`manager-run-v4/reopen_original_v17_v1.py`，SHA256为`40a62c3afe8a69e0b4a6c68bb7499bdcaaf4db94d0b1f3357c05cad7024ef86b`；实际成功回执SHA256为`14275c55a3d1ef0cc35c642d7bc937c5f446f46c8aafec55c9aa8d525b02108d`。独立公网和浏览器结果在同游标定位，真实数据与配置不进入Git。
+
+生产继续`c24dd21`/V17营业；候选a39bfaf的代码、完整CI、产物、资格及部分演练证据保留，新柜台多本借阅尚未上线。原R1/R2/P/OPEN及全部已消费入口冻结，不继续旧编排。后续按[发布验证与维护时间](../../operations/release-validation.md)先验证真实规模与预算内的新方案，长回归放在停服前的隔离环境；完整CI、全数据保全和两份新备要求保持。套餐及资金后续继续暂缓。

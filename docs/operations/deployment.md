@@ -2,6 +2,8 @@
 
 本页维护当前安装、更新、代理和恢复步骤。项目状态见 [PROJECT](../../PROJECT.md)，发布前通过[完整验证](../development/testing.md)，使用目标提交的 `verified-distribution` 及配套校验文件。历史服务器操作与验收见[档案](../archive/README.md)。
 
+新批次及重新审查后的编排按[发布验证与维护时间](release-validation.md)确定范围、真实规模耗时、维护预算与退出路径。本页各版本专项段落保留兼容和数据安全限制；旧的完整 HTTP 清单复用时须重新审查适用范围，不能自动累加。在途已批准图及历史证据不因本文变化而改判。
+
 ## 发布目录
 
 发布 ZIP 只有一个版本目录，包含 `compose.yaml`、`compose.sub2api.yaml`、`backend/target/library-backend.jar`、两个 Dockerfile、`frontend/dist`、代理模板、运维脚本和文档。数据库迁移位于 JAR 内。包中不包含 `.env`、SSH 密钥、运行上传目录或开发依赖。ZIP 附带 SHA256 校验文件。

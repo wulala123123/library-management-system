@@ -29,7 +29,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate project documentation
-        run: python3 scripts/check_docs.py
+        run: |
+          python3 scripts/check_docs.py
+          python3 -B scripts/test_release_validation_plan.py
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "17", cache: maven }
       - uses: actions/setup-node@v4

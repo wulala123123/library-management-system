@@ -3,6 +3,7 @@
 | 主题 | 操作入口 |
 | --- | --- |
 | 安装、更新、代理、备份与恢复 | [部署与恢复](deployment.md) |
+| 验证范围、维护预算与超时处理 | [发布验证与维护时间](release-validation.md) |
 | 数据库结构升级和旧库接管 | [数据库迁移](database-migrations.md) |
 | 来源数据导入及定向修正 | [数据承接](data-transfer.md) |
 | 代理 Compose 模板 | [sub2api 示例](sub2api-compose.example.yml) |

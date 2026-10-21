@@ -18,9 +18,9 @@
 
 已具备基础借还、逐册迁入、历史资料查询和公网 HTTPS 访问。会员经营规则及统计仍有待修正，现行行为由[领域规范](docs/specs/README.md)记录。
 
-当前部署代码为 `c24dd21fa34578f5e56e707e34690856ea374879`/V17，已通过 [Verify 39381924528](https://github.com/wulala123123/library-management-system/actions/runs/39381924528)，当天实收登记已启用，固定起点为2026-10-20北京时间00:00。完整发布和启用证据见[当天收款记录](docs/archive/2026-10/member-finance-receipts-2026-10-20.md)；原V16结果见[只读财务台账记录](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)。服务器操作前仍需现场核对实际版本。
+当前部署代码为 `a39bfaf8435b6d1d242f53f1bcfabc878a7d66e1`/V18，已通过 [Verify 39485535420](https://github.com/wulala123123/library-management-system/actions/runs/39485535420)。2026-10-21完成B50-A柜台多本借阅订单、逐册关联与批量归还的两份新备恢复升级、生产发布及公网/浏览器验收，三个服务健康并已开放，实际维护42.2分钟；完整记录见[柜台借还发布](docs/archive/2026-10/counter-circulation-2026-10-21.md)。本批仅完成阶段5的独立部分，套餐限制、计次及资金后续仍未启用。当天实收登记及2026-10-20固定起点保持，原[当天收款记录](docs/archive/2026-10/member-finance-receipts-2026-10-20.md)有效。
 
-B50借还发布演练已发现并修复既有分页排序问题，新候选a39bfaf已通过完整Verify，尚未上线。用户于2026-10-21批准先恢复现有V17，原前后端已恢复，三个服务健康，公网和浏览器借阅页通过；数据保值及恢复证据见[当次记录](docs/archive/2026-10/preupgrade-v17-service-recovery-2026-10-21.md)，后续发布位置见PLAN。
+原长维护失败及V17恢复保留在[恢复记录](docs/archive/2026-10/preupgrade-v17-service-recovery-2026-10-21.md)，已消费入口不重跑。本批已将验证职责、范围、复用和结束条件统一到[测试与发布检查](docs/development/testing.md)，按[维护时间规范](docs/operations/release-validation.md)先验证真实规模和预算；后续只补实际变更风险，不因换聊天或工具调整重做已完成产品全套。服务器操作前仍须现场核对实际版本。
 
 ## 总体路线
 
