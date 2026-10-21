@@ -29,7 +29,7 @@
 - [当天柜台收款实现与发布记录（进行中）](member-finance-receipts-2026-10-20.md)
 - [未升级生产的 V17 服务恢复](preupgrade-v17-service-recovery-2026-10-21.md)
 - [柜台多本借还与验证范围收敛](counter-circulation-2026-10-21.md)
-- [历史资料衔接首批（待完整CI及上线）](history-context-2026-10-21.md)
+- [历史资料衔接首批（已验证、未上线）](history-context-2026-10-21.md)
 
 ## 候选包来源
 

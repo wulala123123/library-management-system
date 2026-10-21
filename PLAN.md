@@ -7,12 +7,12 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | B60/B61历史资料衔接首批：会员、书目及借阅入口关联已存来源档案，区分迁入/新柜台/本系统记录；不猜配旧订单，套餐及全部资金后续仍暂缓 |
-| 工作项状态 | 历史只读接口与三处入口已审，H2/真实MySQL各36项、门控3项、前端57项及构建过。首轮完整CI因旧测试连接数耗尽失败；仅修测试池空闲回收后重验。无迁移/回填，生产仍a39bfaf/V18，维护未开始 |
+| 下一工作项 | B60/B61历史只读首批已完成开发和完整CI；下一步按本批无迁移范围准备发布、数据保全与退出路径及实际维护预算。套餐及全部资金后续仍暂缓，不重做历史全套 |
+| 工作项状态 | 已验证、待发布：目标完整Verify全过，后端895项0失败/错误/跳过，前端定向57项及完整CI/构建、合成浏览器通过。首轮连接数失败仅修测试池后解决；无迁移/回填，生产仍a39bfaf/V18，维护未开始 |
 | 阶段定义 | [阶段6历史衔接](docs/plans/member-business-alignment/stages/06-reporting.md)的独立只读首批；原[阶段5](docs/plans/member-business-alignment/stages/05-circulation.md)剩余及[阶段4暂缓](docs/plans/member-business-alignment/stages/04-payments.md)保持 |
-| 工作分支 | `codex/member-business-batch1`；本批起点3ee7395，历史只读候选待提交后固定；生产仍a39bfaf |
+| 工作分支 | `codex/member-business-batch1`；本批起点3ee7395，只读应用候选`d9e937f`，生产仍a39bfaf；[草稿PR](https://github.com/wulala123123/library-management-system/pull/1) |
 | 应用代码基线 | 生产`a39bfaf8435b6d1d242f53f1bcfabc878a7d66e1`/V18已上线并开放；原MySQL/环境/上传/其他服务及现有财务配置、2026-10-20锚点保持。原生产c24dd21/V17及所有失败/恢复证据冻结，不重启旧写代码 |
-| 完整 Verify | 新候选a39bfaf的[39485535420](https://github.com/wulala123123/library-management-system/actions/runs/39485535420)成功，准确产物12294790102已下载验字节。原11c131e的[39460755918](https://github.com/wulala123123/library-management-system/actions/runs/39460755918)及产物仅历史保持；原生产c24dd21的[39381924528](https://github.com/wulala123123/library-management-system/actions/runs/39381924528)保持 |
+| 完整 Verify | 历史候选d9e937f的[39601808026](https://github.com/wulala123123/library-management-system/actions/runs/39601808026)成功，准确产物12346643495已生成、未下载部署；首轮39600763770失败保留。生产a39bfaf的[39485535420](https://github.com/wulala123123/library-management-system/actions/runs/39485535420)及产物12294790102仍有效 |
 | 最近维护结果 | [柜台多本借还与范围收敛](docs/archive/2026-10/counter-circulation-2026-10-21.md)已完成；[原V17恢复](docs/archive/2026-10/preupgrade-v17-service-recovery-2026-10-21.md)、当天收款及此前各批成果保持，旧入口不重跑 |
 | 恢复依据 | 本批范围/游标见阶段6与本PLAN；私有验证输出`logs/history-stage6/`。原发布为`logs/circulation-stage5/recovery.json`，已消费入口冻结 |
 
@@ -35,8 +35,8 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
-| B60/B61后端 / v1.1 | 经理接纳，`history_backend`停写 | 新`history/`包、HistoryContextController及history测试 | H2 36及门控3项通过；相同36项真实MySQL交目标CI，无迁移/业务写入 |
-| B60/B61前端 / v1 | 经理接纳，`history_frontend`停写 | historyContext API/共享drawer、会员详情及书目/借阅页与相关测试 | 57项及构建通过；三入口、只读原文与账号/实体迟到保护已验收，未上线 |
+| B60/B61后端 / v1.1 | 经理接纳，`history_backend`停写 | 新`history/`包、HistoryContextController及history测试 | H2/真实MySQL各36及门控3项通过；完整CI后端895项全过，无迁移/业务写入 |
+| B60/B61前端 / v1 | 经理接纳，`history_frontend`停写 | historyContext API/共享drawer、会员详情及书目/借阅页与相关测试 | 57项、完整CI及构建过，合成浏览器分页/原文通过，临时资源清理；未上线 |
 | B50-A验证范围收敛 / v1 | 经理验收完成 | `manager-run-v5/`及范围/预算工具、活动文档 | 2316→65；新工具193/279GET及完整保值/同库升级通过；两新备/生产四阶段独立验收、公网/浏览器和资源0闭环，42.2分钟已开放 |
 | B50-A有界发布运行树 / v1 | 经理已接纳；代理停写 | 仅`bounded-release-runtime-v1/`；不得访问服务器 | 26项定向/43源码编译及原字节独立核通过；准确新图实际执行及生产闭环完成，全部原入口冻结 |
 | B50-A后端 / v4 | 经理接纳，原代理停写 | 仅两测试四处维护；backend-v2/v3/v4冻结 | 旧升级准确target17、latest恢复预期18；V16→17、V17→18及原出版恢复三项现有测试独立MySQL全过，业务源码/原断言保持 |
