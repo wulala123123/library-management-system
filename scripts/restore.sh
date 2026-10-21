@@ -12,6 +12,6 @@ library_backup="${1:?Provide a verified backup directory}"
 [[ -z "$(docker volume ls -q --filter "name=${library_project}_")" ]] || { echo 'Recovery volume names already exist; refusing overwrite' >&2; exit 1; }
 "${library_dc[@]}" up -d --wait --wait-timeout 180 mysql
 "${library_dc[@]}" exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_MIGRATION_PASSWORD" exec mysql -u library_migrator "$MYSQL_DATABASE"' < "$library_backup/database.sql"
-"${library_dc[@]}" run --rm --no-deps -T --entrypoint tar backend -xzf - -C /app < "$library_backup/uploads.tar.gz"
+python3 "$library_release/scripts/restore_uploads.py" "$library_backup/uploads.tar.gz" -- "${library_dc[@]}"
 "${library_dc[@]}" up -d --build --wait --wait-timeout 240
 echo "Restored into isolated project: $library_project"

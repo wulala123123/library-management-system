@@ -2,14 +2,17 @@
   <div class="statistics-page">
     <div class="export-toolbar"><el-button type="primary" :loading="exporting" @click="handleExport">导出基础指标 CSV</el-button></div>
     <StatisticsScope :stats="stats" />
+    <p v-if="user.isAdmin">基础指标沿用原库存与会员口径：库存只含启用书目；借阅报告覆盖全部符合筛选的明细，分别计算。</p>
+    <BorrowOperationsReport v-if="user.isAdmin" />
     <el-row :gutter="20">
-      <el-col :xs="24" :lg="16">
+      <el-col v-if="!user.isAdmin" :xs="24" :lg="16">
         <el-card shadow="hover" v-loading="loading">
           <template #header>近7天借出册数</template>
           <div class="chart-container" style="height: 350px;">
             <div class="mock-chart">
               <div class="chart-bars">
                 <div v-for="(bar, i) in trendData" :key="i" class="chart-bar-wrapper">
+                  <span class="trend-count">{{ bar.display }} 册</span>
                   <div class="chart-bar" :style="{ height: bar.value + '%' }"></div>
                   <span class="chart-label">{{ bar.label }}</span>
                 </div>
@@ -31,7 +34,7 @@
     </el-row>
 
     <el-row :gutter="20" style="margin-top: 20px;">
-      <el-col :xs="24" :lg="12">
+      <el-col v-if="!user.isAdmin" :xs="24" :lg="12">
         <el-card shadow="hover"><template #header>热门图书 TOP10（已接入借阅明细，登记书名）</template>
           <div v-if="hotBooks.length">
             <div v-for="(book, i) in hotBooks" :key="i" class="hot-item">
@@ -63,24 +66,28 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getStatistics, exportStatistics, getBorrowTrend, getCategoryDistribution, getHotBooks, type DashboardStats } from '@/api/dashboard'
-import { downloadCsv, getSummaryRows } from '@/utils/statistics'
+import { downloadCsv, getMetricRows, getSummaryRows } from '@/utils/statistics'
+import { useUserStore } from '@/store/modules/user'
 import StatisticsScope from '@/components/statistics/StatisticsScope.vue'
 import InventoryReconciliation from '@/components/statistics/InventoryReconciliation.vue'
+import BorrowOperationsReport from '@/components/statistics/BorrowOperationsReport.vue'
+
+const user = useUserStore()
 
 const loading = ref(false)
 
-const trendData = ref<Array<{ label: string; value: number }>>([])
+const trendData = ref<Array<{ label: string; value: number; display: number }>>([])
 
 const categoryData = ref<Array<{ name: string; percentage: number; color: string }>>([])
 
 const hotBooks = ref<{ title: string; borrowCount: number }[]>([])
 
 const stats = ref<DashboardStats | null>(null)
-const summaryData = computed(() => getSummaryRows(stats.value))
+const summaryData = computed(() => user.isAdmin ? getMetricRows(stats.value) : getSummaryRows(stats.value))
 const exporting = ref(false)
 
 onMounted(async () => {
-  await Promise.all([fetchDashboardStats(), fetchBorrowTrend(), fetchCategoryDistribution(), fetchHotBooks()])
+  await Promise.all([fetchDashboardStats(), user.isAdmin ? Promise.resolve() : fetchBorrowTrend(), fetchCategoryDistribution(), user.isAdmin ? Promise.resolve() : fetchHotBooks()])
 })
 
 async function fetchDashboardStats() {
@@ -105,7 +112,7 @@ async function fetchBorrowTrend() {
     const data = await getBorrowTrend()
     if (data && data.length) {
       const maxVal = Math.max(...data.map(d => d.value), 1)
-      trendData.value = data.map(d => ({ label: d.label, value: Math.round((d.value / maxVal) * 100) }))
+      trendData.value = data.map(d => ({ label: d.label, value: Math.round((d.value / maxVal) * 100), display: d.value }))
     }
   } catch {}
 }

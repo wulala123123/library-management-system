@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 const api = vi.hoisted(() => ({ list: vi.fn(), detail: vi.fn(), me: vi.fn(), source: vi.fn(), create: vi.fn(), update: vi.fn(), push: vi.fn(), user: { isAdmin: true, isLibrarian: false, isReader: false, token: 'synthetic-admin', userInfo: { id: 2, role: 'ADMIN' } }, route: { query: {} as Record<string, string> } }))
 vi.mock('@/api/member', () => ({ getMemberPage: api.list, getMemberById: api.detail, getMyMembership: api.me, getMemberSourcePreview: api.source, createMember: api.create, updateMember: api.update }))
 vi.mock('@/api/memberEntitlement', () => ({ getMyEntitlement: api.me }))
+vi.mock('@/api/managementReports', async original => ({ ...await original<object>(), createManagementReportsApi: () => ({ listPage: (_kind: string, query: object) => api.list(query) }) }))
 vi.mock('@/store/modules/user', () => ({ useUserStore: () => api.user }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: api.push }), useRoute: () => api.route }))
 vi.mock('element-plus', () => ({ ElMessage: { success: vi.fn(), error: vi.fn() } }))

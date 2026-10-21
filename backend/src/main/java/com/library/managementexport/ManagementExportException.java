@@ -1,0 +1,7 @@
+package com.library.managementexport;
+
+public final class ManagementExportException extends RuntimeException {
+    private final int status;
+    public ManagementExportException(int status, String message) { super(message); this.status=status; }
+    public int status() { return status; }
+}

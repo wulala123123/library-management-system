@@ -7,9 +7,9 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | 历史资料衔接＋借阅来源/数量口径＋全部筛选CSV三项合批已上线。B63统一报表、B64日期精度及B65其他导出仍待后续；套餐、计次及资金后续继续暂缓 |
-| 工作项状态 | 89c2d24/V18已开放，实际维护343.1秒（5分43秒）。完整CI后端962项全过；最终停服新备/全新隔离恢复、80表/19类元数据/全部next-ID/959附件、生产39GET、运行字节、公网和浏览器通过，专属隔离资源0 |
-| 阶段定义 | [阶段6历史查询与导出合批](docs/plans/member-business-alignment/stages/06-reporting.md)，仅B60/B61首批及B62/B65借阅查询子集；原[阶段5](docs/plans/member-business-alignment/stages/05-circulation.md)剩余和[阶段4暂缓](docs/plans/member-business-alignment/stages/04-payments.md)保持 |
+| 下一工作项 | 用户已同意管理员非资金统计统一＋会员/书目/库存完整筛选导出合批。日期到天即可，B64取消；读者默认不登录、阶段7范围外，全部日常操作由管理员办理；套餐、计次及资金后续仍暂缓 |
+| 工作项状态 | 管理员统计与导出实现及定向验收完成，准备完整CI，尚未上线；前批89c2d24/V18保持开放，原343.1秒发布、完整CI962项、80表/19类元数据/全部next-ID/959附件及浏览器证据保留复用 |
+| 阶段定义 | [阶段6管理员统计与导出](docs/plans/member-business-alignment/stages/06-reporting.md)，B63非资金子集/B65会员、书目及库存导出；B64取消、阶段7范围外，阶段4/5的套餐和资金后续仍暂缓 |
 | 工作分支 | `codex/member-business-batch1`；本批起点3ee7395，已部署应用代码`89c2d24`，后续状态文档提交不替代已验收产物；[草稿PR](https://github.com/wulala123123/library-management-system/pull/1) |
 | 应用代码基线 | 生产`89c2d24d1a8589c87668201ac60c164284d494fe`/V18，版本目录为CI的PR合并SHA db687c9；原MySQL/环境/上传/其他服务、财务配置及2026-10-20锚点保持。a39bfaf为前一V18应用，旧发布/恢复入口冻结，不回灌旧备 |
 | 完整 Verify | 合批89c2d24的[39611862889](https://github.com/wulala123123/library-management-system/actions/runs/39611862889)成功，准确产物12351642230已部署；包、JAR、运行镜像及静态绑定见[本批档案](docs/archive/2026-10/history-context-2026-10-21.md)。原候选、失败证据与CI保持 |
@@ -36,8 +36,8 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
-| B62/B65后端 / v1 | 经理验收上线，`history_backend`停写 | 新borrowquery包/控制器/测试，共享history只读判定；旧借还接口不改 | H2/MySQL新查询各32、历史各36和两门控各3实际通过；生产全量分页/CSV及权限通过 |
-| B62/B65前端 / v1 | 经理验收上线，`history_frontend`停写 | 新borrowInquiry API/辅助/测试、借阅页及定向测试；历史抽屉保持 | 54项/构建及完整CI通过；公网浏览器筛选、数量、实际CSV下载及历史抽屉通过，代理与测试进程已停 |
+| 管理员统计/导出后端 / v1 | 两实施代理已交付停写，经理接纳 | 新managementexport/managementreport及控制器/测试，StatisticsService只补导出漏项；独立构建 | `logs/admin-reporting-stage6/export-backend-v1/`与`report-backend-v1/`；H2各26/21、门控各3、旧统计7通过，MySQL由完整CI确认 |
+| 管理员统计/导出前端 / v1 | `history_frontend`已交付停写，经理接纳 | 新报告/API/下载辅助及五页面/相关测试；鉴权和业务写组件保持 | `logs/admin-reporting-stage6/frontend-v1/`；85项及类型/构建通过，待完整CI/隔离与页面验收后发布；前批证明保持 |
 | B50-A验证范围收敛 / v1 | 经理验收完成 | `manager-run-v5/`及范围/预算工具、活动文档 | 2316→65；新工具193/279GET及完整保值/同库升级通过；两新备/生产四阶段独立验收、公网/浏览器和资源0闭环，42.2分钟已开放 |
 | B50-A有界发布运行树 / v1 | 经理已接纳；代理停写 | 仅`bounded-release-runtime-v1/`；不得访问服务器 | 26项定向/43源码编译及原字节独立核通过；准确新图实际执行及生产闭环完成，全部原入口冻结 |
 | B50-A后端 / v4 | 经理接纳，原代理停写 | 仅两测试四处维护；backend-v2/v3/v4冻结 | 旧升级准确target17、latest恢复预期18；V16→17、V17→18及原出版恢复三项现有测试独立MySQL全过，业务源码/原断言保持 |

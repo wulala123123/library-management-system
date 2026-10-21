@@ -47,9 +47,11 @@
     </div>
 
     <StatisticsScope :stats="stats" />
+    <p v-if="userStore.isAdmin" class="overview-scope">以上为原库存与会员基础指标：库存按启用书目统计；下方借阅经营报告按全部符合筛选的借阅明细独立统计。</p>
+    <BorrowOperationsReport v-if="userStore.isAdmin" />
 
-    <div class="chart-row">
-      <div class="panel-card main-panel animate-fade-in">
+    <div class="chart-row" :style="userStore.isAdmin ? { gridTemplateColumns: '1fr' } : undefined">
+      <div v-if="!userStore.isAdmin" class="panel-card main-panel animate-fade-in">
         <div class="panel-header">
           <h3>借阅趋势</h3>
           <span>近7天借出册数</span>
@@ -83,8 +85,8 @@
       </div>
     </div>
 
-    <div class="bottom-row">
-      <div class="panel-card hot-panel animate-fade-in">
+    <div class="bottom-row" :style="userStore.isAdmin ? { gridTemplateColumns: '1fr' } : undefined">
+      <div v-if="!userStore.isAdmin" class="panel-card hot-panel animate-fade-in">
         <div class="panel-header">
           <h3>热门图书</h3>
           <span>已接入借阅明细排行 · 登记书名</span>
@@ -105,7 +107,7 @@
       <div class="panel-card recent-panel animate-fade-in">
         <div class="panel-header">
           <h3>最近借阅</h3>
-          <span>最新动态</span>
+          <span>{{ userStore.isAdmin ? '全库最近明细，不随报告筛选改变' : '最新动态' }}</span>
         </div>
         <el-table :data="recentBorrows" size="small" stripe>
           <el-table-column prop="userName" label="读者" width="80" />
@@ -137,9 +139,10 @@ import { getBorrowPage, getMyBorrows } from '@/api/borrow'
 import { Reading } from '@element-plus/icons-vue'
 import type { BorrowRecord } from '@/types'
 import type { DashboardStats } from '@/api/dashboard'
-import { getSummaryRows } from '@/utils/statistics'
+import { getMetricRows, getSummaryRows } from '@/utils/statistics'
 import StatisticsScope from '@/components/statistics/StatisticsScope.vue'
 import InventoryReconciliation from '@/components/statistics/InventoryReconciliation.vue'
+import BorrowOperationsReport from '@/components/statistics/BorrowOperationsReport.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -162,7 +165,7 @@ const todayStr = computed(() => {
 })
 
 const stats = ref<DashboardStats | null>(null)
-const statCards = computed(() => getSummaryRows(stats.value).map(metric => ({
+const statCards = computed(() => (userStore.isAdmin ? getMetricRows(stats.value) : getSummaryRows(stats.value)).map(metric => ({
   icon: metric.unit === '人' || metric.unit === '个' ? 'User' : 'Reading',
   label: metric.label, value: `${metric.value} ${metric.unit}`, trend: null as number | null,
   hovered: false, type: 'primary',
@@ -180,9 +183,9 @@ let aborted = false
 onMounted(async () => {
   const results = await Promise.allSettled([
     getDashboardStats(),
-    getBorrowTrend(),
+    userStore.isAdmin ? Promise.resolve([]) : getBorrowTrend(),
     getCategoryDistribution(),
-    getHotBooks(),
+    userStore.isAdmin ? Promise.resolve([]) : getHotBooks(),
   ])
 
   if (aborted) return

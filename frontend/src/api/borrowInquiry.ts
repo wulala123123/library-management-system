@@ -1,3 +1,4 @@
+import { readCsvDownload, CsvDownloadError } from './csvDownload'
 export type BorrowOrigin = 'IMPORTED' | 'COUNTER_ORDER' | 'SYSTEM' | 'UNVERIFIED'
 export type BorrowOriginFilter = 'ALL' | BorrowOrigin
 export type BorrowStatusFilter = 'ACTIVE' | 'BORROWING' | 'OVERDUE' | 'RETURNED' | null
@@ -84,16 +85,8 @@ export function createBorrowInquiryApi(token: string): BorrowInquiryApi {
     },
     async export(filters, signal) {
       const response = await read(`/api/borrow-inquiry/export?${params(filters)}`, signal)
-      const contentType = response.headers.get('Content-Type') ?? '', disposition = response.headers.get('Content-Disposition') ?? ''
-      const filename = /(?:^|;)\s*filename="?(borrow-inquiry-[0-9]{8}T[0-9]{6}Z\.csv)"?(?:;|$)/i.exec(disposition)?.[1]
-      const totalText = response.headers.get('X-Total-Count') ?? '', asOf = response.headers.get('X-As-Of')
-      if (!/^text\/csv(?:;|$)/i.test(contentType) || !/charset\s*=\s*"?utf-8"?/i.test(contentType) || !/^attachment(?:;|$)/i.test(disposition) || !filename
-        || !whole(/^(0|[1-9][0-9]*)$/, totalText) || !count(Number(totalText)) || Number(totalText) > 20000 || !instant(asOf)) return invalid()
-      let bytes: ArrayBuffer
-      try { bytes = await response.arrayBuffer() } catch (cause) { if (signal?.aborted) throw cause; throw new BorrowInquiryError(null, '导出文件读取失败，请重试。') }
-      const prefix = new Uint8Array(bytes, 0, Math.min(3, bytes.byteLength))
-      if (prefix[0] !== 0xef || prefix[1] !== 0xbb || prefix[2] !== 0xbf) return invalid()
-      return { blob: new Blob([bytes], { type: 'text/csv;charset=utf-8' }), filename, total: Number(totalText), asOf }
+      try { return await readCsvDownload(response, /^borrow-inquiry-[0-9]{8}T[0-9]{6}Z\.csv$/i, 20000, signal) }
+      catch (cause) { if (!(cause instanceof CsvDownloadError)) throw cause; if (cause.message.includes('读取失败')) throw new BorrowInquiryError(null, cause.message); return invalid() }
     },
   }
 }

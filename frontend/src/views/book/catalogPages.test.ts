@@ -3,6 +3,7 @@ import { computed,defineComponent,h,inject,provide,reactive,type ComputedRef } f
 import { afterEach,beforeEach,expect,it,vi } from 'vitest'
 const api=vi.hoisted(()=>({books:vi.fn(),book:vi.fn(),code:vi.fn(),codes:vi.fn(),borrow:vi.fn(),copies:vi.fn(),users:vi.fn(),push:vi.fn(),confirm:vi.fn(),alert:vi.fn(),success:vi.fn(),csv:vi.fn(),user:{isAdmin:true,isLibrarian:false,token:'synthetic-admin',userInfo:{id:2,role:'ADMIN'}},route:{query:{} as Record<string,string>}}))
 vi.mock('@/api/catalogAttribute',()=>({getCatalogBooks:api.books,getCatalogBook:api.book}))
+vi.mock('@/api/managementReports',async original=>({...await original<object>(),createManagementReportsApi:()=>({listPage:(_kind:string,query:object)=>api.books(query)})}))
 vi.mock('@/api/book',()=>({deleteBook:vi.fn(),getBookCopies:api.copies}))
 vi.mock('@/api/category',()=>({getCategoryList:vi.fn().mockResolvedValue([])}))
 vi.mock('@/api/user',()=>({searchUsers:api.users}))

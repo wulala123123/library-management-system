@@ -37,8 +37,10 @@
           <el-button @click="handleExport">导出本页书目</el-button>
           <el-button v-if="user.isAdmin" @click="openPublication(null)">批量出版资料补录</el-button>
         </div>
-        <div class="toolbar-right"><span>共 {{ total }} 种图书</span></div>
+        <div class="toolbar-right"><span v-if="listReady">共 {{ total }} 种图书</span></div>
       </div>
+      <AdminListExport v-if="user.isAdmin" kind="books" :filters="appliedFilters" :invalidation-key="[queryParams, attributeFilters]" :ready="listReady && !loading && !listError" :description="filterDescription" :unapplied="unapplied" />
+      <el-alert v-if="listError" title="书目列表读取失败，请重试；失败不表示没有书目。" type="error" :closable="false" />
 
       <el-table v-loading="loading" :data="bookList" stripe border size="default">
         <el-table-column
@@ -85,7 +87,7 @@
         </el-table-column>
       </el-table>
 
-      <div class="pagination-wrapper">
+      <div v-if="listReady && !loading && !listError" class="pagination-wrapper">
         <el-pagination
           v-model:current-page="queryParams.page"
           v-model:page-size="queryParams.size"
@@ -110,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive, onMounted, watch } from 'vue'
+import { computed, ref, reactive, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BookDialog from './components/BookDialog.vue'
@@ -124,7 +126,9 @@ import CatalogAttributeFilters from '@/components/catalog/CatalogAttributeFilter
 import HistoryContextDrawer from '@/components/HistoryContextDrawer.vue'
 import { useUserStore } from '@/store/modules/user'
 import { deleteBook } from '@/api/book'
-import { getCatalogBooks, type CatalogBook } from '@/api/catalogAttribute'
+import { type CatalogBook } from '@/api/catalogAttribute'
+import { createManagementReportsApi, ManagementReadError } from '@/api/managementReports'
+import AdminListExport from '@/components/statistics/AdminListExport.vue'
 import { getCategoryList } from '@/api/category'
 import type { BookCategory } from '@/types'
 import { ageText, bindingText, bookDisplayTitle, catalogPageCsv, emptyAttributeFilters, attributeFilterQuery } from '@/utils/catalogAttributes'
@@ -132,7 +136,7 @@ import { displayValue } from '@/utils/display'
 import { downloadCsv } from '@/utils/statistics'
 
 const router = useRouter()
-const user = useUserStore(), canManage = computed(() => user.isAdmin || user.isLibrarian)
+const user = useUserStore(), accessDenied = ref(false), canManage = computed(() => !accessDenied.value && (user.isAdmin || user.isLibrarian))
 
 const loading = ref(false)
 const bookList = ref<CatalogBook[]>([])
@@ -154,6 +158,10 @@ function openIdentity(id: number) { identityBookId.value = id; identityVisible.v
 function openSource(id: number) { if (user.isAdmin) { sourceBookId.value = id; sourceVisible.value = true } }
 
 const queryParams = reactive({ page: 1, size: 10, keyword: '', categoryId: undefined as number | undefined, status: null as number | null })
+const filtersSnapshot = () => ({ keyword: queryParams.keyword, categoryId: queryParams.categoryId || undefined, status: queryParams.status === 0 || queryParams.status === 1 ? queryParams.status : undefined, ...attributeFilterQuery(attributeFilters.value) })
+const appliedFilters = ref(filtersSnapshot()), listReady = ref(false), listError = ref(false)
+const unapplied = computed(() => JSON.stringify(filtersSnapshot()) !== JSON.stringify(appliedFilters.value))
+const filterDescription = computed(() => { const filters = appliedFilters.value; return `关键词「${filters.keyword || '全部'}」 · 分类 ${filters.categoryId ? categories.value.find(category => category.id === filters.categoryId)?.name ?? `编号 ${filters.categoryId}` : '全部'} · 状态 ${filters.status === 0 ? '下架' : filters.status === 1 ? '在馆' : '全部'} · 装帧 ${filters.bindingState === 'UNKNOWN' ? '未设置' : filters.bindingCode ? bindingText(filters.bindingCode) : filters.bindingState === 'KNOWN' ? '已设置' : '全部'} · 年龄 ${filters.ageState === 'UNKNOWN' ? '未设置' : filters.ageLabels?.length ? ageText(filters.ageLabels) : filters.ageState === 'KNOWN' ? '已设置' : '全部'}` })
 
 onMounted(() => {
   if (!canManage.value) return
@@ -168,25 +176,32 @@ async function fetchCategories() {
 }
 
 let listRequest = 0
+let listController: AbortController | undefined
+function clearList() { ++listRequest; listController?.abort(); bookList.value = []; total.value = 0; listReady.value = false; loading.value = false }
 async function fetchBookList() {
   if (!canManage.value) return
-  const request = ++listRequest; loading.value = true
+  clearList(); const request = listRequest, owner = { id: user.userInfo?.id, role: user.userInfo?.role, token: user.token }
+  const current = () => request === listRequest && canManage.value && owner.id === user.userInfo?.id && owner.role === user.userInfo?.role && owner.token === user.token
+  listController = new AbortController(); loading.value = true; listError.value = false
   try {
-    const res = await getCatalogBooks({ ...queryParams, ...attributeFilterQuery(attributeFilters.value) })
-    if (request !== listRequest) return
-    bookList.value = res?.records || []
-    total.value = res?.total || 0
-  } catch {
-    if (request !== listRequest) return
-    bookList.value = []
-    total.value = 0
+    const res = await createManagementReportsApi(owner.token).listPage<CatalogBook>('books', { page: queryParams.page, size: queryParams.size, ...appliedFilters.value }, listController.signal)
+    if (!current()) return
+    bookList.value = res.records; total.value = res.total; listReady.value = true
+  } catch (cause) {
+    if (!current()) return
+    listError.value = true
+    if (cause instanceof ManagementReadError && (cause.status === 401 || cause.status === 403)) { clearList(); accessDenied.value = true }
   } finally {
-    if (request === listRequest) loading.value = false
+    if (current()) loading.value = false
   }
 }
 
-function handleSearch() { queryParams.page = 1; fetchBookList() }
-function resetQuery() { Object.assign(queryParams, { page: 1, keyword: '', categoryId: undefined, status: null }); attributeFilters.value = emptyAttributeFilters(); fetchBookList() }
+function handleSearch() { appliedFilters.value = filtersSnapshot(); queryParams.page = 1; fetchBookList() }
+function resetQuery() { Object.assign(queryParams, { page: 1, keyword: '', categoryId: undefined, status: null }); attributeFilters.value = emptyAttributeFilters(); handleSearch() }
+watch(() => [user.userInfo?.id, user.userInfo?.role, user.token, user.isAdmin, user.isLibrarian], () => { clearList(); accessDenied.value = false; if (canManage.value) fetchBookList() }, { flush: 'sync' })
+function invalidateAccess() { clearList(); accessDenied.value = true }
+window.addEventListener('auth-access-invalidated', invalidateAccess)
+onBeforeUnmount(() => { clearList(); window.removeEventListener('auth-access-invalidated', invalidateAccess) })
 function handleAdd() { editBookId.value = null; dialogVisible.value = true }
 function handleEdit(row: CatalogBook) { editBookId.value = row.id; dialogVisible.value = true }
 function handleIntake(row: CatalogBook) { if (canManage.value) { intakeBook.value = row; intakeVisible.value = true } }
