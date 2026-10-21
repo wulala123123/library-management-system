@@ -7,9 +7,9 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
-| 下一工作项 | B60/B61历史只读首批已完成开发和完整CI；下一步按本批无迁移范围准备发布、数据保全与退出路径及实际维护预算。套餐及全部资金后续仍暂缓，不重做历史全套 |
-| 工作项状态 | 已验证、待发布：目标完整Verify全过，后端895项0失败/错误/跳过，前端定向57项及完整CI/构建、合成浏览器通过。首轮连接数失败仅修测试池后解决；无迁移/回填，生产仍a39bfaf/V18，维护未开始 |
-| 阶段定义 | [阶段6历史衔接](docs/plans/member-business-alignment/stages/06-reporting.md)的独立只读首批；原[阶段5](docs/plans/member-business-alignment/stages/05-circulation.md)剩余及[阶段4暂缓](docs/plans/member-business-alignment/stages/04-payments.md)保持 |
+| 下一工作项 | 用户已同意三项合批发布：既有历史资料衔接＋借阅来源/数量口径＋全部筛选结果CSV；B62/B65仅借阅查询子集，无迁移。套餐及资金后续仍暂缓，不扩全站报表 |
+| 工作项状态 | 合批实现及经理审查完成：新后端32/门控3/原历史36项、前端54项及构建通过。营业中资格备份15.5秒、隔离恢复101.1秒及80表/19类元数据/全部next-ID完整保持通过；最终组合CI待。生产仍a39bfaf/V18，未停服 |
+| 阶段定义 | [阶段6历史查询与导出合批](docs/plans/member-business-alignment/stages/06-reporting.md)，仅B60/B61首批及B62/B65借阅查询子集；原[阶段5](docs/plans/member-business-alignment/stages/05-circulation.md)剩余和[阶段4暂缓](docs/plans/member-business-alignment/stages/04-payments.md)保持 |
 | 工作分支 | `codex/member-business-batch1`；本批起点3ee7395，只读应用候选`d9e937f`，生产仍a39bfaf；[草稿PR](https://github.com/wulala123123/library-management-system/pull/1) |
 | 应用代码基线 | 生产`a39bfaf8435b6d1d242f53f1bcfabc878a7d66e1`/V18已上线并开放；原MySQL/环境/上传/其他服务及现有财务配置、2026-10-20锚点保持。原生产c24dd21/V17及所有失败/恢复证据冻结，不重启旧写代码 |
 | 完整 Verify | 历史候选d9e937f的[39601808026](https://github.com/wulala123123/library-management-system/actions/runs/39601808026)成功，准确产物12346643495已生成、未下载部署；首轮39600763770失败保留。生产a39bfaf的[39485535420](https://github.com/wulala123123/library-management-system/actions/runs/39485535420)及产物12294790102仍有效 |
@@ -35,8 +35,8 @@ B32后端/前端及发布准备均已交付，经理完成返工、验收和发�
 
 | 有效任务 | 执行者 | 唯一可写边界 | 交付与下一动作 |
 | --- | --- | --- | --- |
-| B60/B61后端 / v1.1 | 经理接纳，`history_backend`停写 | 新`history/`包、HistoryContextController及history测试 | H2/真实MySQL各36及门控3项通过；完整CI后端895项全过，无迁移/业务写入 |
-| B60/B61前端 / v1 | 经理接纳，`history_frontend`停写 | historyContext API/共享drawer、会员详情及书目/借阅页与相关测试 | 57项、完整CI及构建过，合成浏览器分页/原文通过，临时资源清理；未上线 |
+| B62/B65后端 / v1 | 经理接纳，`history_backend`停写 | 新borrowquery包/控制器/测试，共享history只读判定；旧借还接口不改 | 新32/门控3/原历史36项通过；原历史合同保持，MySQL同32项交最终CI |
+| B62/B65前端 / v1 | 经理接纳，`history_frontend`停写 | 新borrowInquiry API/辅助/测试、借阅页及定向测试；历史抽屉保持 | 54项及构建过，条件/数量/下载头与迟到保护核对；证据inquiry-frontend/ |
 | B50-A验证范围收敛 / v1 | 经理验收完成 | `manager-run-v5/`及范围/预算工具、活动文档 | 2316→65；新工具193/279GET及完整保值/同库升级通过；两新备/生产四阶段独立验收、公网/浏览器和资源0闭环，42.2分钟已开放 |
 | B50-A有界发布运行树 / v1 | 经理已接纳；代理停写 | 仅`bounded-release-runtime-v1/`；不得访问服务器 | 26项定向/43源码编译及原字节独立核通过；准确新图实际执行及生产闭环完成，全部原入口冻结 |
 | B50-A后端 / v4 | 经理接纳，原代理停写 | 仅两测试四处维护；backend-v2/v3/v4冻结 | 旧升级准确target17、latest恢复预期18；V16→17、V17→18及原出版恢复三项现有测试独立MySQL全过，业务源码/原断言保持 |

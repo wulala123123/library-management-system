@@ -213,38 +213,23 @@ public class HistoryContextService {
         s.basis.add("当前借阅身份使用 borrow_record.id、user_id、book_id、copy_id，分别核对现存实体。");
         Subject memberEvidence = s.memberValid ? member(s.memberId) : null;
         if (memberEvidence != null) s.memberArchiveId = memberEvidence.memberArchiveId;
-        var orders = jdbc.query("SELECT i.order_id,i.book_id,i.copy_id,i.barcode,o.id AS existing_order,o.user_id "
-                        + "FROM circulation_order_item i LEFT JOIN circulation_order o ON o.id=i.order_id WHERE i.record_id=? ORDER BY i.order_id LIMIT 2",
-                (r, i) -> new CounterOrder(r.getLong("order_id"), number(r, "existing_order"), number(r, "user_id"),
-                        number(r, "book_id"), number(r, "copy_id"), r.getString("barcode")), id);
-        if (!orders.isEmpty()) {
-            CounterOrder o = orders.get(0);
-            if (orders.size() == 1 && Objects.equals(o.existingId, o.id) && s.memberValid && s.bookValid && s.copyValid
-                    && Objects.equals(o.memberId, s.memberId) && Objects.equals(o.bookId, s.bookId)
-                    && Objects.equals(o.copyId, s.copyId) && Objects.equals(o.barcode, s.barcode) && s.sourceKey == null) {
-                s.orderId = o.id;
-                s.classification = "COUNTER_ORDER";
+        var origin = jdbc.queryForMap(new HistoryBorrowOriginSql(mysql).cte()
+                + "SELECT origin,counter_order_id FROM borrow_classified WHERE id=?", id);
+        s.classification = (String) origin.get("origin");
+        s.orderId = origin.get("counter_order_id") == null ? null : ((Number) origin.get("counter_order_id")).longValue();
+        switch (s.classification) {
+            case "COUNTER_ORDER" -> {
                 s.state = "VERIFIED";
                 s.basis.add("circulation_order_item.record_id 精确等于当前借阅ID，订单会员、书目、册ID及条码与当前记录一致。");
-            } else {
-                unverified(s, "柜台明细存在但订单、会员、书目、实体册或来源键冲突，不能认作已核实柜台订单。");
             }
-        } else if (s.sourceKey == null && s.memberValid && s.bookValid && (s.copyId == null || s.copyValid)) {
-            s.classification = "SYSTEM";
-            s.basis.add("本系统借阅无迁入来源键，也没有已存柜台订单明细关联。");
-        } else if (s.sourceKey != null && s.sourceKey.matches("huiben:[^:]+:[1-9][0-9]*")
-                && s.memberValid && s.bookValid && s.copyValid) {
-            String memberKey = s.sourceKey.substring(0, s.sourceKey.lastIndexOf(':'));
-            long bookSources = count("r.book_id=? AND " + exact("r.record_type", "'BOOK'") + " AND "
-                            + exact("r.source_system", "'huiben'") + " AND " + binary("r.source_key") + "=?",
-                    s.bookId, bytes(s.barcode));
-            if ("IMPORTED".equals(memberEvidence.classification) && Objects.equals(memberKey, memberEvidence.sourceKey) && bookSources == 1) {
-                s.classification = "IMPORTED";
-                s.sourceSystem = "huiben";
+            case "IMPORTED" -> {
                 s.state = "VERIFIED";
+                s.sourceSystem = "huiben";
                 s.basis.add("迁入明细键的会员部分与已核实 MEMBER 档案一致，所存册与当前书目及原 BOOK 条码一致。");
-            } else unverified(s, "迁入借阅键未同时对应已核实的会员与实体册原档案。");
-        } else unverified(s, "借阅来源或当前会员、书目、实体册身份待核实。");
+            }
+            case "SYSTEM" -> s.basis.add("本系统借阅无迁入来源键，也没有已存柜台订单明细关联。");
+            default -> unverified(s, "借阅来源或当前会员、书目、实体册及柜台订单关联待核实。");
+        }
         if (s.sourceKey != null) s.warnings.add("来源键保留原文；huiben:会员来源键:序号 是迁入明细键，不是原订单号。");
         s.warnings.add("同会员 ORDER 档案仅供会员历史资料参考，与本条借阅没有确切旧订单关联；不按姓名、手机号、日期或ISBN猜配。");
         return s;
@@ -322,7 +307,6 @@ public class HistoryContextService {
     }
     private record Scope(String where, List<Object> args) {}
     private record MemberArchive(long id, Long memberId, Long bookId) {}
-    private record CounterOrder(long id, Long existingId, Long memberId, Long bookId, Long copyId, String barcode) {}
 
     private static final class Subject {
         final String kind;
