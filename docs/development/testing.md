@@ -40,6 +40,7 @@
 python3 scripts/check_docs.py
 git diff --check
 python3 -B scripts/test_release_validation_plan.py
+python3 -B scripts/test_restore_uploads.py
 mvn -B -ntp -f backend/pom.xml verify
 pnpm --dir frontend test
 pnpm --dir frontend build

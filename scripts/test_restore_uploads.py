@@ -104,6 +104,7 @@ class UploadRestoreTests(unittest.TestCase):
             self.assertIn('--no-start', command.call_args_list[0].args[0])
             self.assertIn('--no-deps', command.call_args_list[0].args[0])
             self.assertIn('--same-owner', command.call_args_list[1].args[0])
+            self.assertIn('--numeric-owner', command.call_args_list[1].args[0])
             self.assertIn('--delay-directory-restore', command.call_args_list[1].args[0])
             with tarfile.open(fileobj=io.BytesIO(raw_archives[0]), mode='r:gz') as raw:
                 self.assertEqual(raw.getmember('uploads').pax_headers['mtime'], '1.123456789')

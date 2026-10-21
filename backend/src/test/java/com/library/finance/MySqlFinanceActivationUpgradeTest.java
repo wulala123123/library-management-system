@@ -11,8 +11,8 @@ import static com.library.finance.FinanceSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Isolated upgrade schema on the guarded disposable loopback MySQL test instance. */
-@EnabledIfEnvironmentVariable(named="MYSQL_TEST_URL",matches=".+")
 class MySqlFinanceActivationUpgradeTest {
+    @EnabledIfEnvironmentVariable(named="MYSQL_TEST_URL",matches=".+")
     @Test void v16ToV17KeepsAll76TablesMetadataNextIdsAndLeavesGuardEmpty()throws Exception {
         var ownerDs=FinanceLedgerUpgradeTest.dataSource();var owner=new JdbcTemplate(ownerDs);String schema="library_repair_b40b_activation_"+UUID.randomUUID().toString().replace("-","");
         owner.execute("CREATE DATABASE `"+schema+"` CHARACTER SET utf8mb4");try {
@@ -39,7 +39,50 @@ class MySqlFinanceActivationUpgradeTest {
         }finally {owner.execute("DROP DATABASE `"+schema+"`");}
     }
     Map<String,Object> metadata(JdbcTemplate j) {
-        Map<String,Object> result=new TreeMap<>();for(String table:List.of("COLUMNS","STATISTICS","KEY_COLUMN_USAGE","TABLE_CONSTRAINTS"))result.put(table,j.queryForList("SELECT * FROM information_schema."+table+" WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME<>'member_finance_activation'"));
+        Map<String,Object> result=new TreeMap<>();for(String table:List.of("COLUMNS","STATISTICS","KEY_COLUMN_USAGE","TABLE_CONSTRAINTS"))result.put(table,sortedMetadataRows(table,j.queryForList("SELECT * FROM information_schema."+table+" WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME<>'member_finance_activation'")));
         return result;
+    }
+    // information_schema has no implicit row order. Compare every original column
+    // and duplicate row after ordering by the complete identity of each view row.
+    static List<Map<String,Object>> sortedMetadataRows(String view,List<Map<String,Object>> rows) {
+        List<String> keys=switch(view) {
+            case "COLUMNS" -> List.of("TABLE_CATALOG","TABLE_SCHEMA","TABLE_NAME","ORDINAL_POSITION","COLUMN_NAME");
+            case "STATISTICS" -> List.of("TABLE_CATALOG","TABLE_SCHEMA","TABLE_NAME","INDEX_SCHEMA","INDEX_NAME","SEQ_IN_INDEX");
+            case "KEY_COLUMN_USAGE" -> List.of("CONSTRAINT_CATALOG","CONSTRAINT_SCHEMA","CONSTRAINT_NAME","TABLE_CATALOG","TABLE_SCHEMA","TABLE_NAME","ORDINAL_POSITION","COLUMN_NAME");
+            case "TABLE_CONSTRAINTS" -> List.of("CONSTRAINT_CATALOG","CONSTRAINT_SCHEMA","CONSTRAINT_NAME","TABLE_SCHEMA","TABLE_NAME");
+            default -> throw new IllegalArgumentException("Unexpected metadata view: "+view);
+        };
+        Comparator<Map<String,Object>> order=(left,right)->0;
+        for(String key:keys)order=order.thenComparing((left,right)->compareMetadataKey(left.get(key),right.get(key)));
+        List<Map<String,Object>> result=new ArrayList<>(rows);result.sort(order);return result;
+    }
+    private static int compareMetadataKey(Object left,Object right) {
+        if(left==right)return 0;if(left==null)return -1;if(right==null)return 1;
+        if(left instanceof Number a&&right instanceof Number b)return Long.compare(a.longValue(),b.longValue());
+        return left.toString().compareTo(right.toString());
+    }
+    @Test void metadataOrderingKeepsEveryColumnAndDuplicateRow() {
+        for(String view:List.of("COLUMNS","STATISTICS","KEY_COLUMN_USAGE","TABLE_CONSTRAINTS")) {
+            Map<String,Object> first=metadataExample("a",1),second=metadataExample("a",2),last=metadataExample("z",1);
+            List<Map<String,Object>> original=List.of(last,second,first,first);
+            assertEquals(List.of(first,first,second,last),sortedMetadataRows(view,original),view);
+            assertEquals(List.of(last,second,first,first),original,"The source snapshot must remain unchanged");
+        }
+    }
+    @Test void metadataComparisonStillRejectsChangedColumnsMissingColumnsAndDuplicateCounts() {
+        for(String view:List.of("COLUMNS","STATISTICS","KEY_COLUMN_USAGE","TABLE_CONSTRAINTS")) {
+            Map<String,Object> row=metadataExample("a",1),changed=new LinkedHashMap<>(row),missing=new LinkedHashMap<>(row);
+            changed.put("EXTRA","changed-value");missing.remove("EXTRA");
+            var before=sortedMetadataRows(view,List.of(row,row));
+            for(var after:List.of(List.of(row,changed),List.of(row,missing),List.of(row)))
+                assertThrows(AssertionError.class,()->assertEquals(before,sortedMetadataRows(view,after)),view);
+        }
+    }
+    private static Map<String,Object> metadataExample(String table,int ordinal) {
+        Map<String,Object> row=new LinkedHashMap<>();
+        for(String key:List.of("TABLE_CATALOG","TABLE_SCHEMA","CONSTRAINT_CATALOG","CONSTRAINT_SCHEMA","CONSTRAINT_NAME","INDEX_SCHEMA","INDEX_NAME"))row.put(key,"same");
+        row.put("CONSTRAINT_NAME",table+"_constraint_"+ordinal);
+        row.put("TABLE_NAME",table);row.put("ORDINAL_POSITION",ordinal);row.put("SEQ_IN_INDEX",ordinal);
+        row.put("COLUMN_NAME","column_"+ordinal);row.put("EXTRA",null);return row;
     }
 }

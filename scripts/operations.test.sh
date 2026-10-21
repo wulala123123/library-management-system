@@ -31,7 +31,7 @@ PY
     exit 0
 fi
 if [[ "$1" == run ]]; then
-    if [[ "$*" != *'--format=pax -czpf - -C /app uploads' ]]; then cat > /dev/null; exit 0; fi
+    if [[ "$*" != *'--format=pax --numeric-owner -czpf - -C /app uploads' ]]; then cat > /dev/null; exit 0; fi
     python3 - <<'PY'
 import io, sys, tarfile
 with tarfile.open(fileobj=sys.stdout.buffer, mode='w|gz') as archive:

@@ -94,7 +94,7 @@ def capture(archive, compose):
     command = upload_context(compose)
     command[command.index('--mount') + 1] += ',readonly'
     with Path(archive).open('xb') as target:
-        subprocess.run(command + ['--format=pax', '-czpf', '-', '-C', '/app', 'uploads'],
+        subprocess.run(command + ['--format=pax', '--numeric-owner', '-czpf', '-', '-C', '/app', 'uploads'],
                        stdout=target, check=True, timeout=180)
     inventory(archive)
 
@@ -111,7 +111,7 @@ def restore(archive, compose):
     command = upload_context(compose)
     command.insert(2, '-i')
     with Path(archive).open('rb') as contents:
-        subprocess.run(command + ['-xzpf', '-', '--same-owner', '--delay-directory-restore', '-C', '/app'],
+        subprocess.run(command + ['-xzpf', '-', '--same-owner', '--numeric-owner', '--delay-directory-restore', '-C', '/app'],
                        stdin=contents, check=True, timeout=180)
 
 
