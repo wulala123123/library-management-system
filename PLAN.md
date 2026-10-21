@@ -8,12 +8,12 @@
 | --- | --- |
 | 活动计划 | [会员业务整合](docs/plans/member-business-alignment/README.md) |
 | 下一工作项 | 阶段5独立借还流程：柜台多本借阅订单、明确逐册关联及单册/批量归还。套餐与全部资金后续工作按用户要求暂缓，沿用当前已生效借阅规则 |
-| 工作项状态 | B50-A分页修复a39bfaf已通过完整Verify：后端820/前端735及五轮容器通过，准确产物/213文件权限与原迁移字节已核。新分页oracle/资格工具准备已接纳，尚未执行新Linux资格、两新备及生产发布；原失败资源均清理0、生产保值通过。维护例外待用户选择 |
+| 工作项状态 | B50-A分页修复a39bfaf已通过完整Verify：后端820/前端735及五轮容器通过，准确产物/213文件权限与原迁移字节已核。新分页oracle/资格工具准备已接纳，尚未执行新Linux资格、两新备及生产发布；用户已批准先恢复原V17，完整保值、运行/静态字节、公网和浏览器验收通过，当前可日常使用 |
 | 阶段定义 | [阶段 5](docs/plans/member-business-alignment/stages/05-circulation.md)，[阶段 4 暂缓范围](docs/plans/member-business-alignment/stages/04-payments.md) |
 | 工作分支 | `codex/member-business-batch1`；应用候选固定a39bfaf，后续文档HEAD不作应用目标 |
-| 应用代码基线 | 生产仍`c24dd21fa34578f5e56e707e34690856ea374879`/V17，双端维护停止、MySQL健康；原收款配置和2026-10-20锚点保留。新候选`a39bfaf8435b6d1d242f53f1bcfabc878a7d66e1`/V18替代11c131e，旧产物不用于下一发布 |
+| 应用代码基线 | 生产仍`c24dd21fa34578f5e56e707e34690856ea374879`/V17，原双端已恢复，三服务健康；原收款配置和2026-10-20锚点保留。新候选`a39bfaf8435b6d1d242f53f1bcfabc878a7d66e1`/V18替代11c131e，尚未部署，旧产物不用于下一发布 |
 | 完整 Verify | 新候选a39bfaf的[39485535420](https://github.com/wulala123123/library-management-system/actions/runs/39485535420)成功，准确产物12294790102已下载验字节。原11c131e的[39460755918](https://github.com/wulala123123/library-management-system/actions/runs/39460755918)及产物仅历史保持；原生产c24dd21的[39381924528](https://github.com/wulala123123/library-management-system/actions/runs/39381924528)保持 |
-| 最近维护结果 | [当天收款发布记录](docs/archive/2026-10/member-finance-receipts-2026-10-20.md)已闭环；[只读财务台账](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)、[套装目录](docs/archive/2026-10/catalog-sets-2026-10-19.md)及此前各批成果保留 |
+| 最近维护结果 | [原V17恢复日常使用](docs/archive/2026-10/preupgrade-v17-service-recovery-2026-10-21.md)已验收；[当天收款发布记录](docs/archive/2026-10/member-finance-receipts-2026-10-20.md)、[只读财务台账](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)、[套装目录](docs/archive/2026-10/catalog-sets-2026-10-19.md)及此前各批成果保留 |
 | 恢复依据 | 当前批次`logs/circulation-stage5/recovery.json`；原B40-B为`logs/member-business-stage4/b40-b-manager/recovery.json`，全部旧发布/恢复/启用入口冻结 |
 
 ## 下一步
@@ -25,7 +25,7 @@
 5. B34已完整闭环，在当前V17保持；v1/v2失败及v3成功证据均冻结。实体配套及整套收费/扣次仍待后续，不复用旧备或已消费发布入口。
 6. B40-A管理员三个GET和台账/来源页面已部署V16，六表仅新增不回填。实现、完整CI、两轮新备恢复升级、实际生产及浏览器通过；最终独立只读验收亦通过，结果见[当批档案](docs/archive/2026-10/member-finance-readonly-2026-10-20.md)。
 7. B40-B当天实收登记已在V17启用，日期锚点固定2026-10-20。保留合法新业务，禁止复用旧空表验收、发布或启用入口。2026-10-20用户进一步暂缓退款及全部资金后续工作，并授权先完善独立借还流程；不据此停用现有收款。
-8. B50新候选a39bfaf的准确产物及包检查由`logs/circulation-stage5/manager-run-v3/`定位；先处理待答复的维护方式选择。恢复现有V17须明确批准已准备的维护例外；继续发布须按新候选完成新Linux资格、两轮独立新备恢复及P/OPEN，不重跑任何原失败入口。
+8. 用户已于2026-10-21批准先恢复现有V17；原容器已恢复，77表/19类元数据/全部next-ID在开放前保值，97静态、公网及浏览器借阅页通过，见当次档案。本轮恢复已完成；未来新候选a39bfaf仍须完成新Linux资格、两轮独立新备恢复及P/OPEN，准确产物由`logs/circulation-stage5/manager-run-v3/`定位，不重跑任何原失败或已消费入口。
 
 ## 有效执行者
 
