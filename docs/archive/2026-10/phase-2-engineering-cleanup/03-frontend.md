@@ -1,10 +1,10 @@
 # 批次3：前端精简与构建包优化
 
-状态：本地实现及行为验收通过，依赖审计待补证，未上线。目标、基线和共用护栏见[第二阶段总计划](README.md)，当前执行位置见[根目录PLAN](../../../PLAN.md)。
+状态：本地行为及完整Linux Verify已验收，前端依赖审计0已知漏洞，未上线。原本机超时作为历史证据保留；当前完整验证结论见[第二阶段总计划](README.md)，执行位置见[根目录PLAN](../../../../PLAN.md)。
 
 ## 范围
 
-评估[前端入口](../../../frontend/src/main.ts)的Element Plus按需引入，整理语义相同的请求、错误处理、下载辅助及重复页面代码。保持现有管理员操作和已部署角色兼容；当前构建目录基线约2.32 MiB。
+评估[前端入口](../../../../frontend/src/main.ts)的Element Plus按需引入，整理语义相同的请求、错误处理、下载辅助及重复页面代码。保持现有管理员操作和已部署角色兼容；当前构建目录基线约2.32 MiB。
 
 ## 任务
 
@@ -40,3 +40,5 @@
 完整类型/构建通过；79文件848项测试通过（含3项Blob正常/异常释放检查）。首次高并发失败的mock遗漏已修复，其余瞬态失败在不改断言/超时的4 worker完整复验中通过，原日志保留。Edge真实dist配合本地合成后端完成登录中文必填、会员分页/筛选/实际988字节CSV下载、Dialog/Drawer、MessageBox、Loading、日期/下拉、馆员及读者拒绝检查；控制台无warn/error，未留下未知EL标签。UI仅只读/取消路径，夹具写入仅在本批合成库；所属服务、审计进程及端口均已结束/释放。
 
 私有证据为`logs/engineering-cleanup/batch3/`的`implementation-v2.md`、`verification-v2.json`、`size-comparison.json`、`ui-checks.json`及截图/下载。官方方案依据在`preparation-v1.md`。后续补证确认pnpm错误23为超时，Python/Node/curl微型POST也超时、GET正常；264个精确版本及安装锁已绑定，未得到官方advisory响应，漏洞数量未知。`audit-supplement/report.md`保留探针与有界正式审计结果；需在可完成同一官方POST的环境补验，不能宣称审计通过。正式上线仍需目标完整Verify。实现提交`e851eaa`。
+
+2026-10-22续验：Verify 39715399664在同锁版本完成官方前端审计，实际输出0已知漏洞，原超时缺口关闭；完整前端848项、类型及构建通过。产物检查确认旧模板`/vite.svg`缺失，最后收口删除无效引用1行；最终候选精确验证及包入口核对由[PR #2](https://github.com/wulala123123/library-management-system/pull/2)记录。

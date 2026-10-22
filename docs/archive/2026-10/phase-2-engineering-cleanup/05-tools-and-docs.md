@@ -1,10 +1,10 @@
 # 批次5：工具、文档与分发内容收口
 
-状态：本地收口已验收，未上线；外部审计及完整Linux Verify未通过前不能发布。目标、基线和共用护栏见[第二阶段总计划](README.md)，当前执行位置见[根目录PLAN](../../../PLAN.md)。
+状态：本地及完整Linux Verify、实际产物收口已验收，未上线。用户将生产发布后置；准确目标及完整验证结论见[第二阶段总计划](README.md)，当前执行位置见[根目录PLAN](../../../../PLAN.md)。
 
 ## 范围
 
-按用途与引用整理一次性迁入/修正工具、日常维护和发布运行工具、历史计划及分发包输入。主要入口为[打包脚本](../../../scripts/package_release.py)、[容器验收脚本](../../../scripts/container-acceptance.sh)及其[原流程保护](../../../scripts/test_container_circulation.py)。
+按用途与引用整理一次性迁入/修正工具、日常维护和发布运行工具、历史计划及分发包输入。主要入口为[打包脚本](../../../../scripts/package_release.py)、[容器验收脚本](../../../../scripts/container-acceptance.sh)及其[原流程保护](../../../../scripts/test_container_circulation.py)。
 
 ## 任务
 
@@ -23,7 +23,7 @@
 
 ## 交付记录
 
-2026-10-22：第一阶段归档和原子计划保全由`6c3e909`独立保存；新增[工具用途与维护边界](../../development/tools.md)，登记23个工具的用途、CI/实际包/恢复引用，补充数据承接入口冻结说明。原记录和私有路径保持，未重跑任何旧批次。
+2026-10-22：第一阶段归档和原子计划保全由`6c3e909`独立保存；新增[工具用途与维护边界](../../../development/tools.md)，登记23个工具的用途、CI/实际包/恢复引用，补充数据承接入口冻结说明。原记录和私有路径保持，未重跑任何旧批次。
 
 - 删除`jekins测试项目/.github/workflows/maven.yml`，53行/1378字节；该目录仅剩嵌套旧工作流，GitHub只加载仓库根`.github/workflows`，当前Verify/Release使用根入口，源码/打包均无调用；恢复可用`git show 109a769:jekins测试项目/.github/workflows/maven.yml`。根Maven工作流继续保留，无法仅凭本地证据排除其作为远端必需状态检查的用途。依据见[GitHub工作流规范](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#about-yaml-syntax-for-workflows)。
 - 23个工具共458,198字节，均保留原路径；包括手工密码散列辅助、受控导入/修正及其合成CI测试。实际验收、备份恢复和来源追溯仍使用它们，取消后续开发不构成删除依据。分发脚本和容器验收脚本原字节保持，未强行拆分或修改冻结哈希。
@@ -34,3 +34,5 @@
 - 目录空间按同一文件长度口径复测：旧HTTP上传实际清理645 MiB；计入新验证资料、约191.87 MiB隔离库及48.60 MiB本地检查包后，排除前端依赖链接重复计数的可比目录净减约384 MiB。依赖目录重新安装后逻辑计数减少约440 MiB，但pnpm链接可能重复计数，不计作唯一物理磁盘释放量。无历史资料移动或压缩收益；20 GiB私有资料保持。
 
 私有证据位于`logs/engineering-cleanup/`：`tool-inventory.json`、`private-history-disposition.json`、`obsolete-workflow-candidate.json`、`distribution-final.json`、`distribution-controlled-comparison.json`、`space-final.json`、`tool-check-results.json`及`final-container-pure.log`；各源码批次另有准确内容清单。所有员工交付已由经理验收，测试服务与端口已关闭。五批本地实现和定向行为检查收口；依赖审计官方POST超时、Linux代理/运维/完整Verify待可达隔离环境补证，历史原资料/新MySQL目录清理的自动审批限制保持。没有生产操作。
+
+2026-10-22续验：Verify 39715399664补齐Linux Shell运维、随包Nginx、依赖审计及实际包的安装/更新/故障回退/备份恢复。产物ID12399765355、报告12399003416及内外摘要一致，133个Git输入、18份Flyway、工具文件集与执行位核验通过；原流程字节和五轮钩子保持。完成计划按WORKFLOW移入当月第二阶段档案，入链及分发文档自动收集保持；最后归档与模板清理提交的精确结果见PR #2。首次本地检查包继续只是本地证据，不能替代已通过的CI产物。原始续验证据在`logs/engineering-cleanup/ci-qualification-v1/`，后续目标单独保存，尚未上线。

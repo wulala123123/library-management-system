@@ -1,10 +1,10 @@
 # 批次1：本地文件与测试产物治理
 
-状态：本地已验收，未上线；Linux代理分支仍由完整Verify补证。初估1–2小时，本次实施及验收约25分钟；目标、基线和共用护栏见[第二阶段总计划](README.md)，当前执行位置见[根目录PLAN](../../../PLAN.md)。
+状态：本地及Linux完整Verify已验收，未上线。原Linux代理缺口已由Verify 39715399664的11项真实HTTP补齐；初估1–2小时，本次实施及验收约25分钟，完整验证结论见[第二阶段总计划](README.md)，当前执行位置见[根目录PLAN](../../../../PLAN.md)。
 
 ## 范围
 
-核对可重建缓存、测试上传、旧构建及重复发布包，治理测试产物增长，并形成私有资料的归档处置清单。优先入口为[生产HTTP测试](../../../backend/src/test/java/com/library/MySqlProductionHttpTest.java)及本地`backend/target/`、根`dist/`；当前盘点测试上传为645 MiB。
+核对可重建缓存、测试上传、旧构建及重复发布包，治理测试产物增长，并形成私有资料的归档处置清单。优先入口为[生产HTTP测试](../../../../backend/src/test/java/com/library/MySqlProductionHttpTest.java)及本地`backend/target/`、根`dist/`；当前盘点测试上传为645 MiB。
 
 ## 任务
 

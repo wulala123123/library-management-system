@@ -1,10 +1,10 @@
 # 批次4：后端公共逻辑整理
 
-状态：本地已验收，未上线。目标、基线和共用护栏见[第二阶段总计划](README.md)，当前执行位置见[根目录PLAN](../../../PLAN.md)。
+状态：本地已验收，未上线。目标、基线和共用护栏见[第二阶段总计划](README.md)，当前执行位置见[根目录PLAN](../../../../PLAN.md)。
 
 ## 范围
 
-先处理CSV转义和公式防护等明确重复逻辑，再按引用与语义依据整理重复校验和投影。已发现候选为[借阅查询CSV](../../../backend/src/main/java/com/library/borrowquery/BorrowInquiryCsv.java)、[报告CSV](../../../backend/src/main/java/com/library/managementreport/ManagementReportCsv.java)和[列表CSV](../../../backend/src/main/java/com/library/managementexport/ManagementCsv.java)。
+先处理CSV转义和公式防护等明确重复逻辑，再按引用与语义依据整理重复校验和投影。已发现候选为[借阅查询CSV](../../../../backend/src/main/java/com/library/borrowquery/BorrowInquiryCsv.java)、[报告CSV](../../../../backend/src/main/java/com/library/managementreport/ManagementReportCsv.java)和[列表CSV](../../../../backend/src/main/java/com/library/managementexport/ManagementCsv.java)。
 
 ## 任务
 
@@ -17,7 +17,7 @@
 ## 验证与完成条件
 
 - 后端编译与受影响的CSV/接口检查通过，覆盖特殊字符、公式前缀、原空值和字符串保真。
-- 若实际涉及数据库事务或并发，按[验证规范](../../development/testing.md)补充合成隔离检查；仅CSV底层整理不机械重跑全部历史业务。
+- 若实际涉及数据库事务或并发，按[验证规范](../../../development/testing.md)补充合成隔离检查；仅CSV底层整理不机械重跑全部历史业务。
 - 不改变已部署迁移、业务事务、锁顺序、幂等、审计或既有响应；不为缩短代码重写安全过滤与业务状态机。
 - 合并内容有明确收益，原行为与必要检查保持，即结束本批；复杂服务的大范围重写不自动纳入。
 
