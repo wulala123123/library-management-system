@@ -1,12 +1,12 @@
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { createBorrowInquiryApi, BorrowInquiryError, type BorrowInquiryApi, type BorrowInquiryExport, type BorrowInquiryFilters, type BorrowInquiryPage, type BorrowOriginFilter, type BorrowStatusFilter } from '@/api/borrowInquiry'
-import { downloadCsv } from '@/utils/statistics'
+import { downloadBlob } from '@/utils/download'
 
 export interface InquiryAccess { id: number | undefined; role: string | undefined; token: string }
 const emptyFilters = (): BorrowInquiryFilters => ({ keyword: '', status: null, origin: 'ALL' })
 const filtersFrom = (draft: { keyword: string; status: BorrowStatusFilter | ''; origin: BorrowOriginFilter }): BorrowInquiryFilters => ({ keyword: draft.keyword, status: draft.status || null, origin: draft.origin })
 /** One page owns its applied filters and pending reads; no shared data or browser persistence. */
-export function useBorrowInquiry(access: () => InquiryAccess, makeApi: (token: string) => BorrowInquiryApi = createBorrowInquiryApi, download: (blob: Blob, filename: string) => void = downloadCsv) {
+export function useBorrowInquiry(access: () => InquiryAccess, makeApi: (token: string) => BorrowInquiryApi = createBorrowInquiryApi, download: (blob: Blob, filename: string) => void = downloadBlob) {
   const draft = reactive({ keyword: '', status: '' as BorrowStatusFilter | '', origin: 'ALL' as BorrowOriginFilter })
   const pagination = reactive({ page: 1, size: 10 })
   const applied = ref<BorrowInquiryFilters>(emptyFilters()), data = ref<BorrowInquiryPage | null>(null)

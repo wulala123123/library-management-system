@@ -11,7 +11,7 @@ vi.mock('@/api/borrow',()=>({adminBorrowBook:api.borrow}))
 vi.mock('@/api/borrowCode',()=>({generateBorrowCode:api.code,getMyBorrowCodes:api.codes,verifyBorrowCode:vi.fn()}))
 vi.mock('@/store/modules/user',()=>({useUserStore:()=>api.user}))
 vi.mock('vue-router',()=>({useRoute:()=>api.route,useRouter:()=>({push:api.push})}))
-vi.mock('@/utils/statistics',()=>({downloadCsv:api.csv}))
+vi.mock('@/utils/download',()=>({downloadBlob:api.csv}))
 vi.mock('element-plus',()=>({ElMessage:{success:api.success,error:vi.fn(),warning:vi.fn()},ElMessageBox:{confirm:api.confirm,alert:api.alert}}))
 import Management from './index.vue'
 import Catalog from '../book-catalog/index.vue'
