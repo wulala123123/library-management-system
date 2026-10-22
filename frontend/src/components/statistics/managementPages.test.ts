@@ -1,14 +1,14 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { computed, defineComponent, h, inject, provide, reactive, type ComputedRef } from 'vue'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { ManagementReadError, type BorrowOperationsReport as Report } from '@/api/managementReports'
+import { ManagementReadError } from '@/api/managementReports'
 import { managementFile, operationsReport, pendingManagement } from './managementFixtures'
 const api = vi.hoisted(() => ({ list: vi.fn(), csv: vi.fn(), report: vi.fn(), reportCsv: vi.fn(), download: vi.fn(), stats: vi.fn(), trend: vi.fn(), hot: vi.fn(), categories: vi.fn(), route: { query: {} }, user: { isAdmin: true, isLibrarian: false, isReader: false, canManageBooks: true, token: 'admin-one', userInfo: { id: 1, role: 'ADMIN' } } }))
 vi.mock('@/store/modules/user', () => ({ useUserStore: () => api.user }))
 vi.mock('vue-router', () => ({ useRoute: () => api.route, useRouter: () => ({ push: vi.fn() }) }))
 vi.mock('element-plus', () => ({ ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn() }, ElMessageBox: { confirm: vi.fn() } }))
 vi.mock('@/api/managementReports', async original => ({ ...await original<object>(), createManagementReportsApi: () => ({ listPage: api.list, listCsv: api.csv, report: api.report, reportCsv: api.reportCsv }) }))
-vi.mock('@/utils/statistics', async original => ({ ...await original<object>(), downloadCsv: api.download }))
+vi.mock('@/utils/download', async original => ({ ...await original<object>(), downloadBlob: api.download }))
 vi.mock('@/api/category', () => ({ getCategoryList: api.categories }))
 vi.mock('@/api/dashboard', () => ({ getDashboardStats: api.stats, getInventoryStats: api.stats, getStatistics: api.stats, getBorrowTrend: api.trend, getHotBooks: api.hot, getCategoryDistribution: vi.fn().mockResolvedValue([]), exportStatistics: vi.fn() }))
 vi.mock('@/api/borrow', () => ({ getBorrowPage: vi.fn().mockResolvedValue({ records: [] }), getMyBorrows: vi.fn().mockResolvedValue({ records: [] }) }))

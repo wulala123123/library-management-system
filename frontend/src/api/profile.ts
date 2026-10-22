@@ -1,14 +1,9 @@
-import type { User } from '@/types'
 import { get, post, put } from './request'
 
 export interface ProfileStats {
   totalBorrows: number
   activeBorrows: number
   overdueBorrows: number
-}
-
-export function getProfile() {
-  return get<User>('/profile')
 }
 
 export function updateProfile(data: Record<string, string>) {

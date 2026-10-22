@@ -99,14 +99,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyBorrows, selfReturnBook } from '@/api/borrow'
 import type { BorrowRecord } from '@/types'
 import RenewDialog from './components/RenewDialog.vue'
 import { dueDateText } from '@/utils/borrowDates'
 
-const router = useRouter()
 const loading = ref(false)
 const returningId = ref<number | null>(null)
 const renewDialogVisible = ref(false)

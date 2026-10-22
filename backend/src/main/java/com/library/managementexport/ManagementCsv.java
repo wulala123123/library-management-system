@@ -1,5 +1,6 @@
 package com.library.managementexport;
 
+import com.library.common.CsvWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -21,20 +22,6 @@ final class ManagementCsv {
         return out.toString().getBytes(StandardCharsets.UTF_8);
     }
     private static void line(StringBuilder out,Object... cells) {
-        for(int i=0;i<cells.length;i++) {
-            if(i>0)out.append(',');
-            if(cells[i]==null) { out.append("\\N"); continue; }
-            String value=cells[i].toString();
-            if(cells[i] instanceof String && formula(value))value="'"+value;
-            out.append('"').append(value.replace("\"","\"\"")).append('"');
-        }
-        out.append("\r\n");
-    }
-    private static boolean formula(String value) {
-        if(value.isEmpty())return false;
-        if(value.charAt(0)=='\t'||value.charAt(0)=='\r'||value.charAt(0)=='\n')return true;
-        int i=0;
-        while(i<value.length()&&(Character.isWhitespace(value.charAt(i))||Character.isSpaceChar(value.charAt(i))))i++;
-        return i<value.length()&&"=+-@".indexOf(value.charAt(i))>=0;
+        CsvWriter.appendLine(out, CsvWriter.NullValue.UNQUOTED_BACKSLASH_N, cells);
     }
 }

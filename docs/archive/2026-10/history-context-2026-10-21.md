@@ -1,6 +1,6 @@
 # 历史资料、借阅来源与完整导出合批
 
-本页保存2026-10-21历史只读首批及三项合批的实现、验收与发布事实。最终以89c2d24/V18上线，维护5分43秒；下述早期“未上线”记录保留当时状态，最终结果见末节。执行状态由[PLAN](../../../PLAN.md)维护，范围见[阶段6](../../plans/member-business-alignment/stages/06-reporting.md)。
+本页保存2026-10-21历史只读首批及三项合批的实现、验收与发布事实。最终以89c2d24/V18上线，维护5分43秒；下述早期“未上线”记录保留当时状态，最终结果见末节。执行状态由[PLAN](../../../PLAN.md)维护，范围见[阶段6](phase-1-data-adaptation/member-business-alignment/stages/06-reporting.md)。
 
 ## 基线与范围
 

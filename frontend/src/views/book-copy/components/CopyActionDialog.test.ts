@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import ElementPlus from 'element-plus'
-import type { CopyActionPreviewInputV2, CopyActionReceipt, AnyCopyActionView } from '@/api/bookCopyAction'
+import type { CopyActionReceipt, AnyCopyActionView } from '@/api/bookCopyAction'
 const api = vi.hoisted(() => ({ preview: vi.fn(), confirm: vi.fn(), get: vi.fn(), byKey: vi.fn(), context: vi.fn(), history: vi.fn(), user: { isAdmin: true, isLibrarian: false } }))
 vi.mock('@/api/bookCopyAction', () => ({ previewCopyAction: api.preview, previewCopyActionV2: api.preview, confirmCopyAction: api.confirm, getCopyAction: api.get, getCopyActionByKey: api.byKey, getCopyActionContext: api.context, getCopyActionHistory: api.history }))
 vi.mock('@/store/modules/user', () => ({ useUserStore: () => api.user }))

@@ -10,7 +10,7 @@ import Editor from './SetEditor.vue'
 import Directory from './index.vue'
 import Reviews from './reviews.vue'
 import Memberships from './BookSetMemberships.vue'
-import { setContext,setEvidence,setHash,setInput,setReceipt,setRequest,setSnapshot,existingSetMember } from './setFixtures'
+import { setContext,setHash,setInput,setRequest,setSnapshot,existingSetMember } from './setFixtures'
 const slot=defineComponent({setup(_,{slots}){return()=>h('div',[slots.default?.(),slots.footer?.()])}})
 const input=defineComponent({props:['modelValue','type','disabled'],emits:['update:modelValue'],setup(p,{emit,attrs}){return()=>h(p.type==='textarea'?'textarea':'input',{...attrs,value:p.modelValue,disabled:p.disabled,onInput:(e:any)=>emit('update:modelValue',e.target.value)})}})
 const select=defineComponent({props:['modelValue','disabled','multiple'],emits:['update:modelValue','change'],setup(p,{emit,slots,attrs}){return()=>h('select',{...attrs,value:p.modelValue,disabled:p.disabled,multiple:p.multiple,onChange:(e:any)=>{const value=p.multiple?[...e.target.selectedOptions].map((option:any)=>option.value):e.target.value;emit('update:modelValue',value);emit('change',value)}},slots.default?.())}})

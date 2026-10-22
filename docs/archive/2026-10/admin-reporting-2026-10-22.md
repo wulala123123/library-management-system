@@ -1,6 +1,6 @@
 # 管理员非资金统计与三类完整导出
 
-历史验收记录。当前状态见[PLAN](../../../PLAN.md)，生效口径见[财务与统计](../../specs/finance-reporting.md)，范围见[阶段6](../../plans/member-business-alignment/stages/06-reporting.md)。
+历史验收记录。当前状态见[PLAN](../../../PLAN.md)，生效口径见[财务与统计](../../specs/finance-reporting.md)，范围见[阶段6](phase-1-data-adaptation/member-business-alignment/stages/06-reporting.md)。
 
 ## 用户决定与交付范围
 

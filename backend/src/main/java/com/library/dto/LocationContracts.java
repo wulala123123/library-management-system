@@ -2,7 +2,6 @@ package com.library.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.util.List;
 
 public final class LocationContracts {
     private LocationContracts() {}

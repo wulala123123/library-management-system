@@ -10,6 +10,7 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { downloadBlob } from '@/utils/download'
 import { exportStocktake, getStocktakeDifferences, type Difference, type Resolution, type Review } from '@/api/stocktake'
 import CopyPlacement from '@/components/locations/CopyPlacement.vue'
 import StocktakeResolutions from './StocktakeResolutions.vue'
@@ -20,7 +21,7 @@ const rows = ref<Difference[]>([]), page = ref(1), total = ref(0), type = ref(''
 let request = 0
 async function load() { const current = ++request; loading.value = true; try { const copyId = copyFilter.value ? parseExplicitIds(copyFilter.value, 1)[0] : undefined; const result = await getStocktakeDifferences(props.sessionId, { reviewSnapshotId: props.review.snapshotId, page: page.value, size: 20, type: type.value || undefined, copyId }); if (current === request) { rows.value = result.records; total.value = result.total } } catch { if (current === request) { rows.value = []; total.value = 0; error.value = '差异页读取失败，请重试。' } } finally { if (current === request) loading.value = false } }
 function search() { page.value = 1; load() }
-async function download(format: 'json' | 'csv') { if (exporting.value) return; exporting.value = true; try { const blob = await exportStocktake(props.sessionId, props.review.snapshotId, format); const url = URL.createObjectURL(blob), anchor = document.createElement('a'); anchor.href = url; anchor.download = `stocktake-${props.sessionId}-snapshot-${props.review.snapshotId}.${format}`; anchor.click(); URL.revokeObjectURL(url); error.value = '' } catch { error.value = '快照导出失败，未使用当前页重建报告；请重试原快照导出。' } finally { exporting.value = false } }
+async function download(format: 'json' | 'csv') { if (exporting.value) return; exporting.value = true; try { const blob = await exportStocktake(props.sessionId, props.review.snapshotId, format); downloadBlob(blob, `stocktake-${props.sessionId}-snapshot-${props.review.snapshotId}.${format}`); error.value = '' } catch { error.value = '快照导出失败，未使用当前页重建报告；请重试原快照导出。' } finally { exporting.value = false } }
 watch(() => [props.sessionId, props.review.snapshotId], () => { selected.value = null; page.value = 1; load() }, { immediate: true })
 watch(() => props.refresh, load)
 </script>

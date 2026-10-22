@@ -6,12 +6,6 @@ export interface PageResult<T> {
   pages: number
 }
 
-export interface ApiResponse<T> {
-  code: number
-  message: string
-  data: T
-}
-
 export interface Book {
   id: number
   isbn: string
@@ -74,15 +68,6 @@ export interface User {
   updateTime: string
 }
 
-export interface InventoryItem {
-  bookId: number
-  bookTitle: string
-  isbn: string
-  stockTotal: number
-  stockAvailable: number
-  borrowRate: number
-}
-
 export interface PurchaseOrder {
   items: PurchaseItem[]
   id: number
@@ -116,18 +101,6 @@ export interface PurchaseItem {
   createTime: string
   updateTime: string
   categoryName: string
-}
-
-export interface ApprovalRecord {
-  id: number
-  orderId: number
-  nodeId: string
-  nodeName: string
-  approverId: number
-  approverName: string
-  action: string
-  comment: string
-  createTime: string
 }
 
 export interface BorrowCode {

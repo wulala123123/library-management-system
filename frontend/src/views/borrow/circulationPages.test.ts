@@ -10,7 +10,7 @@ vi.mock('@/api/catalogAttribute',()=>({getCatalogBooks:api.catalog}))
 vi.mock('@/api/bookCopyQuery',()=>({getBookCopies:api.copies,getBookCopy:api.copy}))
 vi.mock('@/api/borrow',()=>({getBorrowPage:api.legacyBorrows,returnBook:vi.fn(),adminBorrowBook:vi.fn(),renewBook:vi.fn()}))
 vi.mock('@/api/borrowInquiry',async original=>({...await original<object>(),createBorrowInquiryApi:()=>({query:api.borrows,export:api.exportFile})}))
-vi.mock('@/utils/statistics',()=>({downloadCsv:api.download}))
+vi.mock('@/utils/download',()=>({downloadBlob:api.download}))
 vi.mock('@/api/book',()=>({getBookCopies:vi.fn().mockResolvedValue([])}))
 vi.mock('@/api/circulation',async original=>({...await original<object>(),createCirculationApi:()=>({order:api.order,orders:api.orders,preview:api.preview,request:api.request,confirm:api.confirm,cancel:api.cancel})}))
 import CounterBorrowDialog from './components/CounterBorrowDialog.vue'

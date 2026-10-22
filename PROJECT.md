@@ -14,30 +14,32 @@
 
 ## 当前阶段
 
+2026-10-22[第二阶段：工程清理与代码精简](docs/archive/2026-10/phase-2-engineering-cleanup/README.md)五批实现、完整Linux Verify与实际产物已验收，并按用户后续授权完成[生产发布](docs/archive/2026-10/engineering-cleanup-release-2026-10-22.md)：旧上传清理645 MiB，后续按逐项证据清理15.32 GiB；前端构建减少19.27%，业务源码净减189行，真实资料与必要私有证据保留。准确发布候选`5f6cfed3`通过Verify39766772871，后端1084项无失败/错误/跳过、前端848项通过；前端审计0已知漏洞，后端2条已有不可达评审、0未评审，Nginx、运维及实际包更新/回退/备份恢复通过。北京时间19:34恢复营业，维护约7分21秒；[草稿PR #2](https://github.com/wulala123123/library-management-system/pull/2)仍未合并。第一阶段及原取消、暂缓决定继续有效，当前恢复位置见PLAN。
+
+2026-10-22用户确认剩余五项候选均不实施：统计多维筛选、成功借出后的撤销/换书、管理员待取预留、管理员新旧借阅入口统一、实物套装配套及整套借还。当前已批准开发批次收尾，转入用户人工验收与反馈；套餐、计次及资金后续继续暂缓，不作为本次验收前置。取消项保留原规划记录，不标为已实现，具体状态由对应阶段及PLAN维护。
+
 阶段 0 的备份恢复、字段对照与原权益核对已验收，关键规则部分确认；阶段 1 的 B10–B14 已上线；阶段 2 的会员资料、套餐版本、来源预填及权益快照已上线，已核实来源宝宝定向登记完成；阶段 3 的书目与逐册管理各批已验收上线，B34套装目录关系于2026-10-19完成闭环。阶段4的B40-A只读台账与B40-B当天柜台收款已验收上线，V17于2026-10-20启用当天现金/微信实收登记。用户随后要求暂缓套餐及全部资金后续工作，优先推进阶段5可独立实施的柜台借还流程；阶段4其余项目和套餐规则仍未完成。2026-10-21用户确认先推进阶段6的独立只读历史资料衔接；套餐及资金后续继续暂缓。下一工作项及恢复位置由 [PLAN](PLAN.md)维护。
 
 已具备基础借还、逐册迁入、历史资料查询和公网 HTTPS 访问。2026-10-21[历史资料、借阅来源与完整CSV](docs/archive/2026-10/history-context-2026-10-21.md)已上线，B60/B61及B62/B65借阅子集完成。2026-10-22[管理员非资金统计与三类完整导出](docs/archive/2026-10/admin-reporting-2026-10-22.md)已验收上线，首页和统计页共用报告，会员、书目及库存导出全部已应用筛选；维护3分51秒。日期精度扩展取消，读者端退出当前路线。现行行为由[领域规范](docs/specs/README.md)记录。
 
-当前部署应用代码为 `f79e6460f43ee23c0d4793d70dad99456904c0e7`/V18，已通过 [Verify 39635001955](https://github.com/wulala123123/library-management-system/actions/runs/39635001955)，后端1064项0失败/错误/跳过，使用准确产物12361651838，版本目录为PR合并SHA 2eba31f；三个服务健康并已开放。80表、19类元数据、全部next-ID及959附件完整保持，生产83次只读请求、运行字节及页面/实际下载均通过；旧89c2d24为上一应用。此前[柜台借还发布](docs/archive/2026-10/counter-circulation-2026-10-21.md)及[当天收款](docs/archive/2026-10/member-finance-receipts-2026-10-20.md)成果保持；套餐限制、计次及资金后续仍暂缓，收款固定起点2026-10-20不变。
+当前部署应用代码为 `5f6cfed3c3a333112da42c5bef5a2efb80cbd895`/V18，已通过 [Verify 39766772871](https://github.com/wulala123123/library-management-system/actions/runs/39766772871)，使用准确产物12420718952；实际checkout为`e6c9f8e65bd17aa881e0cfa754cca05318c1fb7a`，与候选tree一致，current为对应`ci-e6c9f8e…`目录。三个服务健康并已开放。80表、19类元数据、全部next-ID及959附件完整保持，248次生产只读请求、运行字节及页面/实际下载均通过；原MySQL、环境及其他9个服务保持。上一应用`f79e646`/V18及原版本目录保留供审查恢复。此前[柜台借还发布](docs/archive/2026-10/counter-circulation-2026-10-21.md)及[当天收款](docs/archive/2026-10/member-finance-receipts-2026-10-20.md)成果保持；套餐限制、计次及资金后续仍暂缓，收款固定起点2026-10-20不变。
 
 原长维护失败及V17恢复保留在[恢复记录](docs/archive/2026-10/preupgrade-v17-service-recovery-2026-10-21.md)，已消费入口不重跑。本批已将验证职责、范围、复用和结束条件统一到[测试与发布检查](docs/development/testing.md)，按[维护时间规范](docs/operations/release-validation.md)先验证真实规模和预算；后续只补实际变更风险，不因换聊天或工具调整重做已完成产品全套。服务器操作前仍须现场核对实际版本。
 
 ## 总体路线
 
-活动计划为[会员业务整合](docs/plans/member-business-alignment/README.md)。本表维护阶段顺序；任务定义、勾选状态和验收条件由链接的阶段文档维护。
+项目按以下大阶段组织，当前执行位置由根目录PLAN维护。
 
-| 阶段 | 目标 | 依赖 | 阶段定义 |
-| --- | --- | --- | --- |
-| 0 | 建立基线和确认规则 | 无 | [基线与规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
-| 1 | 修正数据错误及基础统计 | 0 | [数据修正](docs/plans/member-business-alignment/stages/01-data-corrections.md) |
-| 2 | 统一会员档案和套餐权益 | 1 | [会员管理](docs/plans/member-business-alignment/stages/02-membership.md) |
-| 3 | 完善图书和逐册管理 | 1，交付顺序在 2 后 | [图书管理](docs/plans/member-business-alignment/stages/03-catalog.md) |
-| 4 | 建立收费与押金流程 | 2 | [收费与押金](docs/plans/member-business-alignment/stages/04-payments.md) |
-| 5 | 接通套餐规则及借还订单 | 2、3、4 | [借还流程](docs/plans/member-business-alignment/stages/05-circulation.md) |
-| 6 | 完善历史衔接与经营统计 | 5 | [历史与报表](docs/plans/member-business-alignment/stages/06-reporting.md) |
-| 7（当前范围外） | 原读者登录与自助计划保留记录，当前不实施 | — | [原读者服务计划](docs/plans/member-business-alignment/stages/07-reader-services.md) |
+| 大阶段 | 目标 | 状态与入口 |
+| --- | --- | --- |
+| 第一阶段 | 围绕导入资料适配会员、图书、借还及管理查询 | 用户认可范围完成；[计划与执行档案](docs/archive/2026-10/phase-1-data-adaptation/README.md) |
+| 第二阶段 | 工程清理、代码精简及维护成本整理 | 五批开发、完整隔离验证及2026-10-22生产发布验收完成；[完整档案](docs/archive/2026-10/phase-2-engineering-cleanup/README.md) |
+
+原会员业务整合中的0–7是第一阶段内部的子阶段，原路线、依赖及任务状态已集中保存在第一阶段档案，未勾选或暂缓事项不自动进入第二阶段。
 
 ## 项目完成标准
+
+以下保留原总体路线的完成标准；当前人工验收以已交付的管理员功能和现行领域规范为准。已取消或暂缓的扩展不构成本次验收前置，当前收尾不表示原路线全部功能均已实现或已通过用户人工验收。
 
 1. 老会员和新会员在统一入口维护业务资料，权益变更有来源和记录。
 2. 套餐、有效期、次数、借阅期限和续借权限在各办理入口一致执行。

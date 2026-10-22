@@ -9,7 +9,7 @@ const api = vi.hoisted(() => ({ report: vi.fn(), reportCsv: vi.fn(), listCsv: vi
 const user = reactive({ isAdmin: true, token: 'login-one', userInfo: { id: 1, role: 'ADMIN' } })
 vi.mock('@/store/modules/user', () => ({ useUserStore: () => user }))
 vi.mock('@/api/managementReports', async original => ({ ...await original<object>(), createManagementReportsApi: () => api }))
-vi.mock('@/utils/statistics', () => ({ downloadCsv: api.download }))
+vi.mock('@/utils/download', () => ({ downloadBlob: api.download }))
 vi.mock('element-plus', () => ({ ElMessage: { success: api.toast } }))
 import BorrowOperationsReport from './BorrowOperationsReport.vue'
 import AdminListExport from './AdminListExport.vue'

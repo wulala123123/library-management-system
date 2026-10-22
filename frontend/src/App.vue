@@ -1,14 +1,17 @@
 <template>
-  <router-view v-slot="{ Component, route }">
-    <transition name="fade" mode="out-in">
-      <component :is="Component" :key="route.path" />
-    </transition>
-  </router-view>
+  <el-config-provider :locale="zhCn">
+    <router-view v-slot="{ Component, route }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" :key="route.path" />
+      </transition>
+    </router-view>
+  </el-config-provider>
 </template>
 
 <script setup lang="ts">
 import { onErrorCaptured } from 'vue'
 import { ElMessage } from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 
 onErrorCaptured((err) => {
   console.error('全局错误捕获:', err)

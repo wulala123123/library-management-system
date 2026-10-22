@@ -5,10 +5,6 @@ export function getNotices(params: { page?: number; size?: number; type?: string
   return get<PageResult<Notice>>('/notices', params)
 }
 
-export function getNoticeById(id: number) {
-  return get<Notice>(`/notices/${id}`)
-}
-
 export function createNotice(data: Record<string, unknown>) {
   return post<Notice>('/notices', data)
 }

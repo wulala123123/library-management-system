@@ -38,12 +38,4 @@
         ORDER BY br.create_time DESC, br.id DESC
     </select>
 
-    <select id="countByStatus" resultType="java.lang.Long">
-        SELECT COUNT(*) FROM borrow_record WHERE deleted = 0 AND status = #{status}
-    </select>
-
-    <select id="countTodayBorrows" resultType="java.lang.Long">
-        SELECT COUNT(*) FROM borrow_record WHERE deleted = 0 AND borrow_date = CURDATE()
-    </select>
-
 </mapper>

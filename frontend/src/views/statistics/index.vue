@@ -66,7 +66,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getStatistics, exportStatistics, getBorrowTrend, getCategoryDistribution, getHotBooks, type DashboardStats } from '@/api/dashboard'
-import { downloadCsv, getMetricRows, getSummaryRows } from '@/utils/statistics'
+import { getMetricRows, getSummaryRows } from '@/utils/statistics'
+import { downloadBlob } from '@/utils/download'
 import { useUserStore } from '@/store/modules/user'
 import StatisticsScope from '@/components/statistics/StatisticsScope.vue'
 import InventoryReconciliation from '@/components/statistics/InventoryReconciliation.vue'
@@ -102,7 +103,7 @@ async function handleExport() {
   exporting.value = true
   try {
     const csv = await exportStatistics()
-    downloadCsv(csv, '基础统计指标.csv')
+    downloadBlob(csv, '基础统计指标.csv')
     ElMessage.success('导出成功，统计日期和范围见 CSV')
   } catch {} finally { exporting.value = false }
 }

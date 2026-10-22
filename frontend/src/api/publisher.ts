@@ -5,10 +5,6 @@ export function getPublishers(params: { page?: number; size?: number; keyword?: 
   return get<PageResult<Publisher>>('/publishers', params)
 }
 
-export function getPublisherById(id: number) {
-  return get<Publisher>(`/publishers/${id}`)
-}
-
 export function createPublisher(data: Record<string, unknown>) {
   return post<Publisher>('/publishers', data)
 }

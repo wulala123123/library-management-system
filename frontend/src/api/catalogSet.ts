@@ -53,7 +53,6 @@ export const getSetBookContexts = (bookId: number[]) => get<{ schemaVersion: 1; 
 export const previewCatalogSet = (input: SetPreviewInput) => post<SetRequestView>('/catalog-sets/previews', input)
 export const confirmCatalogSet = (id: number, operationKey: string, previewDigest: string) => post<SetReceipt>(`/catalog-sets/requests/${id}/confirm`, { schemaVersion: 1, operationKey, previewDigest })
 export const cancelCatalogSet = (id: number, operationKey: string, previewDigest: string, reason: CancelReason) => post<SetRequestView>(`/catalog-sets/requests/${id}/cancel`, { schemaVersion: 1, operationKey, previewDigest, reason })
-export const getSetRequest = (id: number) => get<SetRequestView>(`/catalog-sets/requests/${id}`)
 export const getSetRequestByKey = (key: string) => get<SetRequestView>(`/catalog-sets/requests/by-key?${query({ key })}`)
 export const getSetEvents = (setId: number, page = 1, size = 20) => get<SetPage<SetEvent>>(`/catalog-sets/${setId}/events?${query({ page, size })}`)
 export const getSetReviews = (params: SetReviewQuery) => get<SetPage<SetReviewCase>>(`/catalog-set-reviews?${query(params)}`)

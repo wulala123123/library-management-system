@@ -7,12 +7,12 @@ import {receiptInput,receiptOperation,recoveryRecord,cancelResult,testFact} from
 import {financeFixture} from './financeFixtures'
 import type {Operation} from '@/api/memberFinanceWrite'
 const wrappers:ReturnType<typeof mount>[]=[]
-let factory:IDBFactory,op:Operation|null,writeCalls:{url:string;body:any}[],failConfirm:boolean,failDraft:boolean,denyStorage:boolean,delayedDraft:((v:any)=>void)|null
+let factory:IDBFactory,op:Operation|null,writeCalls:{url:string;body:any}[],failConfirm:boolean,failDraft:boolean,delayedDraft:((v:any)=>void)|null
 const respond=(data:unknown,status=200)=>({status,arrayBuffer:async()=>new TextEncoder().encode(JSON.stringify(data)).buffer}) as Response
 const good=(data:unknown)=>respond({schemaVersion:1,code:200,message:'合成',data})
 const error=(code:string,status=409)=>respond({schemaVersion:1,code:status,message:'合成',data:{errorCode:code,operationKey:null,requestId:null,state:null,certainty:'NO_FINANCIAL_WRITE',recovery:'READ_KEY',retryable:false,fieldErrors:[],operation:null}},status)
 function next(state:Operation['state']){const result=receiptOperation(state,op!.editor.editorId,op!.operationKey);result.editor={...op!.editor};if(op!.input&&state!=='RESERVED'){result.input=structuredClone(op!.input);if(result.request){result.request.input=structuredClone(op!.input);result.request.preview.identity.memberRevision=op!.input.memberRevision;result.request.preview.impact.before.financeRevision=op!.input.financeRevision;result.request.preview.impact.after.financeRevision=(BigInt(op!.input.financeRevision)+1n).toString()}if(result.result?.receipt){const r=result.result.receipt,e=r.entriesAtCommit[0]!;if(op!.input.action==='RECEIPT'){e.rootFactKey=op!.input.payload.factKey;e.businessRef=structuredClone(op!.input.payload.businessRef);e.reason=op!.input.reason;r.audit.reason=op!.input.reason}result.request!.result=structuredClone(result.result)}}return result}
-beforeEach(()=>{factory=new IDBFactory();op=null;writeCalls=[];failConfirm=false;failDraft=false;denyStorage=false;delayedDraft=null;localStorage.clear();sessionStorage.clear();localStorage.setItem('token','actor2');vi.stubGlobal('indexedDB',factory);vi.stubGlobal('BroadcastChannel',undefined)
+beforeEach(()=>{factory=new IDBFactory();op=null;writeCalls=[];failConfirm=false;failDraft=false;delayedDraft=null;localStorage.clear();sessionStorage.clear();localStorage.setItem('token','actor2');vi.stubGlobal('indexedDB',factory);vi.stubGlobal('BroadcastChannel',undefined)
  vi.stubGlobal('fetch',vi.fn(async(input,init)=>{const url=String(input),body=init?.body?JSON.parse(init.body as string):null;if(body)writeCalls.push({url,body})
   if(url.endsWith('/active'))return good(op&&!['COMMITTED','CANCELLED','EXPIRED','REJECTED'].includes(op.state)?op:null)
   if(!body)return op?good(op):error('OPERATION_NOT_FOUND',404)

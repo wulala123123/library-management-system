@@ -1,4 +1,4 @@
-import { readCsvDownload, CsvDownloadError } from './csvDownload'
+import { readCsvDownload, CsvDownloadError, csvInstant } from './csvDownload'
 export type BorrowOrigin = 'IMPORTED' | 'COUNTER_ORDER' | 'SYSTEM' | 'UNVERIFIED'
 export type BorrowOriginFilter = 'ALL' | BorrowOrigin
 export type BorrowStatusFilter = 'ACTIVE' | 'BORROWING' | 'OVERDUE' | 'RETURNED' | null
@@ -34,7 +34,6 @@ const origins: BorrowOriginFilter[] = ['ALL', 'IMPORTED', 'COUNTER_ORDER', 'SYST
 const statuses = [null, 'ACTIVE', 'BORROWING', 'OVERDUE', 'RETURNED']
 const whole = (expression: RegExp, value: string) => expression.exec(value)?.[0] === value
 const date = (value: unknown) => typeof value === 'string' && whole(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/, value)
-const instant = (value: unknown): value is string => typeof value === 'string' && whole(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,9})?Z$/, value) && Number.isFinite(Date.parse(value))
 function invalid(): never { throw new BorrowInquiryError(null, '借阅查询返回内容不完整，请重新读取核对。') }
 function params(filters: BorrowInquiryFilters) {
   if (!object(filters) || !text(filters.keyword) || !statuses.includes(filters.status) || !origins.includes(filters.origin)) throw new BorrowInquiryError(null, '借阅筛选条件无效，请核对。')
@@ -75,7 +74,7 @@ export function createBorrowInquiryApi(token: string): BorrowInquiryApi {
       try { payload = await response.json() } catch { return invalid() }
       const value = payload?.data
       if (!object(payload) || payload.code !== 200 || !object(value) || !Array.isArray(value.records) || value.records.length > query.size || !value.records.every(validRecord)
-        || !count(value.total) || value.page !== query.page || value.size !== query.size || value.pages !== Math.ceil(value.total / query.size) || !instant(value.asOf)
+        || !count(value.total) || value.page !== query.page || value.size !== query.size || value.pages !== Math.ceil(value.total / query.size) || !csvInstant(value.asOf)
         || !object(value.filters) || !sameFilters(value.filters as BorrowInquiryFilters, query) || !object(value.summary)
         || !['total', 'imported', 'counterOrder', 'system', 'unverified'].every(key => count(value.summary[key]))
         || value.summary.total !== value.total || value.summary.imported + value.summary.counterOrder + value.summary.system + value.summary.unverified !== value.total

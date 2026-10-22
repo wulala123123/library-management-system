@@ -1,6 +1,6 @@
 # 柜台多本借还与验证范围收敛
 
-本页记录 B50-A 本批的实际结果，当前执行位置见 [PLAN](../../../PLAN.md)，业务边界见[阶段 5](../../plans/member-business-alignment/stages/05-circulation.md)。真实备份、账号、业务响应及配置只保存在私有证据目录。
+本页记录 B50-A 本批的实际结果，当前执行位置见 [PLAN](../../../PLAN.md)，业务边界见[阶段 5](phase-1-data-adaptation/member-business-alignment/stages/05-circulation.md)。真实备份、账号、业务响应及配置只保存在私有证据目录。
 
 ## 范围与基线
 

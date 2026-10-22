@@ -133,7 +133,7 @@ import { getCategoryList } from '@/api/category'
 import type { BookCategory } from '@/types'
 import { ageText, bindingText, bookDisplayTitle, catalogPageCsv, emptyAttributeFilters, attributeFilterQuery } from '@/utils/catalogAttributes'
 import { displayValue } from '@/utils/display'
-import { downloadCsv } from '@/utils/statistics'
+import { downloadBlob } from '@/utils/download'
 
 const router = useRouter()
 const user = useUserStore(), accessDenied = ref(false), canManage = computed(() => !accessDenied.value && (user.isAdmin || user.isLibrarian))
@@ -218,7 +218,7 @@ function handleExport() {
     return
   }
   const blob = new Blob([catalogPageCsv(bookList.value)], { type: 'text/csv;charset=utf-8;' })
-  downloadCsv(blob, '本页书目.csv')
+  downloadBlob(blob, '本页书目.csv')
   ElMessage.success('导出成功')
 }
 async function handleDelete(row: CatalogBook) {

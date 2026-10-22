@@ -2,7 +2,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useUserStore } from '@/store/modules/user'
 import { ManagementReadError } from '@/api/managementReports'
 import type { CsvDownload } from '@/api/csvDownload'
-import { downloadCsv } from '@/utils/statistics'
+import { downloadBlob } from '@/utils/download'
 
 /** Own one administrator download. All awaits finish before the final ownership check and object URL. */
 export function useAdminDownload(options: { key: () => unknown; ready: () => boolean; read: (token: string, signal: AbortSignal) => Promise<CsvDownload>; onDenied?: () => void; onSuccess?: (file: CsvDownload) => void }) {
@@ -20,7 +20,7 @@ export function useAdminDownload(options: { key: () => unknown; ready: () => boo
     try {
       const file = await options.read(owner.token, controller.signal)
       if (!current()) return
-      downloadCsv(file.blob, file.filename); success.value = file; options.onSuccess?.(file)
+      downloadBlob(file.blob, file.filename); success.value = file; options.onSuccess?.(file)
     } catch (cause) {
       if (!current()) return
       if (cause instanceof ManagementReadError && (cause.status === 401 || cause.status === 403)) invalidate()
