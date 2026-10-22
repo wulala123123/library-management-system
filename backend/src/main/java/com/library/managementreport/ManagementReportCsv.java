@@ -1,5 +1,6 @@
 package com.library.managementreport;
 
+import com.library.common.CsvWriter;
 import java.nio.charset.StandardCharsets;
 import com.library.managementreport.ManagementReportContracts.*;
 
@@ -26,17 +27,6 @@ final class ManagementReportCsv {
         return out.toString().getBytes(StandardCharsets.UTF_8);
     }
     private static void line(StringBuilder out,Object... values) {
-        for(int n=0;n<values.length;n++) {
-            if(n>0) out.append(',');String value=values[n]==null?"":values[n].toString();
-            if(values[n] instanceof String&&formula(value)) value="'"+value;
-            out.append('"').append(value.replace("\"","\"\"")).append('"');
-        }
-        out.append("\r\n");
-    }
-    private static boolean formula(String value) {
-        if(value.isEmpty()) return false;
-        if("\t\r\n".indexOf(value.charAt(0))>=0) return true;
-        int i=0;while(i<value.length()&&(Character.isWhitespace(value.charAt(i))||Character.isSpaceChar(value.charAt(i)))) i++;
-        return i<value.length()&&"=+-@".indexOf(value.charAt(i))>=0;
+        CsvWriter.appendLine(out, CsvWriter.NullValue.QUOTED_EMPTY, values);
     }
 }

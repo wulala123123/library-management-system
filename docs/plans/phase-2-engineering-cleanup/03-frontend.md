@@ -39,4 +39,4 @@
 
 完整类型/构建通过；79文件848项测试通过（含3项Blob正常/异常释放检查）。首次高并发失败的mock遗漏已修复，其余瞬态失败在不改断言/超时的4 worker完整复验中通过，原日志保留。Edge真实dist配合本地合成后端完成登录中文必填、会员分页/筛选/实际988字节CSV下载、Dialog/Drawer、MessageBox、Loading、日期/下拉、馆员及读者拒绝检查；控制台无warn/error，未留下未知EL标签。UI仅只读/取消路径，夹具写入仅在本批合成库；所属服务、审计进程及端口均已结束/释放。
 
-私有证据为`logs/engineering-cleanup/batch3/`的`implementation-v2.md`、`verification-v2.json`、`size-comparison.json`、`ui-checks.json`及截图/下载。官方方案依据在`preparation-v1.md`。pnpm审计因官方registry POST错误23未完成，正独立补证，不冒充审计通过；正式上线仍需目标完整Verify。提交由本批Git记录定位。
+私有证据为`logs/engineering-cleanup/batch3/`的`implementation-v2.md`、`verification-v2.json`、`size-comparison.json`、`ui-checks.json`及截图/下载。官方方案依据在`preparation-v1.md`。后续补证确认pnpm错误23为超时，Python/Node/curl微型POST也超时、GET正常；264个精确版本及安装锁已绑定，未得到官方advisory响应，漏洞数量未知。`audit-supplement/report.md`保留探针与有界正式审计结果；需在可完成同一官方POST的环境补验，不能宣称审计通过。正式上线仍需目标完整Verify。实现提交`e851eaa`。

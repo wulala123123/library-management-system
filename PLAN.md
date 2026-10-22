@@ -7,9 +7,9 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [工程清理与代码精简](docs/plans/phase-2-engineering-cleanup/README.md)，2026-10-22用户已批准 |
-| 当前批次 | 文档`6c3e909`、批次1`617bcca`、批次2`109a769`已提交；批次3本地行为验收通过，总dist减少19.27%，依赖审计独立补证 |
-| 下一工作项 | [批次4：后端公共逻辑整理](docs/plans/phase-2-engineering-cleanup/04-backend.md)，合并CSV相同行处理并保持两种NULL策略 |
-| 当前状态 | 批次3/v2由经理验收，UI及服务已结束；`/root/batch2_inventory`只读补前端依赖审计；批次4`/root/batch4_csv`准备已验收，下一动作放行实施。员工均使用技能默认`gpt-6.1-sol/xhigh`，经理独占状态与提交，交付在本聊天及`logs/engineering-cleanup/batch*/` |
+| 当前批次 | 文档及前三批已提交；批次4本地已验收，99项通过、六份完整CSV逐字节一致 |
+| 下一工作项 | [批次5：工具、文档与分发内容收口](docs/plans/phase-2-engineering-cleanup/05-tools-and-docs.md)，核对实际包并汇总净空间、代码与剩余门槛 |
+| 当前状态 | 四批员工交付均已验收且进程结束；经理独占批次5文档、旧嵌套workflow及实际打包核对。前端审计补证确认官方bulk POST超时，264精确版本已绑定，漏洞数量未知；同锁版本须在可达环境补验，证据在`logs/engineering-cleanup/batch3/audit-supplement/` |
 | 工作分支 | `codex/engineering-cleanup`；本地起点`1500166`，承接已准备的工程清理文档改动 |
 | 工时估算 | 原估8–14小时，历史资料现按审查结论保留；前三批已完成实现及必要本地行为验证。剩余CSV、工具收口及打包暂估1–2小时有效工作时间，依赖审计/完整Linux Verify受环境影响另计，生产维护另计 |
 | 交付方式 | 分批独立提交；分别记录工作目录、构建包和代码变化，必要检查达标即交付 |

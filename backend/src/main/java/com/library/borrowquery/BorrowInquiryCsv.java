@@ -1,5 +1,6 @@
 package com.library.borrowquery;
 
+import com.library.common.CsvWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import com.library.borrowquery.BorrowInquiryContracts.*;
@@ -26,19 +27,6 @@ final class BorrowInquiryCsv {
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
     private static void line(StringBuilder out, Object... values) {
-        for (int i = 0; i < values.length; i++) {
-            if (i > 0) out.append(',');
-            String value = values[i] == null ? "" : values[i].toString();
-            if (values[i] instanceof String && formula(value)) value = "'" + value;
-            out.append('"').append(value.replace("\"", "\"\"")).append('"');
-        }
-        out.append("\r\n");
-    }
-    private static boolean formula(String value) {
-        if (value.isEmpty()) return false;
-        if (value.charAt(0) == '\t' || value.charAt(0) == '\r' || value.charAt(0) == '\n') return true;
-        int i = 0;
-        while (i < value.length() && (Character.isWhitespace(value.charAt(i)) || Character.isSpaceChar(value.charAt(i)))) i++;
-        return i < value.length() && "=+-@".indexOf(value.charAt(i)) >= 0;
+        CsvWriter.appendLine(out, CsvWriter.NullValue.QUOTED_EMPTY, values);
     }
 }
