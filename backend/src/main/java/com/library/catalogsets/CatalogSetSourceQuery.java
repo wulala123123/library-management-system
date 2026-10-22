@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import static com.library.catalogattributes.CatalogAttributeSupport.JSON;
 import static com.library.catalogattributes.CatalogAttributeSupport.obj;
-import static com.library.catalogattributes.CatalogAttributeSupport.tree;
 import static com.library.catalogattributes.CatalogAttributeSupport.hash;
 import static com.library.catalogattributes.CatalogAttributeSupport.read;
 import static com.library.catalogattributes.CatalogAttributeSupport.bytes;

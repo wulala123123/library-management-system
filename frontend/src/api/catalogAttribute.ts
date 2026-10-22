@@ -26,7 +26,6 @@ export interface AttributePreviewInput { operationKey: string; mode: AttributeMo
 export interface AttributePreview { schemaVersion: 1; mode: AttributeMode; reason: string; createdAt: string; expiresAt: string; book: { bookId: number; expectedRevision: number; catalogDigest: string; sourceDigest: string | null; before: ProfileSnapshot; after: ProfileSnapshot; changedFields: string[]; willChange: boolean; sourceEvidence: BookSource | null } }
 export interface AttributeReceipt { schemaVersion: 1; requestId: number; operationKey: string; mode: AttributeMode; actorId: number; confirmedAt: string; book: { bookId: number; changed: boolean; beforeRevision: number; afterRevision: number; eventId: number | null; profile: ProfileSnapshot; displayTitle: string; catalogDigest: string } }
 export interface AttributeRequestView { requestId: number; operationKey: string; mode: AttributeMode; state: 'PREVIEWED' | 'COMMITTED'; previewDigest: string; expiresAt: string; preview: AttributePreview; receipt: AttributeReceipt | null }
-export interface AttributeAudit { eventId: number; bookId: number; requestId: number | null; kind: 'MANUAL' | 'SOURCE' | 'LEGACY_TITLE'; beforeRevision: number; afterRevision: number; changedFields: string[]; before: ProfileSnapshot; after: ProfileSnapshot; sourceEvidence: BookSource | null; actorId: number; occurredAt: string; reason: string }
 export const getCatalogBooks = (params: CatalogQuery) => {
   const query = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
@@ -41,6 +40,4 @@ export const getCatalogAttributes = (id: number) => get<AttributeView>(`/catalog
 export const getBookSource = (id: number) => get<BookSource>(`/catalog-books/${id}/source`)
 export const previewCatalogAttributes = (input: AttributePreviewInput) => post<AttributeRequestView>('/catalog-attributes/previews', input)
 export const confirmCatalogAttributes = (id: number, operationKey: string, previewDigest: string) => post<AttributeReceipt>(`/catalog-attributes/${id}/confirm`, { operationKey, previewDigest })
-export const getCatalogAttributeRequest = (id: number) => get<AttributeRequestView>(`/catalog-attributes/${id}`)
 export const getCatalogAttributeRequestByKey = (key: string) => get<AttributeRequestView>('/catalog-attributes/by-key', { key })
-export const getCatalogAttributeEvents = (id: number, page: number, size = 20) => get<PageResult<AttributeAudit>>(`/catalog-books/${id}/attribute-events`, { page, size })

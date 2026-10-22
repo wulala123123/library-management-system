@@ -1,7 +1,7 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { computed, defineComponent, h, inject, provide, reactive, type ComputedRef } from 'vue'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { ManagementReadError, type BorrowOperationsReport as Report } from '@/api/managementReports'
+import { ManagementReadError } from '@/api/managementReports'
 import { managementFile, operationsReport, pendingManagement } from './managementFixtures'
 const api = vi.hoisted(() => ({ list: vi.fn(), csv: vi.fn(), report: vi.fn(), reportCsv: vi.fn(), download: vi.fn(), stats: vi.fn(), trend: vi.fn(), hot: vi.fn(), categories: vi.fn(), route: { query: {} }, user: { isAdmin: true, isLibrarian: false, isReader: false, canManageBooks: true, token: 'admin-one', userInfo: { id: 1, role: 'ADMIN' } } }))
 vi.mock('@/store/modules/user', () => ({ useUserStore: () => api.user }))

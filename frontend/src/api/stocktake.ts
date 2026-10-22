@@ -34,7 +34,6 @@ export const getStocktakeObservations = (id: number, params: PageQuery & { copyI
 export const getStocktakeDifferences = (id: number, params: PageQuery & { reviewSnapshotId?: number; type?: string; copyId?: number }) => get<PageResult<Difference>>(`/stocktakes/${id}/differences`, params)
 export const getStocktakeChanges = (id: number, params: PageQuery & { snapshotId?: number; copyId?: number; category?: string }) => get<PageResult<Change>>(`/stocktakes/${id}/changes`, params)
 export const getStocktakeResolutions = (id: number, params: PageQuery) => get<PageResult<Resolution>>(`/stocktakes/${id}/resolutions`, params)
-export const getStocktakeResolution = (id: number) => get<Resolution>(`/stocktake-resolutions/${id}`)
 export const recoverStocktakeResolution = (id: number) => get<Resolution>(`/stocktake-resolutions/${id}/recover`)
 export const getStocktakeCandidates = (params: PageQuery & { differenceId: number; workflow: Workflow }) => get<PageResult<Candidate>>('/stocktake-resolution-candidates', params)
 export const exportStocktake = (id: number, reviewSnapshotId: number, format: 'json' | 'csv') => request.get<unknown, Blob>(`/stocktakes/${id}/export`, { params: { reviewSnapshotId, format }, responseType: 'blob' })

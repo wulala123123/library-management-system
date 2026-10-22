@@ -1,4 +1,4 @@
-import type { BorrowOrderDetail, BorrowOrderPage, CirculationInput, CirculationItem, CirculationPreview, CirculationReceipt, CirculationRequest } from '@/api/circulation'
+import type { BorrowOrderDetail, BorrowOrderPage, CirculationInput, CirculationPreview, CirculationReceipt, CirculationRequest } from '@/api/circulation'
 
 type Check = (value: any) => boolean
 const obj = (shape: Record<string, Check>): Check => value => !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === Object.keys(shape).length && Object.entries(shape).every(([key, check]) => Object.prototype.hasOwnProperty.call(value, key) && check(value[key]))

@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue'
 import { FINANCE_ACCESS_REVOKED, financeId, type MemberFinance } from '@/api/memberFinance'
-import { assertOperationBinding, createFinanceWriteApi, FinanceWriteError, type CancelBody, type CancelReceipt, type Editor, type Operation, type ReceiptInput, type RecoveryRecord } from '@/api/memberFinanceWrite'
+import { assertOperationBinding, createFinanceWriteApi, FinanceWriteError, type CancelReceipt, type Editor, type Operation, type ReceiptInput, type RecoveryRecord } from '@/api/memberFinanceWrite'
 import { assertWriteDefinition } from '@/api/memberFinanceWriteValidation'
 import { createFinanceRecoveryStore, FinanceStorageError, type FinanceRecoveryStore } from './financeRecoveryStore'
 import type { FinanceReaderIdentity } from './financeReadSession'

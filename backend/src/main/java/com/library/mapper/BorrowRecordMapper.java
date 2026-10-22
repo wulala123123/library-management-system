@@ -18,8 +18,4 @@ public interface BorrowRecordMapper extends BaseMapper<BorrowRecord> {
                                              @Param("keyword") String keyword,
                                              @Param("status") String status,
                                              @Param("userId") Long userId);
-
-    Long countByStatus(@Param("status") String status);
-
-    Long countTodayBorrows();
 }

@@ -46,10 +46,6 @@ export function deleteBook(id: number) {
   return del<void>(`/books/${id}`)
 }
 
-export function updateBookStatus(id: number, status: number) {
-  return put<void>(`/books/${id}/status`, {}, { params: { status } })
-}
-
 export function uploadBookCover(bookId: number, file: File) {
   const formData = new FormData()
   formData.append('file', file)

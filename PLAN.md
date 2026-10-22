@@ -7,9 +7,9 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 活动计划 | [工程清理与代码精简](docs/plans/phase-2-engineering-cleanup/README.md)，2026-10-22用户已批准 |
-| 当前批次 | 文档前置整理已提交`6c3e909`；批次1本地已验收：释放旧上传645 MiB，历史资料及独有旧包保留；代理分支待完整Verify |
-| 下一工作项 | [批次2：无用代码与依赖清点](docs/plans/phase-2-engineering-cleanup/02-unused-code.md)，验收只读盘点后实施有依据的删除 |
-| 当前状态 | 批次1员工`/root/batch1_uploads`已交付且进程结束；批次2/v1由`/root/batch2_inventory`只读盘点，批次3/v1准备已交付；均使用技能默认`gpt-6.1-sol/xhigh`。经理独占状态与提交；交付在本聊天及`logs/engineering-cleanup/batch*/` |
+| 当前批次 | 文档`6c3e909`、批次1`617bcca`已提交；批次2本地已验收，净减197行，前端845项/后端36项通过 |
+| 下一工作项 | [批次3：前端精简与构建包优化](docs/plans/phase-2-engineering-cleanup/03-frontend.md)，按已验收准备实施组件按需引入及相同底层辅助整理 |
+| 当前状态 | 批次2/v2已交付且验证进程结束，经理验收通过；批次3准备由`/root/batch3_frontend`交付，下一动作放行实施；批次4只读准备已交付。员工均使用技能默认`gpt-6.1-sol/xhigh`，经理独占状态与提交，交付在本聊天及`logs/engineering-cleanup/batch*/` |
 | 工作分支 | `codex/engineering-cleanup`；本地起点`1500166`，承接已准备的工程清理文档改动 |
 | 工时估算 | 原估8–14小时；批次1约25分钟，历史资料转为有依据的保留。剩余本地实现及验证暂估4–7小时有效工作时间，分工可缩短等待；Linux完整Verify及生产维护另计 |
 | 交付方式 | 分批独立提交；分别记录工作目录、构建包和代码变化，必要检查达标即交付 |
