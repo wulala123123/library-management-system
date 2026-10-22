@@ -41,7 +41,7 @@
 - 原“不限次数”映射错误已完成来源核对、定向修正及上线；不限使用 `total_uses = NULL`，明确有限零次保留零，未知值不猜测补齐。验收见[第一批档案](../archive/2026-10/member-business-batch1-2026-10-15.md)。
 - 账号、会员及办理借阅可按姓名、手机号、卡号和登录账号搜索；共享手机号返回独立会员。借阅候选只包含启用读者。
 
-待实施内容见[会员阶段](../plans/member-business-alignment/stages/02-membership.md)及[基线与规则](../plans/member-business-alignment/stages/00-baseline.md)。启用前按已确认方案验证权限与权益，历史会员身份及已有借阅关联保持可追溯。
+待实施内容见[会员阶段](../archive/2026-10/phase-1-data-adaptation/member-business-alignment/stages/02-membership.md)及[基线与规则](../archive/2026-10/phase-1-data-adaptation/member-business-alignment/stages/00-baseline.md)。启用前按已确认方案验证权限与权益，历史会员身份及已有借阅关联保持可追溯。
 
 ## 已确认、尚未启用的办理规则
 

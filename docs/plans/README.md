@@ -6,6 +6,10 @@
 
 | 计划 | 范围 |
 | --- | --- |
-| [会员业务整合](member-business-alignment/README.md) | 数据修正、会员、图书、收费、借还、统计与读者端 |
+| [第二阶段：工程清理与代码精简](phase-2-engineering-cleanup/README.md) | 已获用户同意；第一阶段PLAN已归档，接续本地文件、测试产物、无用代码、前后端公共逻辑与工具文档整理 |
+
+## 第一阶段历史入口
+
+- [第一阶段：资料导入与系统适配](../archive/2026-10/phase-1-data-adaptation/README.md)：原PLAN、完整子计划及原子阶段0–7集中归档；已取消与暂缓内容不作为新阶段待办。
 
 已完成计划放入[历史档案](../archive/README.md)。新增、拆分、完成和归档按 [WORKFLOW](../../WORKFLOW.md)执行。

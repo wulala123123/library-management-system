@@ -19,7 +19,7 @@
 ## 验收结果
 
 - B00：完整数据库、上传、配置及版本备份通过 SHA256 校验；全新隔离项目恢复，全表内容哈希与上传字节一致，生产数据未变。
-- B01–B02：来源清单、批次哈希、会员档案和业务字段关联逐项核对；原套餐设置与实际权益保留。字段分类见[来源字段](../../plans/member-business-alignment/source-fields.md)。
+- B01–B02：来源清单、批次哈希、会员档案和业务字段关联逐项核对；原套餐设置与实际权益保留。字段分类见[来源字段](phase-1-data-adaptation/member-business-alignment/source-fields.md)。
 - B10–B11：只修正来源明确不限、预期旧值匹配的 `total_uses`。正式执行前只读预览、校验备份、停应用；锁定事务提交并核对所有无关记录及字段。重复同预览没有变化；首次结果保留，后续代码更新未重复修正。
 - B12–B13：首页、库存、统计和 CSV 的十项指标与数据库独立查询一致；种数、册数、账号、会员及有效期待核实分别显示。实体册登记差异如实提供，权限通过验收。
 - B14：缺失卡号、库位、出版日期、页数和简介按未设置、待补充显示，已知零值及前导零保留。次数接口明确输出 NULL，缺失字段不冒充不限。
@@ -38,4 +38,4 @@
 
 本地：`logs/member-business-batch1/`、`logs/member-business-batch1-null-contract/`、`logs/b10-b11-unlimited-tests/`。服务器安装根目录下 `migrations/member-business-batch1/` 保存基线、首次修正和恢复依据，`migrations/member-business-batch1-null-contract/` 保存加强后二次隔离及最终线上核对。备份路径只保存在私有记录；不重写原文件，不公开真实数量。
 
-后续进入[阶段 2](../../plans/member-business-alignment/stages/02-membership.md)的会员资料、搜索和权限。套餐版本、收费、扣次及借阅限制按各自阶段验收后启用。
+后续进入[阶段 2](phase-1-data-adaptation/member-business-alignment/stages/02-membership.md)的会员资料、搜索和权限。套餐版本、收费、扣次及借阅限制按各自阶段验收后启用。

@@ -102,7 +102,7 @@
 
 ## 变更边界
 
-柜台多本订单及批量归还已启用，见上节；会员套餐限制继续暂缓。2026-10-22用户取消管理员新旧借阅入口统一、待取预留、成功后的撤销/换书、实物配套及整套借还办理；相关原任务见[图书阶段](../plans/member-business-alignment/stages/03-catalog.md)及[借还阶段](../plans/member-business-alignment/stages/05-circulation.md)。已上线套装目录关系、单册与新柜台办理按各自边界保留，历史期限和记录不变，来源未知值不补成默认业务值。
+柜台多本订单及批量归还已启用，见上节；会员套餐限制继续暂缓。2026-10-22用户取消管理员新旧借阅入口统一、待取预留、成功后的撤销/换书、实物配套及整套借还办理；相关原任务见[图书阶段](../archive/2026-10/phase-1-data-adaptation/member-business-alignment/stages/03-catalog.md)及[借还阶段](../archive/2026-10/phase-1-data-adaptation/member-business-alignment/stages/05-circulation.md)。已上线套装目录关系、单册与新柜台办理按各自边界保留，历史期限和记录不变，来源未知值不补成默认业务值。
 
 2026 年 10 月 15 日用户确认：新套餐允许明确选择不限归还日期，未选择时使用具体天数，功能在套餐及借还阶段实现后启用。套装归属未核实前，先按实际单册条码借还，不启用整套扣次或整套限额。
 

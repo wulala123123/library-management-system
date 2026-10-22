@@ -26,4 +26,4 @@ Codex 内置浏览器复用原登录，确认导航、书目差额、在借筛�
 
 私有证据：`logs/catalog-stage3/query-backend/`、`query-frontend/`、`query-manager-acceptance.json`，以及 `query-manager-v2/` 的 `trial-complete.json`、`final-complete.json`、`deployment-complete.json`、`online-verification.json`、`manager-final-acceptance.json`。服务端对应受保护目录为 `migrations/catalog-stage3-query-v2/`；v1 失败现场继续保留。
 
-本批只完成 B30/B31 的查询子范围。统一手工/采购入库、逐册状态与库位写操作尚未上线，按[阶段 3](../../plans/member-business-alignment/stages/03-catalog.md)继续推进；套餐收费及借阅限制仍未启用。
+本批只完成 B30/B31 的查询子范围。统一手工/采购入库、逐册状态与库位写操作尚未上线，按[阶段 3](phase-1-data-adaptation/member-business-alignment/stages/03-catalog.md)继续推进；套餐收费及借阅限制仍未启用。

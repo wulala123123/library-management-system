@@ -14,6 +14,8 @@
 
 ## 当前阶段
 
+2026-10-22用户确认围绕导入资料适配系统的第一阶段可以归档，并同意进入[第二阶段：工程清理与代码精简](docs/plans/phase-2-engineering-cleanup/README.md)。[原根目录PLAN](docs/archive/2026-10/phase-1-data-adaptation/PLAN.md)已完整归档，新PLAN只保存第二阶段执行游标。当前完成范围切换与排期，接续本地冗余、测试产物增长、前后端维护成本及脚本文档整理；已上线业务作为基线，原取消及暂缓决定继续有效。
+
 2026-10-22用户确认剩余五项候选均不实施：统计多维筛选、成功借出后的撤销/换书、管理员待取预留、管理员新旧借阅入口统一、实物套装配套及整套借还。当前已批准开发批次收尾，转入用户人工验收与反馈；套餐、计次及资金后续继续暂缓，不作为本次验收前置。取消项保留原规划记录，不标为已实现，具体状态由对应阶段及PLAN维护。
 
 阶段 0 的备份恢复、字段对照与原权益核对已验收，关键规则部分确认；阶段 1 的 B10–B14 已上线；阶段 2 的会员资料、套餐版本、来源预填及权益快照已上线，已核实来源宝宝定向登记完成；阶段 3 的书目与逐册管理各批已验收上线，B34套装目录关系于2026-10-19完成闭环。阶段4的B40-A只读台账与B40-B当天柜台收款已验收上线，V17于2026-10-20启用当天现金/微信实收登记。用户随后要求暂缓套餐及全部资金后续工作，优先推进阶段5可独立实施的柜台借还流程；阶段4其余项目和套餐规则仍未完成。2026-10-21用户确认先推进阶段6的独立只读历史资料衔接；套餐及资金后续继续暂缓。下一工作项及恢复位置由 [PLAN](PLAN.md)维护。
@@ -26,18 +28,14 @@
 
 ## 总体路线
 
-活动计划为[会员业务整合](docs/plans/member-business-alignment/README.md)。本表维护阶段顺序；任务定义、勾选状态和验收条件由链接的阶段文档维护。
+项目按以下大阶段组织，当前执行位置由根目录PLAN维护。
 
-| 阶段 | 目标 | 依赖 | 阶段定义 |
-| --- | --- | --- | --- |
-| 0 | 建立基线和确认规则 | 无 | [基线与规则](docs/plans/member-business-alignment/stages/00-baseline.md) |
-| 1 | 修正数据错误及基础统计 | 0 | [数据修正](docs/plans/member-business-alignment/stages/01-data-corrections.md) |
-| 2 | 统一会员档案和套餐权益 | 1 | [会员管理](docs/plans/member-business-alignment/stages/02-membership.md) |
-| 3 | 完善图书和逐册管理 | 1，交付顺序在 2 后 | [图书管理](docs/plans/member-business-alignment/stages/03-catalog.md) |
-| 4 | 建立收费与押金流程 | 2 | [收费与押金](docs/plans/member-business-alignment/stages/04-payments.md) |
-| 5 | 接通套餐规则及借还订单 | 2、3、4 | [借还流程](docs/plans/member-business-alignment/stages/05-circulation.md) |
-| 6 | 完善历史衔接与经营统计 | 5 | [历史与报表](docs/plans/member-business-alignment/stages/06-reporting.md) |
-| 7（当前范围外） | 原读者登录与自助计划保留记录，当前不实施 | — | [原读者服务计划](docs/plans/member-business-alignment/stages/07-reader-services.md) |
+| 大阶段 | 目标 | 状态与入口 |
+| --- | --- | --- |
+| 第一阶段 | 围绕导入资料适配会员、图书、借还及管理查询 | 用户认可范围完成；[计划与执行档案](docs/archive/2026-10/phase-1-data-adaptation/README.md) |
+| 第二阶段 | 工程清理、代码精简及维护成本整理 | 当前活动计划；[工程清理与代码精简](docs/plans/phase-2-engineering-cleanup/README.md) |
+
+原会员业务整合中的0–7是第一阶段内部的子阶段，原路线、依赖及任务状态已集中保存在第一阶段档案，未勾选或暂缓事项不自动进入第二阶段。
 
 ## 项目完成标准
 
