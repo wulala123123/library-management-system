@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.library.service.CaptchaService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 import java.net.URI;
 import java.net.http.*;
@@ -28,12 +31,16 @@ import static org.junit.jupiter.api.Assertions.*;
         "spring.flyway.password=${MYSQL_TEST_PASSWORD:}",
         "jwt.secret=production-http-test-key-with-at-least-sixty-four-characters-long-123",
         "bootstrap.admin.username=review_admin","bootstrap.admin.password=ReviewAdministrator123",
-        "file.upload-dir=target/http-test-uploads","logging.file.name=target/http-test.log",
+        "logging.file.name=target/http-test.log",
         "login.rate-limit.max-attempts=1000"
 })
 @ActiveProfiles("prod")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MySqlProductionHttpTest {
+    @RegisterExtension static final HttpTestUploads uploads=new HttpTestUploads();
+    @DynamicPropertySource static void uploadDirectory(DynamicPropertyRegistry properties) {
+        properties.add("file.upload-dir",()->uploads.directory().toString());
+    }
     @LocalServerPort int port;
     @Autowired ObjectMapper json;
     @Autowired CaptchaService captcha;
